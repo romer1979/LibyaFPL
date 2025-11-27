@@ -41,7 +41,6 @@
 
 html {
     -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
 }
 
 body {
@@ -53,8 +52,6 @@ body {
     direction: rtl;
     margin: 0;
     padding: 0;
-    max-width: 100vw;
-    overflow-x: hidden;
 }
 
 /* Header */
@@ -212,7 +209,6 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     padding: 1.5rem;
-    overflow-x: hidden;
 }
 
 /* Dashboard Grid */
@@ -235,7 +231,6 @@ body {
     padding: 1.5rem;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
-    overflow: hidden;
 }
 
 .section-title {
@@ -1093,109 +1088,41 @@ body {
     z-index: 1;
 }
 
-/* Responsive for stats */
-@media (max-width: 1400px) {
-    .points-stats-grid-simple {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media (max-width: 1200px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stats-section.eo-section,
-    .stats-section.points-section {
-        grid-column: 1;
-    }
-    
-    .points-stats-grid-simple {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .stats-three-columns {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .points-stats-grid-simple {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .stat-value {
-        font-size: 1.3rem;
-    }
-    
-    .stat-players-big {
-        font-size: 0.8rem;
-    }
-    
-    .stat-emoji {
-        font-size: 1.2rem;
-    }
-    
-    .comparison-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .comparison-select {
-        width: 100%;
-    }
-    
-    .chart-container {
-        height: 350px;
-    }
-}
-
-/* Footer */
-.footer {
-    text-align: center;
-    padding: 1.5rem;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border-color);
-    margin-top: 2rem;
-}
-
-.refresh-note {
-    color: var(--primary-purple);
-    margin-top: 0.5rem;
-    font-weight: 500;
 
 /* ===========================================
-   MOBILE RESPONSIVE
+   RESPONSIVE - MOBILE FRIENDLY
    =========================================== */
 
-@media (max-width: 1200px) {
+/* Tablet and below - single column */
+@media screen and (max-width: 1200px) {
     .dashboard-grid {
-        grid-template-columns: 1fr;
+        display: block !important;
     }
+    
     .stats-grid {
         grid-template-columns: 1fr;
     }
 }
 
-@media (max-width: 768px) {
-    /* Force everything to fit screen width */
-    *, *::before, *::after {
+/* Mobile */
+@media screen and (max-width: 768px) {
+    /* Reset box sizing */
+    * {
         box-sizing: border-box;
     }
     
     /* HEADER */
     .header {
-        padding: 0.5rem;
-        width: 100%;
-        max-width: 100vw;
+        padding: 0.5rem 0.75rem;
     }
     
     .header-content {
         flex-direction: column;
         gap: 0.5rem;
-        max-width: 100%;
+    }
+    
+    .logo {
+        justify-content: center;
     }
     
     .logo-img {
@@ -1203,141 +1130,172 @@ body {
     }
     
     .logo-title {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
     
     .logo-subtitle {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
     
     .gameweek-info {
         padding: 0.4rem 0.6rem;
-        gap: 0.4rem;
+        gap: 0.35rem;
         flex-wrap: wrap;
         justify-content: center;
     }
     
     .gw-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
     
     .gw-number {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
     
     .status-badge {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
+        padding: 0.15rem 0.4rem;
     }
     
     .refresh-btn {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
     }
     
     .stats-link {
-        font-size: 0.8rem;
-        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
     }
     
-    /* MAIN CONTAINER */
+    /* MAIN CONTENT */
     .main-container {
         padding: 0.5rem;
-        width: 100%;
-        max-width: 100vw;
+    }
+    
+    .dashboard-grid {
+        display: block !important;
     }
     
     .fixtures-section,
     .standings-section {
-        padding: 0.5rem;
+        padding: 0.75rem;
         margin-bottom: 0.75rem;
-        width: 100%;
-        max-width: 100%;
     }
     
     .section-title {
-        font-size: 1rem;
+        font-size: 0.95rem;
+        flex-wrap: wrap;
     }
     
-    /* TABLES - SCROLL INSIDE CONTAINER */
-    .fixtures-table-container,
-    .standings-table-container {
-        width: 100%;
-        max-width: 100%;
-        overflow-x: scroll;
+    /* FIXTURES TABLE */
+    .fixtures-table-container {
+        overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        display: block;
     }
     
     .fixtures-table {
-        width: max-content;
         min-width: 480px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
     
     .fixtures-table th,
     .fixtures-table td {
-        padding: 0.5rem 0.4rem;
-        white-space: nowrap;
+        padding: 0.5rem 0.3rem;
+    }
+    
+    .fixtures-table th {
+        font-size: 0.75rem;
     }
     
     .team-name {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+    }
+    
+    .manager-link {
+        font-size: 0.8rem;
     }
     
     .team-details {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
+        gap: 0.2rem;
     }
     
     .captain-badge {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
+        padding: 0.1rem 0.25rem;
     }
     
     .chip-badge {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
+        padding: 0.1rem 0.2rem;
     }
     
     .score {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     
-    .diff-badge {
-        font-size: 0.8rem;
-    }
-    
-    .toggle-unique-btn {
-        width: 26px;
-        height: 26px;
+    .vs {
         font-size: 0.7rem;
     }
     
+    .diff-badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+    }
+    
+    .toggle-unique-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.65rem;
+    }
+    
     /* STANDINGS TABLE */
+    .standings-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
     .standings-table {
-        width: max-content;
-        min-width: 580px;
-        font-size: 0.8rem;
+        min-width: 560px;
+        font-size: 0.75rem;
     }
     
     .standings-table th,
     .standings-table td {
-        padding: 0.45rem 0.35rem;
-        white-space: nowrap;
+        padding: 0.4rem 0.25rem;
     }
     
     .standings-table th {
+        font-size: 0.7rem;
+    }
+    
+    .standings-table .manager-link {
         font-size: 0.75rem;
+    }
+    
+    .rank-up, .rank-down, .rank-same {
+        font-size: 0.7rem;
     }
     
     /* UNIQUE PLAYERS */
     .unique-players-container {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .unique-player-tag {
+        font-size: 0.65rem;
     }
     
     /* FOOTER */
     .footer {
         padding: 0.75rem;
-        font-size: 0.75rem;
-        width: 100%;
-        max-width: 100vw;
+        font-size: 0.7rem;
+    }
+    
+    .timestamp {
+        font-size: 0.65rem;
     }
     
     /* STATS PAGE */
@@ -1351,25 +1309,28 @@ body {
     }
     
     .stat-emoji {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     
     .stat-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
     
     .stat-value {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     
     .stat-players-big {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
     
     .stats-table-container {
-        width: 100%;
-        max-width: 100%;
-        overflow-x: scroll;
+        overflow-x: auto;
+    }
+    
+    .stats-table {
+        min-width: 300px;
+        font-size: 0.75rem;
     }
     
     .comparison-controls {
@@ -1379,33 +1340,47 @@ body {
     
     .comparison-select {
         width: 100%;
+        font-size: 0.9rem;
     }
     
     .chart-container {
-        height: 280px;
+        height: 260px;
     }
 }
 
-@media (max-width: 480px) {
+/* Small phones */
+@media screen and (max-width: 480px) {
     .logo-img {
-        height: 40px;
+        height: 38px;
     }
     
     .logo-title {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
     
     .logo-subtitle {
         display: none;
     }
     
+    .gameweek-info {
+        gap: 0.25rem;
+    }
+    
+    .gw-label {
+        font-size: 0.7rem;
+    }
+    
+    .gw-number {
+        font-size: 0.9rem;
+    }
+    
     .fixtures-table {
-        min-width: 440px;
-        font-size: 0.8rem;
+        min-width: 420px;
+        font-size: 0.75rem;
     }
     
     .standings-table {
-        min-width: 520px;
-        font-size: 0.75rem;
+        min-width: 500px;
+        font-size: 0.7rem;
     }
 }
