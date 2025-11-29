@@ -518,6 +518,11 @@ body {
 }
 
 /* Player status colors */
+.unique-player-tag.status-playing {
+    background: #007bff;
+    color: white;
+}
+
 .unique-player-tag.status-played {
     background: #6c757d;
     color: #e0e0e0;
@@ -1393,21 +1398,38 @@ body {
         font-size: 0.65rem;
         padding: 0.15rem 0.4rem;
         border-radius: 6px;
-        background: #e8f4fd;
-        color: #0066cc;
+        background: var(--primary-purple);
+        color: white;
     }
     
-    .unique-tag.status-d,
-    .unique-tag.status-i {
-        background: #fff3cd;
-        color: #856404;
+    /* Player currently playing - blue */
+    .unique-tag.status-playing {
+        background: #007bff;
+        color: white;
     }
     
-    .unique-tag.status-u,
-    .unique-tag.status-s,
-    .unique-tag.status-n {
-        background: #f8d7da;
-        color: #721c24;
+    /* Player played and game finished - grey */
+    .unique-tag.status-played {
+        background: #6c757d;
+        color: #e0e0e0;
+    }
+    
+    /* Player didn't play and team finished - red */
+    .unique-tag.status-dnp {
+        background: #dc3545;
+        color: white;
+    }
+    
+    /* Auto-sub player - green */
+    .unique-tag.status-sub {
+        background: #28a745;
+        color: white;
+    }
+    
+    /* Player hasn't played yet, team has future fixture - purple (default) */
+    .unique-tag.status-pending {
+        background: var(--primary-purple);
+        color: white;
     }
     
     .unique-none {

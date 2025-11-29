@@ -338,7 +338,8 @@ class DashboardData:
             def get_player_status(pid, is_sub=False):
                 """
                 Get player status:
-                - 'played': minutes > 0 (grey)
+                - 'playing': minutes > 0 and game still in progress (blue)
+                - 'played': minutes > 0 and game finished (grey)
                 - 'dnp': minutes == 0 and team finished (red)
                 - 'sub': auto-sub player (green)
                 - 'pending': minutes == 0 but team has unstarted fixture (default)
@@ -347,10 +348,23 @@ class DashboardData:
                 team_id = self.player_info.get(pid, {}).get('team', 0)
                 has_future = team_has_unstarted_fixture(team_id)
                 
+                # Check if player's team game is currently in progress
+                game_in_progress = False
+                for f in fixtures:
+                    if f['team_h'] == team_id or f['team_a'] == team_id:
+                        started = f.get('started', False)
+                        finished = f.get('finished', False) or f.get('finished_provisional', False)
+                        if started and not finished:
+                            game_in_progress = True
+                            break
+                
                 if is_sub:
                     return 'sub'
                 elif minutes > 0:
-                    return 'played'
+                    if game_in_progress:
+                        return 'playing'  # Currently on the pitch
+                    else:
+                        return 'played'   # Game finished
                 elif not has_future:
                     return 'dnp'
                 else:
