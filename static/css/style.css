@@ -625,7 +625,7 @@ body {
 .col-name { text-align: right; min-width: 100px; font-weight: 500; }
 .col-points { width: 65px; }
 .col-captain { min-width: 80px; }
-.col-chip { min-width: 95px; font-size: 0.75rem; }
+.col-chip { min-width: 115px; font-size: 0.75rem; white-space: nowrap; }
 .col-result { width: 75px; }
 .col-opponent { text-align: right; min-width: 80px; }
 
@@ -1257,7 +1257,7 @@ body {
     }
     
     .standings-table {
-        min-width: 560px;
+        min-width: 580px;
         font-size: 0.75rem;
     }
     
@@ -1272,6 +1272,10 @@ body {
     
     .standings-table .manager-link {
         font-size: 0.75rem;
+    }
+    
+    .standings-table .col-chip {
+        min-width: 100px;
     }
     
     .rank-up, .rank-down, .rank-same {
@@ -1380,7 +1384,7 @@ body {
     }
     
     .standings-table {
-        min-width: 500px;
+        min-width: 520px;
         font-size: 0.7rem;
     }
 }
