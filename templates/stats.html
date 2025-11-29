@@ -13,19 +13,17 @@
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <div class="logo">
-                <a href="/">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Elite League" class="logo-img">
-                </a>
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="Elite League" class="logo-img">
                 <div class="logo-text">
                     <span class="logo-title">دوري النخبة</span>
                     <span class="logo-subtitle">ELITE LEAGUE</span>
                 </div>
-            </div>
+            </a>
             <div class="gameweek-info">
                 <span class="gw-label">{{ ar.gameweek }}</span>
                 <span class="gw-number">{{ data.gameweek or '-' }}</span>
-                <a href="/" class="stats-link">🏠 {{ ar.back_to_home }}</a>
+                <a href="/league/elite" class="stats-link">🏠 {{ ar.back_to_home }}</a>
             </div>
         </div>
     </header>

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Elite League FPL App - Single Page Dashboard
+Fantasy Premier League Multi-League App
 """
 
 from flask import Flask, render_template, jsonify
@@ -40,8 +40,33 @@ with app.app_context():
 
 
 @app.route('/')
-def index():
-    """Main dashboard page - single page with everything"""
+def home():
+    """Home page showing all leagues"""
+    # Get Elite League standings for top 10
+    elite_data = get_dashboard()
+    elite_standings = []
+    
+    if elite_data.get('success') and elite_data.get('standings'):
+        gameweek = elite_data.get('gameweek', 1)
+        
+        for team in elite_data['standings']:
+            entry_id = team.get('entry_id')
+            current_rank = team.get('rank', 0)
+            rank_change = calculate_rank_change(gameweek, entry_id, current_rank)
+            team['rank_change'] = rank_change
+        
+        elite_standings = elite_data['standings']
+        
+        # Save standings if live or finished
+        if elite_data.get('gw_finished') or elite_data.get('is_live'):
+            save_standings(gameweek, elite_standings)
+    
+    return render_template('home.html', elite_standings=elite_standings)
+
+
+@app.route('/league/elite')
+def elite_dashboard():
+    """Elite League dashboard page"""
     data = get_dashboard()
     
     # Calculate rank changes from database
@@ -63,9 +88,9 @@ def index():
     return render_template('dashboard.html', data=data, ar=ARABIC)
 
 
-@app.route('/stats')
-def stats():
-    """League statistics page"""
+@app.route('/league/elite/stats')
+def elite_stats():
+    """Elite League statistics page"""
     data = get_league_stats()
     return render_template('stats.html', data=data, ar=ARABIC)
 
@@ -87,12 +112,12 @@ def api_dashboard():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('dashboard.html', data={'success': False, 'error': 'Page not found'}, ar=ARABIC), 404
+    return render_template('home.html', elite_standings=[], error='Page not found'), 404
 
 
 @app.errorhandler(500)
 def server_error(e):
-    return render_template('dashboard.html', data={'success': False, 'error': 'Server error'}, ar=ARABIC), 500
+    return render_template('home.html', elite_standings=[], error='Server error'), 500
 
 
 if __name__ == '__main__':

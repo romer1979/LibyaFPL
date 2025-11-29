@@ -14,13 +14,13 @@
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <div class="logo">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Elite League" class="logo-img">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="Elite League" class="logo-img">
                 <div class="logo-text">
                     <span class="logo-title">دوري النخبة</span>
                     <span class="logo-subtitle">ELITE LEAGUE</span>
                 </div>
-            </div>
+            </a>
             <div class="gameweek-info">
                 <span class="gw-label">{{ ar.gameweek }}</span>
                 <span class="gw-number">{{ data.gameweek or '-' }}</span>
@@ -34,7 +34,7 @@
                     <span class="status-badge">{{ ar.in_progress }}</span>
                 {% endif %}
                 <button class="refresh-btn" onclick="refreshDashboard()" id="refresh-btn">🔄</button>
-                <a href="/stats" class="stats-link">📊 {{ ar.stats }}</a>
+                <a href="/league/elite/stats" class="stats-link">📊 {{ ar.stats }}</a>
             </div>
         </div>
     </header>

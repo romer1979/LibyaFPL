@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دوريات قروب عشاق الفانتازي في ليبيا</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-purple: #4a1259;
+            --primary-purple-light: #6b2d7b;
+            --primary-purple-dark: #2d0a36;
+            --accent-yellow: #f5c842;
+            --accent-yellow-light: #ffd966;
+            --success: #28a745;
+            --danger: #dc3545;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a68;
+            --bg-light: #f8f9fc;
+            --card-bg: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+        
+        /* Header */
+        .main-header {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-dark) 100%);
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(74, 18, 89, 0.3);
+        }
+        
+        .main-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+        
+        .main-header p {
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem;
+        }
+        
+        /* Leagues Grid */
+        .leagues-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* League Card */
+        .league-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .league-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .league-card.coming-soon {
+            opacity: 0.7;
+        }
+        
+        .league-card.coming-soon:hover {
+            transform: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* League Header */
+        .league-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-light) 100%);
+            color: white;
+        }
+        
+        .league-logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .league-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .league-logo.placeholder {
+            background: rgba(255, 255, 255, 0.2);
+            font-size: 2rem;
+        }
+        
+        .league-info h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .league-info .league-type {
+            font-size: 0.8rem;
+            opacity: 0.85;
+        }
+        
+        /* Coming Soon Badge */
+        .coming-soon-badge {
+            background: var(--accent-yellow);
+            color: var(--primary-purple-dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: auto;
+        }
+        
+        /* League Content */
+        .league-content {
+            padding: 1rem;
+        }
+        
+        .coming-soon-content {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .coming-soon-content .icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .coming-soon-content p {
+            font-size: 0.9rem;
+        }
+        
+        /* Standings Mini Table */
+        .standings-mini {
+            width: 100%;
+        }
+        
+        .standings-mini-header {
+            display: grid;
+            grid-template-columns: 40px 1fr 50px 30px;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: #f8f9fc;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+        
+        .standings-mini-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 50px 30px;
+            gap: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+            font-size: 0.85rem;
+            transition: background 0.2s ease;
+        }
+        
+        .standings-mini-row:hover {
+            background: #fafafa;
+        }
+        
+        .standings-mini-row:last-child {
+            border-bottom: none;
+        }
+        
+        .standings-mini-row.top-3 {
+            background: linear-gradient(90deg, rgba(245, 200, 66, 0.1) 0%, transparent 100%);
+        }
+        
+        .rank {
+            font-weight: 700;
+            color: var(--primary-purple);
+            text-align: center;
+        }
+        
+        .rank .medal {
+            font-size: 1rem;
+        }
+        
+        .manager-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .league-points {
+            font-weight: 700;
+            color: var(--primary-purple);
+            text-align: center;
+        }
+        
+        .rank-change {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .rank-change.up {
+            color: var(--success);
+        }
+        
+        .rank-change.down {
+            color: var(--danger);
+        }
+        
+        .rank-change.same {
+            color: #999;
+        }
+        
+        /* View League Button */
+        .view-league-btn {
+            display: block;
+            text-align: center;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-light) 100%);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: opacity 0.2s ease;
+        }
+        
+        .view-league-btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* Footer */
+        .main-footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .leagues-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .league-logo {
+                width: 55px;
+                height: 55px;
+            }
+            
+            .league-info h2 {
+                font-size: 1.05rem;
+            }
+            
+            .standings-mini-header,
+            .standings-mini-row {
+                grid-template-columns: 35px 1fr 45px 28px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <h1>🏆 دوريات قروب عشاق الفانتازي في ليبيا</h1>
+        <p>الموسم 2024/2025</p>
+    </header>
+    
+    <div class="container">
+        <div class="leagues-grid">
+            <!-- Elite League - Active -->
+            <div class="league-card">
+                <div class="league-header">
+                    <div class="league-logo">
+                        <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="Elite League">
+                    </div>
+                    <div class="league-info">
+                        <h2>دوري النخبة</h2>
+                        <span class="league-type">H2H • 36 مدير</span>
+                    </div>
+                </div>
+                <div class="league-content">
+                    <div class="standings-mini">
+                        <div class="standings-mini-header">
+                            <span>#</span>
+                            <span>المدير</span>
+                            <span>النقاط</span>
+                            <span></span>
+                        </div>
+                        {% for team in elite_standings[:10] %}
+                        <div class="standings-mini-row {% if loop.index <= 3 %}top-3{% endif %}">
+                            <span class="rank">
+                                {% if loop.index == 1 %}
+                                    <span class="medal">🥇</span>
+                                {% elif loop.index == 2 %}
+                                    <span class="medal">🥈</span>
+                                {% elif loop.index == 3 %}
+                                    <span class="medal">🥉</span>
+                                {% else %}
+                                    {{ loop.index }}
+                                {% endif %}
+                            </span>
+                            <span class="manager-name">{{ team.player_name }}</span>
+                            <span class="league-points">{{ team.league_points }}</span>
+                            <span class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
+                                {% if team.rank_change > 0 %}
+                                    ▲
+                                {% elif team.rank_change < 0 %}
+                                    ▼
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <a href="/league/elite" class="view-league-btn">عرض الدوري كاملاً ←</a>
+            </div>
+            
+            <!-- The 100 - Coming Soon -->
+            <div class="league-card coming-soon">
+                <div class="league-header">
+                    <div class="league-logo placeholder">💯</div>
+                    <div class="league-info">
+                        <h2>The 100</h2>
+                        <span class="league-type">Survival League</span>
+                    </div>
+                    <span class="coming-soon-badge">قريباً</span>
+                </div>
+                <div class="coming-soon-content">
+                    <div class="icon">🚧</div>
+                    <p>سيتم إضافة هذا الدوري قريباً</p>
+                </div>
+            </div>
+            
+            <!-- دوري المدن - Coming Soon -->
+            <div class="league-card coming-soon">
+                <div class="league-header">
+                    <div class="league-logo placeholder">🏙️</div>
+                    <div class="league-info">
+                        <h2>دوري المدن</h2>
+                        <span class="league-type">Team H2H</span>
+                    </div>
+                    <span class="coming-soon-badge">قريباً</span>
+                </div>
+                <div class="coming-soon-content">
+                    <div class="icon">🚧</div>
+                    <p>سيتم إضافة هذا الدوري قريباً</p>
+                </div>
+            </div>
+            
+            <!-- الدوري الليبي - Coming Soon -->
+            <div class="league-card coming-soon">
+                <div class="league-header">
+                    <div class="league-logo placeholder">🇱🇾</div>
+                    <div class="league-info">
+                        <h2>الدوري الليبي</h2>
+                        <span class="league-type">Team H2H</span>
+                    </div>
+                    <span class="coming-soon-badge">قريباً</span>
+                </div>
+                <div class="coming-soon-content">
+                    <div class="icon">🚧</div>
+                    <p>سيتم إضافة هذا الدوري قريباً</p>
+                </div>
+            </div>
+            
+            <!-- البطولة العربية - Coming Soon -->
+            <div class="league-card coming-soon">
+                <div class="league-header">
+                    <div class="league-logo placeholder">🌍</div>
+                    <div class="league-info">
+                        <h2>البطولة العربية</h2>
+                        <span class="league-type">Team H2H</span>
+                    </div>
+                    <span class="coming-soon-badge">قريباً</span>
+                </div>
+                <div class="coming-soon-content">
+                    <div class="icon">🚧</div>
+                    <p>سيتم إضافة هذا الدوري قريباً</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="main-footer">
+        <p>© 2024 قروب عشاق الفانتازي في ليبيا</p>
+    </footer>
+</body>
+</html>
