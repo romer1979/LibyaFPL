@@ -9,6 +9,254 @@
     <title>The 100 - Fantasy Premier League</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
+    <style>
+        /* Additional styles for standings */
+        .standings-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+        
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .standings-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .standings-table th {
+            background: #1a1a1a;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            color: #888;
+            font-size: 0.8rem;
+            border-bottom: 2px solid #333;
+        }
+        
+        .standings-table td {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid #2a2a2a;
+            text-align: center;
+        }
+        
+        .standings-table tbody tr:hover {
+            background: #222;
+        }
+        
+        /* Safe Zone - Top 100 */
+        .standings-table tr.safe-zone {
+            background: rgba(74, 222, 128, 0.05);
+        }
+        
+        .standings-table tr.safe-zone:hover {
+            background: rgba(74, 222, 128, 0.1);
+        }
+        
+        .standings-table tr.safe-zone .rank {
+            color: #4ade80;
+        }
+        
+        /* Cutoff Row - 100th place */
+        .standings-table tr.cutoff-row {
+            border-bottom: 3px solid #4ade80;
+        }
+        
+        /* Danger Zone - 101+ */
+        .standings-table tr.danger-zone {
+            background: rgba(248, 113, 113, 0.05);
+        }
+        
+        .standings-table tr.danger-zone:hover {
+            background: rgba(248, 113, 113, 0.1);
+        }
+        
+        .standings-table tr.danger-zone .rank {
+            color: #f87171;
+        }
+        
+        /* Top 3 medals */
+        .medal {
+            font-size: 1.1rem;
+        }
+        
+        /* Rank cell */
+        .rank {
+            font-weight: 700;
+            min-width: 40px;
+        }
+        
+        /* Manager name */
+        .manager-cell {
+            text-align: right !important;
+            font-weight: 500;
+        }
+        
+        .team-name {
+            font-size: 0.75rem;
+            color: #666;
+            display: block;
+        }
+        
+        /* Points */
+        .gw-points {
+            font-weight: 600;
+            color: #c0c0c0;
+        }
+        
+        .total-points {
+            font-weight: 700;
+            color: #e8e8e8;
+            font-size: 1rem;
+        }
+        
+        /* Captain & Chip */
+        .captain {
+            color: #fbbf24;
+            font-size: 0.85rem;
+        }
+        
+        .chip {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        .chip.active {
+            color: #a78bfa;
+        }
+        
+        /* Rank change arrows */
+        .rank-change {
+            font-size: 0.85rem;
+            min-width: 35px;
+        }
+        
+        .rank-change.up {
+            color: #4ade80;
+        }
+        
+        .rank-change.down {
+            color: #f87171;
+        }
+        
+        .rank-change.same {
+            color: #666;
+        }
+        
+        /* Zone indicator */
+        .zone-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .zone-indicator.safe {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+        
+        .zone-indicator.danger {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+        
+        /* Search box */
+        .search-box {
+            padding: 0.75rem 1rem;
+            background: #141414;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 1rem;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #555;
+        }
+        
+        .search-box::placeholder {
+            color: #666;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-top-color: #c0c0c0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Live badge */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .live-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .standings-table {
+                font-size: 0.8rem;
+            }
+            
+            .standings-table th,
+            .standings-table td {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            .team-name {
+                display: none;
+            }
+            
+            .chip:not(.active) {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -22,7 +270,11 @@
                 </div>
             </a>
             <div class="header-nav">
-                <a href="/" class="nav-link home-btn">🏠 الرئيسية</a>
+                <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
+                {% if data.is_live %}
+                <span class="live-badge">مباشر</span>
+                {% endif %}
+                <a href="/" class="nav-link home-btn">🏠</a>
             </div>
         </div>
     </header>
@@ -57,22 +309,22 @@
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon">👥</div>
-                            <div class="stat-value">100</div>
+                            <div class="stat-value">{{ data.total_managers or 0 }}</div>
                             <div class="stat-label">المشاركين</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">✅</div>
-                            <div class="stat-value">100</div>
+                            <div class="stat-value">{{ data.qualification_cutoff or 100 }}</div>
                             <div class="stat-label">المتأهلين</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">❌</div>
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">المستبعدين</div>
+                            <div class="stat-value">{{ (data.total_managers or 0) - (data.qualification_cutoff or 100) }}</div>
+                            <div class="stat-label">خارج التأهل</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">📅</div>
-                            <div class="stat-value">13</div>
+                            <div class="stat-value">{{ data.gameweek or '-' }}</div>
                             <div class="stat-label">الجولة الحالية</div>
                         </div>
                     </div>
@@ -83,21 +335,76 @@
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏅 ترتيب التأهل</h2>
-                    <span class="section-badge">أفضل 100 يتأهلون</span>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="zone-indicator safe">✅ أفضل 100 متأهلين</span>
+                        <span class="zone-indicator danger">❌ خارج التأهل</span>
+                    </div>
                 </div>
                 <div class="section-content">
-                    <div class="coming-soon-message">
-                        <div class="icon">🚧</div>
-                        <h3>قريباً</h3>
-                        <p>سيتم إضافة بيانات الترتيب قريباً</p>
+                    <input type="text" class="search-box" id="searchBox" placeholder="🔍 ابحث عن مدير..." oninput="filterTable()">
+                    
+                    {% if data.standings %}
+                    <div class="standings-container">
+                        <table class="standings-table" id="standingsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>المدرب</th>
+                                    <th>الكابتن</th>
+                                    <th>الشريحة</th>
+                                    <th>GW</th>
+                                    <th>المجموع</th>
+                                    <th>+/-</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for team in data.standings %}
+                                <tr class="{% if team.live_rank <= data.qualification_cutoff %}safe-zone{% else %}danger-zone{% endif %}{% if team.live_rank == data.qualification_cutoff %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}">
+                                    <td class="rank">
+                                        {% if team.live_rank == 1 %}
+                                            <span class="medal">🥇</span>
+                                        {% elif team.live_rank == 2 %}
+                                            <span class="medal">🥈</span>
+                                        {% elif team.live_rank == 3 %}
+                                            <span class="medal">🥉</span>
+                                        {% else %}
+                                            {{ team.live_rank }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="manager-cell">
+                                        {{ team.manager_name }}
+                                        <span class="team-name">{{ team.team_name }}</span>
+                                    </td>
+                                    <td class="captain">{{ team.captain }}</td>
+                                    <td class="chip {% if team.chip_raw %}active{% endif %}">{{ team.chip }}</td>
+                                    <td class="gw-points">{{ team.live_gw_points }}</td>
+                                    <td class="total-points">{{ team.live_total }}</td>
+                                    <td class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
+                                        {% if team.rank_change > 0 %}
+                                            ▲{{ team.rank_change }}
+                                        {% elif team.rank_change < 0 %}
+                                            ▼{{ team.rank_change|abs }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
+                    {% else %}
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>جاري تحميل البيانات...</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Elimination Phase -->
         <div id="phase-elimination" class="phase-content">
-            <!-- Stats Overview -->
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">⚔️ إحصائيات الإقصاء</h2>
@@ -129,11 +436,9 @@
                 </div>
             </div>
 
-            <!-- Elimination Table -->
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">📋 ترتيب الإقصاء</h2>
-                    <span class="section-badge">آخر 6 يخرجون</span>
                 </div>
                 <div class="section-content">
                     <div class="coming-soon-message">
@@ -147,7 +452,6 @@
 
         <!-- Championship Phase -->
         <div id="phase-championship" class="phase-content">
-            <!-- Stats Overview -->
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏆 مرحلة البطولة</h2>
@@ -179,7 +483,6 @@
                 </div>
             </div>
 
-            <!-- Bracket -->
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏅 شجرة البطولة</h2>
@@ -198,25 +501,37 @@
     <!-- Footer -->
     <footer class="footer">
         <p>© 2024 قروب عشاق الفانتازي في ليبيا - The 100</p>
+        {% if data.last_updated %}
+        <p style="margin-top: 0.5rem; font-size: 0.75rem;">آخر تحديث: {{ data.last_updated }}</p>
+        {% endif %}
     </footer>
 
     <script>
         function showPhase(phase) {
-            // Hide all phases
             document.querySelectorAll('.phase-content').forEach(el => {
                 el.classList.remove('active');
             });
-            
-            // Remove active from all tabs
             document.querySelectorAll('.phase-tab').forEach(el => {
                 el.classList.remove('active');
             });
-            
-            // Show selected phase
             document.getElementById('phase-' + phase).classList.add('active');
-            
-            // Activate clicked tab
             event.target.closest('.phase-tab').classList.add('active');
+        }
+        
+        function filterTable() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const rows = document.querySelectorAll('#standingsTable tbody tr');
+            
+            rows.forEach(row => {
+                const manager = row.getAttribute('data-manager') || '';
+                const team = row.getAttribute('data-team') || '';
+                
+                if (manager.includes(searchTerm) || team.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
     </script>
 </body>

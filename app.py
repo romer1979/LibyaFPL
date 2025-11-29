@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import LEAGUE_ID, ARABIC
 from core.dashboard import get_dashboard
 from core.stats import get_league_stats, get_manager_history
+from core.the100 import get_the100_standings
 from models import db, save_standings, calculate_rank_change
 
 app = Flask(__name__)
@@ -98,7 +99,8 @@ def elite_stats():
 @app.route('/league/the100')
 def the100_dashboard():
     """The 100 League dashboard"""
-    return render_template('the100_dashboard.html')
+    data = get_the100_standings()
+    return render_template('the100_dashboard.html', data=data)
 
 
 @app.route('/api/comparison')
