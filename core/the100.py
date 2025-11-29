@@ -91,12 +91,8 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                 winner_rank = row.get('rank', 0)
                 break
         
-        # 4) Calculate qualification cutoff
-        # If winner is outside top 100, only 99 others qualify
-        if winner_rank and winner_rank > 100:
-            qualification_cutoff = 99
-        else:
-            qualification_cutoff = 100
+        # 4) Qualification cutoff is always 99 (winner is separate)
+        qualification_cutoff = 99
         
         # 5) Build standings list
         final_rows = []
