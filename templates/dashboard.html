@@ -54,9 +54,9 @@
                         {% if data.is_live %}
                             <span class="live-badge">🔴 {{ ar.live }}</span>
                         {% elif data.showing_previous_gw %}
-                            <span class="prev-gw-badge">{{ ar.gameweek }} {{ data.display_gameweek }}</span>
+                            <span class="prev-gw-badge">{{ ar.gameweek }} {{ data.fixtures_gameweek }}</span>
                         {% elif data.gw_finished %}
-                            <span class="finished-badge">{{ ar.gameweek }} {{ data.display_gameweek }}</span>
+                            <span class="finished-badge">{{ ar.gameweek }} {{ data.fixtures_gameweek }}</span>
                         {% endif %}
                     </h2>
                     

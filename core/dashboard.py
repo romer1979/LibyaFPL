@@ -36,6 +36,7 @@ class DashboardData:
         self.live_elements_dict = None
         self.current_gameweek = None
         self.display_gameweek = None
+        self.fixtures_gameweek = None
         self.gw_info = None
         self.team_fixture_started = {}
         self.is_live = False
@@ -632,6 +633,7 @@ class DashboardData:
                 # STATE 1: Gameweek is FINISHED - show current GW final results
                 fixtures = self._get_gw_fixtures_final(self.current_gameweek, teams_league)
                 self.display_gameweek = self.current_gameweek
+                self.fixtures_gameweek = self.current_gameweek
                 self.showing_previous_gw = False
                 self.is_live = False
                 
@@ -721,15 +723,18 @@ class DashboardData:
                                 standings_dict[name]['projected_league_points'] += 1
                 
                 self.display_gameweek = self.current_gameweek
+                self.fixtures_gameweek = self.current_gameweek
                 self.showing_previous_gw = False
                 
             else:
-                # STATE 3: Gameweek NOT STARTED - show previous GW final results
+                # STATE 3: Gameweek NOT STARTED - show previous GW final results for fixtures
+                # BUT show current GW captains/chips (what managers have selected)
                 if self.current_gameweek > 1:
                     prev_gw = self.current_gameweek - 1
                     fixtures = self._get_gw_fixtures_final(prev_gw, teams_league)
-                    self.display_gameweek = prev_gw
-                    self.showing_previous_gw = True
+                    self.display_gameweek = self.current_gameweek  # Show current GW number
+                    self.fixtures_gameweek = prev_gw  # Fixtures are from previous GW
+                    self.showing_previous_gw = True  # But note fixtures are from previous
                 self.is_live = False
             
             # Fetch standings data for all teams - PARALLEL FETCH
@@ -746,8 +751,8 @@ class DashboardData:
                 entry_ids.append(entry_id)
                 entry_to_name[entry_id] = name
             
-            # Use display_gameweek for fetching picks (handles GW not started case)
-            fetch_gw = self.display_gameweek if self.display_gameweek else self.current_gameweek
+            # Always fetch picks from CURRENT gameweek to show upcoming captains/chips
+            fetch_gw = self.current_gameweek
             
             # BATCH FETCH: Get all entry data and picks in parallel
             all_entry_data = get_multiple_entry_data(entry_ids)
@@ -833,6 +838,7 @@ class DashboardData:
                 'success': True,
                 'gameweek': self.current_gameweek,
                 'display_gameweek': self.display_gameweek,
+                'fixtures_gameweek': self.fixtures_gameweek,
                 'gw_info': self.gw_info,
                 'league_name': league_name,
                 'is_live': self.is_live,

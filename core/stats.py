@@ -121,14 +121,9 @@ def get_league_stats(league_id=None, gameweek=None):
         player_info = build_player_info(bootstrap_data)
         elements = bootstrap_data.get('elements', [])
         
-        # Get current gameweek
+        # Get current gameweek - always use current, not previous
         gw_info = get_current_gameweek(bootstrap_data)
         current_gw = gameweek or gw_info['id']
-        
-        # Check if gameweek has started - if not, use previous GW
-        gw_not_started = gw_info.get('not_started', False)
-        if gw_not_started and current_gw > 1:
-            current_gw = current_gw - 1
         
         # Get league data
         league_data = get_league_standings(league_id)
