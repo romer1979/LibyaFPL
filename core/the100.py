@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 The 100 League - Live Standings for Classic League
-Uses async httpx for fast fetching of ~1000 managers
+Uses sync requests with ThreadPoolExecutor for concurrent fetching
 """
 
-import asyncio
-import httpx
+import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from datetime import datetime
 
 # Configuration
 THE100_LEAGUE_ID = 8921
-MAX_CONCURRENCY = 20
+MAX_WORKERS = 10  # Number of concurrent threads
 TIMEOUT = 20
-RETRY_STATUS = {429, 500, 502, 503, 504}
 
 # Get cookies from environment
 def get_cookies():
@@ -23,28 +22,26 @@ def get_cookies():
     }
 
 # ------------ HTTP HELPERS --------------
-async def fetch_json(client, url, retries=5):
-    """Fetch JSON with retry logic for rate limits"""
-    delay = 0.5
-    for _ in range(retries):
+def fetch_json(url, cookies=None, retries=3):
+    """Fetch JSON with retry logic"""
+    for attempt in range(retries):
         try:
-            r = await client.get(url)
-            if r.status_code in RETRY_STATUS:
-                await asyncio.sleep(delay)
-                delay = min(delay * 2, 8.0)
+            r = requests.get(url, cookies=cookies, timeout=TIMEOUT)
+            if r.status_code == 200:
+                return r.json()
+            if r.status_code in {429, 500, 502, 503, 504}:
                 continue
-            if r.is_error:
-                return None
-            return r.json()
+            return None
         except Exception:
-            await asyncio.sleep(delay)
-            delay = min(delay * 2, 8.0)
+            if attempt < retries - 1:
+                continue
+            return None
     return None
 
 # --------- CORE FETCHERS ---------
-async def get_bootstrap(client):
+def get_bootstrap(cookies):
     """Get bootstrap data: current GW, player info"""
-    data = await fetch_json(client, "https://fantasy.premierleague.com/api/bootstrap-static/")
+    data = fetch_json("https://fantasy.premierleague.com/api/bootstrap-static/", cookies)
     if not data:
         raise RuntimeError("bootstrap-static failed")
     
@@ -65,12 +62,12 @@ async def get_bootstrap(client):
     
     return current["id"], player_info, data
 
-async def get_all_standings(client, league_id):
+def get_all_standings(cookies, league_id):
     """Fetch all pages of classic league standings"""
     page, results = 1, []
     while True:
         url = f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_new_entries=1&page_standings={page}"
-        data = await fetch_json(client, url)
+        data = fetch_json(url, cookies)
         if not data:
             break
         block = data.get("standings", {})
@@ -81,23 +78,27 @@ async def get_all_standings(client, league_id):
         page += 1
     return results
 
-async def get_fixtures(client, gw):
+def get_fixtures(cookies, gw):
     """Get fixtures for gameweek"""
     url = f"https://fantasy.premierleague.com/api/fixtures/?event={gw}"
-    data = await fetch_json(client, url)
-    return data or []
+    return fetch_json(url, cookies) or []
 
-async def get_live(client, gw):
+def get_live(cookies, gw):
     """Get live data for gameweek"""
     url = f"https://fantasy.premierleague.com/api/event/{gw}/live/"
-    data = await fetch_json(client, url)
+    data = fetch_json(url, cookies)
     if not data:
         raise RuntimeError("live data failed")
     return data
 
+def fetch_picks(entry_id, gw, cookies):
+    """Fetch picks for a manager"""
+    url = f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{gw}/picks/"
+    return fetch_json(url, cookies)
+
 # --------------- RULE HELPERS ---------------
 def team_fixtures_decided(team_id, fixtures, postponed_games=None):
-    """Check if team's fixtures are decided (finished or postponed)"""
+    """Check if team's fixtures are decided"""
     postponed_games = postponed_games or {}
     if team_id in postponed_games:
         return True
@@ -234,45 +235,31 @@ def calculate_live_points(picks, live_dict, player_info, chip_played, fixtures, 
 
     return total - event_transfers_cost
 
-# ------------------ PICKS FETCH ------------------
-async def fetch_picks(client, entry_id, gw):
-    """Fetch picks for a manager"""
-    url = f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{gw}/picks/"
-    return await fetch_json(client, url)
-
-async def bounded(sem, coro):
-    """Semaphore-bounded coroutine"""
-    async with sem:
-        return await coro
-
 # ------------------ CHIP NAMES ------------------
 def get_chip_display(chip):
     """Get Arabic chip name"""
     chips = {
-        'wildcard': '🃏 وايلد كارد',
-        'freehit': '🎯 فري هيت',
-        'bboost': '📈 بنش بوست',
-        '3xc': '👑 تربل كابتن',
-        'manager': '🧠 مانجر'
+        'wildcard': '🃏',
+        'freehit': '🎯',
+        'bboost': '📈',
+        '3xc': '👑',
+        'manager': '🧠'
     }
     return chips.get(chip, '-')
 
 # ------------------ MAIN PIPELINE ------------------
-async def fetch_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=None):
-    """Main function to fetch live standings"""
-    postponed_games = postponed_games or {}
-    cookies = get_cookies()
+def get_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=None):
+    """Main function to fetch live standings using ThreadPoolExecutor"""
+    try:
+        postponed_games = postponed_games or {}
+        cookies = get_cookies()
 
-    limits = httpx.Limits(max_keepalive_connections=MAX_CONCURRENCY, max_connections=MAX_CONCURRENCY)
-    headers = {"User-Agent": "Mozilla/5.0"}
-
-    async with httpx.AsyncClient(timeout=TIMEOUT, cookies=cookies, headers=headers, limits=limits) as client:
         # 1) Bootstrap / current GW / players
-        current_gw, player_info, bootstrap_data = await get_bootstrap(client)
+        current_gw, player_info, bootstrap_data = get_bootstrap(cookies)
 
         # 2) Fixtures & live data
-        fixtures = await get_fixtures(client, current_gw)
-        live_json = await get_live(client, current_gw)
+        fixtures = get_fixtures(cookies, current_gw)
+        live_json = get_live(cookies, current_gw)
 
         # 3) Build live dict
         live_dict = {
@@ -285,22 +272,35 @@ async def fetch_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=Non
         }
 
         # 4) Pull ALL standings pages
-        standings = await get_all_standings(client, league_id)
+        standings = get_all_standings(cookies, league_id)
         if not standings:
             raise RuntimeError("No standings found")
 
-        # 5) Fetch all picks concurrently
-        sem = asyncio.Semaphore(MAX_CONCURRENCY)
-        tasks = []
-        entry_rows = []
-        for r in standings:
-            entry_rows.append(r)
-            tasks.append(bounded(sem, fetch_picks(client, r['entry'], current_gw)))
-        picks_list = await asyncio.gather(*tasks)
+        # 5) Fetch all picks concurrently using ThreadPoolExecutor
+        picks_dict = {}
+        
+        def fetch_manager_picks(entry_id):
+            return entry_id, fetch_picks(entry_id, current_gw, cookies)
+        
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(fetch_manager_picks, r['entry']): r 
+                for r in standings
+            }
+            for future in as_completed(futures):
+                try:
+                    entry_id, picks_data = future.result()
+                    if picks_data:
+                        picks_dict[entry_id] = picks_data
+                except Exception:
+                    pass
 
         # 6) Compute live points for each manager
         final_rows = []
-        for row, picks_data in zip(entry_rows, picks_list):
+        for row in standings:
+            entry_id = row.get('entry')
+            picks_data = picks_dict.get(entry_id)
+            
             if not picks_data:
                 continue
             
@@ -320,7 +320,7 @@ async def fetch_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=Non
             live_total = (row['total'] - old_gw_points) + live_gw
 
             final_rows.append({
-                'entry_id': row.get('entry'),
+                'entry_id': entry_id,
                 'manager_name': row.get('player_name'),
                 'team_name': row.get('entry_name'),
                 'live_gw_points': live_gw,
@@ -338,7 +338,7 @@ async def fetch_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=Non
         for i, row in enumerate(final_rows, 1):
             row['live_rank'] = i
             prev = row['previous_rank'] or i
-            row['rank_change'] = prev - i  # positive = moved up
+            row['rank_change'] = prev - i
 
         # Check if GW is live
         is_live = any(
@@ -354,11 +354,7 @@ async def fetch_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=Non
             'qualification_cutoff': 100,
             'last_updated': datetime.now().strftime('%H:%M')
         }
-
-def get_the100_standings():
-    """Sync wrapper to run async function"""
-    try:
-        return asyncio.run(fetch_the100_standings())
+        
     except Exception as e:
         print(f"Error fetching The 100 standings: {e}")
         return {
