@@ -25,7 +25,7 @@
             <div class="gameweek-info">
                 <span class="gw-label">{{ ar.gameweek }}</span>
                 <span class="gw-number">{{ data.gameweek or '-' }}</span>
-                <a href="/" class="back-link">{{ ar.back_to_home }} ←</a>
+                <a href="/" class="back-link desktop-only">{{ ar.back_to_home }} ←</a>
             </div>
         </div>
     </header>
@@ -233,11 +233,23 @@
         {% endif %}
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
+    <!-- Footer (Desktop only) -->
+    <footer class="footer desktop-only">
         <p>{{ ar.copyright }}</p>
         <p class="timestamp" id="timestamp"></p>
     </footer>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav mobile-only">
+        <a href="/" class="bottom-nav-item">
+            <span class="bottom-nav-icon">🏠</span>
+            <span class="bottom-nav-label">الرئيسية</span>
+        </a>
+        <a href="/stats" class="bottom-nav-item active">
+            <span class="bottom-nav-icon">📊</span>
+            <span class="bottom-nav-label">الإحصائيات</span>
+        </a>
+    </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>

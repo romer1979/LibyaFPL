@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>{{ ar.app_title }} - {{ ar.fpl_tracker }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -33,7 +34,7 @@
                     <span class="status-badge">{{ ar.in_progress }}</span>
                 {% endif %}
                 <button class="refresh-btn" onclick="refreshDashboard()" id="refresh-btn">🔄</button>
-                <a href="/stats" class="stats-link">📊 {{ ar.stats }}</a>
+                <a href="/stats" class="stats-link desktop-only">📊 {{ ar.stats }}</a>
             </div>
         </div>
     </header>
@@ -61,7 +62,8 @@
                     </h2>
                     
                     {% if data.fixtures %}
-                        <div class="fixtures-table-container">
+                        <!-- Desktop Table View -->
+                        <div class="fixtures-table-container desktop-only">
                             <table class="fixtures-table">
                                 <thead>
                                     <tr>
@@ -142,6 +144,79 @@
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Mobile Cards View -->
+                        <div class="mobile-fixtures mobile-only">
+                            {% for match in data.fixtures %}
+                            <div class="fixture-card" onclick="toggleMobileUnique({{ loop.index }})">
+                                <div class="fixture-card-main">
+                                    <!-- Team 1 -->
+                                    <div class="fixture-team {% if match.winner == 1 %}winner{% endif %}">
+                                        <a href="https://fantasy.premierleague.com/entry/{{ match.entry_1 }}/event/{{ data.gameweek }}" target="_blank" class="fixture-team-name" onclick="event.stopPropagation()">
+                                            {% if match.winner == 1 %}✓ {% endif %}{{ match.team_1_name }}
+                                        </a>
+                                        <div class="fixture-team-details">
+                                            <span class="fixture-captain">👑 {{ match.team_1_captain }}</span>
+                                            <span class="fixture-chip {% if match.team_1_chip_active %}active{% endif %}">{{ match.team_1_chip }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Score -->
+                                    <div class="fixture-score-block">
+                                        <div class="fixture-scores">
+                                            <span class="fixture-pts {% if match.winner == 1 %}winning{% endif %}">{{ match.team_1_points }}</span>
+                                            <span class="fixture-separator">-</span>
+                                            <span class="fixture-pts {% if match.winner == 2 %}winning{% endif %}">{{ match.team_2_points }}</span>
+                                        </div>
+                                        <div class="fixture-diff">
+                                            <span class="fixture-diff-badge {% if match.winner == 1 %}diff-left{% elif match.winner == 2 %}diff-right{% endif %}">
+                                                {% if match.winner == 1 %}◀{% elif match.winner == 2 %}▶{% endif %} {{ match.points_diff }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Team 2 -->
+                                    <div class="fixture-team {% if match.winner == 2 %}winner{% endif %}">
+                                        <a href="https://fantasy.premierleague.com/entry/{{ match.entry_2 }}/event/{{ data.gameweek }}" target="_blank" class="fixture-team-name" onclick="event.stopPropagation()">
+                                            {% if match.winner == 2 %}✓ {% endif %}{{ match.team_2_name }}
+                                        </a>
+                                        <div class="fixture-team-details">
+                                            <span class="fixture-captain">👑 {{ match.team_2_captain }}</span>
+                                            <span class="fixture-chip {% if match.team_2_chip_active %}active{% endif %}">{{ match.team_2_chip }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Unique Players (Hidden by default) -->
+                                <div class="fixture-card-unique" id="mobile-unique-{{ loop.index }}" style="display: none;">
+                                    <div class="unique-section">
+                                        <div class="unique-header">{{ match.team_1_name }}</div>
+                                        <div class="unique-players">
+                                            {% for player in match.team_1_unique %}
+                                                <span class="unique-tag status-{{ player.status }}">{{ player.name }}</span>
+                                            {% else %}
+                                                <span class="unique-none">لا يوجد</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="unique-section">
+                                        <div class="unique-header">{{ match.team_2_name }}</div>
+                                        <div class="unique-players">
+                                            {% for player in match.team_2_unique %}
+                                                <span class="unique-tag status-{{ player.status }}">{{ player.name }}</span>
+                                            {% else %}
+                                                <span class="unique-none">لا يوجد</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="fixture-card-expand">
+                                    <span class="expand-hint" id="expand-hint-{{ loop.index }}">▼ اللاعبين المميزين</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     {% else %}
                         <div class="no-data">لا توجد مباريات</div>
                     {% endif %}
@@ -155,23 +230,98 @@
                             <span class="live-badge">🔴 {{ ar.live }}</span>
                         {% endif %}
                     </h2>
-                    {% include 'partials/standings_table.html' %}
+                    
+                    <!-- Desktop Table -->
+                    <div class="desktop-only">
+                        {% include 'partials/standings_table.html' %}
+                    </div>
+                    
+                    <!-- Mobile Standings -->
+                    <div class="mobile-standings mobile-only">
+                        <div class="mobile-standings-header">
+                            <span class="msh-rank">م</span>
+                            <span class="msh-name">المدرب</span>
+                            <span class="msh-lp">ن.د</span>
+                            <span class="msh-gw">ن.ج</span>
+                        </div>
+                        {% for team in data.standings %}
+                        <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}" onclick="toggleStandingDetails({{ loop.index }})">
+                            <div class="mobile-standing-main">
+                                <span class="ms-rank">
+                                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ team.rank }}{% endif %}
+                                    {% if team.rank_change and team.rank_change > 0 %}
+                                        <span class="rank-up">↑{{ team.rank_change }}</span>
+                                    {% elif team.rank_change and team.rank_change < 0 %}
+                                        <span class="rank-down">↓{{ team.rank_change|abs }}</span>
+                                    {% endif %}
+                                </span>
+                                <span class="ms-name">
+                                    <a href="https://fantasy.premierleague.com/entry/{{ team.entry_id }}/event/{{ data.gameweek }}" target="_blank" onclick="event.stopPropagation()">{{ team.player_name }}</a>
+                                </span>
+                                <span class="ms-lp">{{ team.projected_league_points }}</span>
+                                <span class="ms-gw">{{ team.current_gw_points or '-' }}</span>
+                            </div>
+                            <div class="mobile-standing-details" id="standing-details-{{ loop.index }}" style="display: none;">
+                                <div class="ms-detail">
+                                    <span class="ms-label">{{ ar.captain }}:</span>
+                                    <span class="ms-value">👑 {{ team.captain or '-' }}</span>
+                                </div>
+                                <div class="ms-detail">
+                                    <span class="ms-label">{{ ar.chip }}:</span>
+                                    <span class="ms-value chip-badge {% if team.chip_active %}active{% endif %}">{{ team.chip or '-' }}</span>
+                                </div>
+                                {% if data.is_live %}
+                                <div class="ms-detail">
+                                    <span class="ms-label">{{ ar.result }}:</span>
+                                    <span class="ms-value">
+                                        {% if team.result == 'W' %}🟢 {{ ar.winner }}{% elif team.result == 'L' %}🔴 {{ ar.loser }}{% elif team.result == 'D' %}🟡 {{ ar.draw }}{% else %}-{% endif %}
+                                    </span>
+                                </div>
+                                <div class="ms-detail">
+                                    <span class="ms-label">{{ ar.opponent }}:</span>
+                                    <span class="ms-value">{{ team.opponent or '-' }}</span>
+                                </div>
+                                {% endif %}
+                                <div class="ms-detail">
+                                    <span class="ms-label">{{ ar.total_points }}:</span>
+                                    <span class="ms-value">{{ '{:,}'.format(team.total_points) if team.total_points else '-' }}</span>
+                                </div>
+                                <div class="ms-detail">
+                                    <span class="ms-label">{{ ar.overall_rank }}:</span>
+                                    <span class="ms-value">{{ '{:,}'.format(team.overall_rank) if team.overall_rank else '-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </section>
             </div>
         {% endif %}
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
+    <!-- Footer (Desktop only) -->
+    <footer class="footer desktop-only">
         <p>{{ ar.copyright }}</p>
         {% if data.is_live %}
             <p class="refresh-note">🔄 {{ ar.auto_refresh }}</p>
         {% endif %}
         <p class="timestamp" id="timestamp"></p>
     </footer>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav mobile-only">
+        <a href="/" class="bottom-nav-item active">
+            <span class="bottom-nav-icon">🏠</span>
+            <span class="bottom-nav-label">الرئيسية</span>
+        </a>
+        <a href="/stats" class="bottom-nav-item">
+            <span class="bottom-nav-icon">📊</span>
+            <span class="bottom-nav-label">الإحصائيات</span>
+        </a>
+    </nav>
 
     <script>
-        // Toggle unique players row
+        // Toggle unique players row (Desktop)
         function toggleUnique(index) {
             const row = document.getElementById('unique-row-' + index);
             const btn = event.target;
@@ -183,6 +333,37 @@
                 row.style.display = 'none';
                 btn.textContent = '▼';
                 btn.classList.remove('active');
+            }
+        }
+        
+        // Toggle unique players (Mobile)
+        function toggleMobileUnique(index) {
+            const uniqueDiv = document.getElementById('mobile-unique-' + index);
+            const hint = document.getElementById('expand-hint-' + index);
+            if (uniqueDiv.style.display === 'none') {
+                uniqueDiv.style.display = 'block';
+                hint.textContent = '▲ إخفاء';
+            } else {
+                uniqueDiv.style.display = 'none';
+                hint.textContent = '▼ اللاعبين المميزين';
+            }
+        }
+        
+        // Toggle standing details (Mobile)
+        function toggleStandingDetails(index) {
+            const details = document.getElementById('standing-details-' + index);
+            const row = details.parentElement;
+            if (details.style.display === 'none') {
+                // Close all other open details
+                document.querySelectorAll('.mobile-standing-details').forEach(d => {
+                    d.style.display = 'none';
+                    d.parentElement.classList.remove('expanded');
+                });
+                details.style.display = 'block';
+                row.classList.add('expanded');
+            } else {
+                details.style.display = 'none';
+                row.classList.remove('expanded');
             }
         }
         
@@ -199,10 +380,13 @@
         setTimeout(() => location.reload(), 60000);
         {% endif %}
         
-        // Update timestamp with English numbers
+        // Update timestamp
         const now = new Date();
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        document.getElementById('timestamp').textContent = '{{ ar.last_updated }}: ' + timeStr;
+        const timestampEl = document.getElementById('timestamp');
+        if (timestampEl) {
+            timestampEl.textContent = '{{ ar.last_updated }}: ' + timeStr;
+        }
     </script>
 </body>
 </html>
