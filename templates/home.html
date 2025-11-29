@@ -303,7 +303,6 @@
 <body>
     <header class="main-header">
         <h1>🏆 دوريات قروب عشاق الفانتازي في ليبيا</h1>
-        <p>الموسم 2024/2025</p>
     </header>
     
     <div class="container">
@@ -323,7 +322,7 @@
                     <div class="standings-mini">
                         <div class="standings-mini-header">
                             <span>#</span>
-                            <span>المدير</span>
+                            <span>المدرب</span>
                             <span>النقاط</span>
                             <span></span>
                         </div>
@@ -341,8 +340,8 @@
                                 {% endif %}
                             </span>
                             <span class="manager-name">{{ team.player_name }}</span>
-                            <span class="league-points">{{ team.league_points }}</span>
-                            <span class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
+                            <span class="league-points">{{ team.projected_league_points }}</span>
+                            <span class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">>
                                 {% if team.rank_change > 0 %}
                                     ▲
                                 {% elif team.rank_change < 0 %}
