@@ -335,13 +335,16 @@
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏅 ترتيب التأهل</h2>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                         <span class="zone-indicator safe">✅ أفضل 100 متأهلين</span>
                         <span class="zone-indicator danger">❌ خارج التأهل</span>
                     </div>
                 </div>
                 <div class="section-content">
-                    <input type="text" class="search-box" id="searchBox" placeholder="🔍 ابحث عن مدير..." oninput="filterTable()">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <input type="text" class="search-box" id="searchBox" placeholder="🔍 ابحث عن مدير..." oninput="filterTable()">
+                        <span style="color: #666; font-size: 0.8rem;">عرض أفضل {{ data.total_managers }} مدير</span>
+                    </div>
                     
                     {% if data.standings %}
                     <div class="standings-container">

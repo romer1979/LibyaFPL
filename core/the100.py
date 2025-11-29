@@ -8,11 +8,20 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from datetime import datetime
+import time
 
 # Configuration
 THE100_LEAGUE_ID = 8921
-MAX_WORKERS = 10  # Number of concurrent threads
+MAX_WORKERS = 8  # Reduced for memory safety
 TIMEOUT = 20
+MAX_MANAGERS = 200  # Limit to top 200 to save memory
+
+# Simple in-memory cache
+_cache = {
+    'data': None,
+    'timestamp': 0,
+    'ttl': 60  # Cache for 60 seconds
+}
 
 # Get cookies from environment
 def get_cookies():
@@ -30,10 +39,12 @@ def fetch_json(url, cookies=None, retries=3):
             if r.status_code == 200:
                 return r.json()
             if r.status_code in {429, 500, 502, 503, 504}:
+                time.sleep(0.5)
                 continue
             return None
         except Exception:
             if attempt < retries - 1:
+                time.sleep(0.5)
                 continue
             return None
     return None
@@ -62,21 +73,16 @@ def get_bootstrap(cookies):
     
     return current["id"], player_info, data
 
-def get_all_standings(cookies, league_id):
-    """Fetch all pages of classic league standings"""
-    page, results = 1, []
-    while True:
-        url = f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_new_entries=1&page_standings={page}"
-        data = fetch_json(url, cookies)
-        if not data:
-            break
-        block = data.get("standings", {})
-        rows = block.get("results", [])
-        results.extend(rows)
-        if not block.get("has_next"):
-            break
-        page += 1
-    return results
+def get_standings_page(cookies, league_id, page=1):
+    """Fetch single page of classic league standings"""
+    url = f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_new_entries=1&page_standings={page}"
+    data = fetch_json(url, cookies)
+    if not data:
+        return [], False
+    block = data.get("standings", {})
+    rows = block.get("results", [])
+    has_next = block.get("has_next", False)
+    return rows, has_next
 
 def get_fixtures(cookies, gw):
     """Get fixtures for gameweek"""
@@ -248,115 +254,144 @@ def get_chip_display(chip):
     return chips.get(chip, '-')
 
 # ------------------ MAIN PIPELINE ------------------
-def get_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=None):
-    """Main function to fetch live standings using ThreadPoolExecutor"""
-    try:
-        postponed_games = postponed_games or {}
-        cookies = get_cookies()
+def _fetch_the100_standings_impl(league_id=THE100_LEAGUE_ID, postponed_games=None):
+    """Internal function to fetch live standings"""
+    postponed_games = postponed_games or {}
+    cookies = get_cookies()
 
-        # 1) Bootstrap / current GW / players
-        current_gw, player_info, bootstrap_data = get_bootstrap(cookies)
+    # 1) Bootstrap / current GW / players
+    current_gw, player_info, bootstrap_data = get_bootstrap(cookies)
 
-        # 2) Fixtures & live data
-        fixtures = get_fixtures(cookies, current_gw)
-        live_json = get_live(cookies, current_gw)
+    # 2) Fixtures & live data
+    fixtures = get_fixtures(cookies, current_gw)
+    live_json = get_live(cookies, current_gw)
 
-        # 3) Build live dict
-        live_dict = {
-            e['id']: {
-                'total_points': e['stats']['total_points'],
-                'minutes': e['stats']['minutes'],
-                'bps': e['stats']['bps'],
-                'bonus': e['stats'].get('bonus', 0)
-            } for e in live_json['elements']
+    # 3) Build live dict
+    live_dict = {
+        e['id']: {
+            'total_points': e['stats']['total_points'],
+            'minutes': e['stats']['minutes'],
+            'bps': e['stats']['bps'],
+            'bonus': e['stats'].get('bonus', 0)
+        } for e in live_json['elements']
+    }
+
+    # 4) Pull standings - only first few pages (top ~200)
+    standings = []
+    page = 1
+    while len(standings) < MAX_MANAGERS:
+        rows, has_next = get_standings_page(cookies, league_id, page)
+        standings.extend(rows)
+        if not has_next or not rows:
+            break
+        page += 1
+    
+    # Limit to MAX_MANAGERS
+    standings = standings[:MAX_MANAGERS]
+    
+    if not standings:
+        raise RuntimeError("No standings found")
+
+    # 5) Fetch all picks concurrently using ThreadPoolExecutor
+    picks_dict = {}
+    
+    def fetch_manager_picks(entry_id):
+        return entry_id, fetch_picks(entry_id, current_gw, cookies)
+    
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(fetch_manager_picks, r['entry']): r 
+            for r in standings
         }
+        for future in as_completed(futures):
+            try:
+                entry_id, picks_data = future.result()
+                if picks_data:
+                    picks_dict[entry_id] = picks_data
+            except Exception:
+                pass
 
-        # 4) Pull ALL standings pages
-        standings = get_all_standings(cookies, league_id)
-        if not standings:
-            raise RuntimeError("No standings found")
-
-        # 5) Fetch all picks concurrently using ThreadPoolExecutor
-        picks_dict = {}
+    # 6) Compute live points for each manager
+    final_rows = []
+    for row in standings:
+        entry_id = row.get('entry')
+        picks_data = picks_dict.get(entry_id)
         
-        def fetch_manager_picks(entry_id):
-            return entry_id, fetch_picks(entry_id, current_gw, cookies)
+        if not picks_data:
+            continue
         
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = {
-                executor.submit(fetch_manager_picks, r['entry']): r 
-                for r in standings
-            }
-            for future in as_completed(futures):
-                try:
-                    entry_id, picks_data = future.result()
-                    if picks_data:
-                        picks_dict[entry_id] = picks_data
-                except Exception:
-                    pass
+        picks = picks_data['picks']
+        chip = picks_data.get('active_chip')
+        hits = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
+        old_gw_points = picks_data.get('entry_history', {}).get('points', 0)
 
-        # 6) Compute live points for each manager
-        final_rows = []
-        for row in standings:
-            entry_id = row.get('entry')
-            picks_data = picks_dict.get(entry_id)
-            
-            if not picks_data:
-                continue
-            
-            picks = picks_data['picks']
-            chip = picks_data.get('active_chip')
-            hits = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
-            old_gw_points = picks_data.get('entry_history', {}).get('points', 0)
+        # Get captain name
+        cap_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+        captain_name = player_info[cap_id]['name'] if cap_id else '-'
 
-            # Get captain name
-            cap_id = next((p['element'] for p in picks if p.get('is_captain')), None)
-            captain_name = player_info[cap_id]['name'] if cap_id else '-'
-
-            # Calculate live points
-            live_gw = calculate_live_points(
-                picks, live_dict, player_info, chip, fixtures, postponed_games, hits
-            )
-            live_total = (row['total'] - old_gw_points) + live_gw
-
-            final_rows.append({
-                'entry_id': entry_id,
-                'manager_name': row.get('player_name'),
-                'team_name': row.get('entry_name'),
-                'live_gw_points': live_gw,
-                'live_total': live_total,
-                'previous_rank': row.get('last_rank', row.get('rank')),
-                'captain': captain_name,
-                'chip': get_chip_display(chip),
-                'chip_raw': chip
-            })
-
-        # 7) Sort by live total
-        final_rows.sort(key=lambda x: (-x['live_total'], -x['live_gw_points']))
-
-        # 8) Assign live ranks and calculate rank changes
-        for i, row in enumerate(final_rows, 1):
-            row['live_rank'] = i
-            prev = row['previous_rank'] or i
-            row['rank_change'] = prev - i
-
-        # Check if GW is live
-        is_live = any(
-            f.get('started') and not f.get('finished_provisional')
-            for f in fixtures
+        # Calculate live points
+        live_gw = calculate_live_points(
+            picks, live_dict, player_info, chip, fixtures, postponed_games, hits
         )
+        live_total = (row['total'] - old_gw_points) + live_gw
 
-        return {
-            'standings': final_rows,
-            'gameweek': current_gw,
-            'total_managers': len(final_rows),
-            'is_live': is_live,
-            'qualification_cutoff': 100,
-            'last_updated': datetime.now().strftime('%H:%M')
-        }
+        final_rows.append({
+            'entry_id': entry_id,
+            'manager_name': row.get('player_name'),
+            'team_name': row.get('entry_name'),
+            'live_gw_points': live_gw,
+            'live_total': live_total,
+            'previous_rank': row.get('last_rank', row.get('rank')),
+            'captain': captain_name,
+            'chip': get_chip_display(chip),
+            'chip_raw': chip
+        })
+
+    # 7) Sort by live total
+    final_rows.sort(key=lambda x: (-x['live_total'], -x['live_gw_points']))
+
+    # 8) Assign live ranks and calculate rank changes
+    for i, row in enumerate(final_rows, 1):
+        row['live_rank'] = i
+        prev = row['previous_rank'] or i
+        row['rank_change'] = prev - i
+
+    # Check if GW is live
+    is_live = any(
+        f.get('started') and not f.get('finished_provisional')
+        for f in fixtures
+    )
+
+    return {
+        'standings': final_rows,
+        'gameweek': current_gw,
+        'total_managers': len(final_rows),
+        'is_live': is_live,
+        'qualification_cutoff': 100,
+        'last_updated': datetime.now().strftime('%H:%M')
+    }
+
+def get_the100_standings(league_id=THE100_LEAGUE_ID, postponed_games=None):
+    """Main function with caching"""
+    global _cache
+    
+    now = time.time()
+    
+    # Return cached data if still valid
+    if _cache['data'] and (now - _cache['timestamp']) < _cache['ttl']:
+        return _cache['data']
+    
+    try:
+        data = _fetch_the100_standings_impl(league_id, postponed_games)
+        _cache['data'] = data
+        _cache['timestamp'] = now
+        return data
         
     except Exception as e:
         print(f"Error fetching The 100 standings: {e}")
+        # Return cached data if available, even if stale
+        if _cache['data']:
+            return _cache['data']
         return {
             'standings': [],
             'gameweek': None,
