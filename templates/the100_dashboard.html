@@ -373,8 +373,6 @@
                                 <tr>
                                     <th>#</th>
                                     <th>المدرب</th>
-                                    <th>الكابتن</th>
-                                    <th>الشريحة</th>
                                     <th>GW</th>
                                     <th>المجموع</th>
                                     <th>+/-</th>
@@ -399,8 +397,6 @@
                                         {% if team.is_winner %}🏆{% endif %}
                                         <span class="team-name">{{ team.team_name }}</span>
                                     </td>
-                                    <td class="captain">{{ team.captain }}</td>
-                                    <td class="chip {% if team.chip_raw %}active{% endif %}">{{ team.chip }}</td>
                                     <td class="gw-points">{{ team.live_gw_points }}</td>
                                     <td class="total-points">{{ team.live_total }}</td>
                                     <td class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
