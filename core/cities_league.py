@@ -307,24 +307,24 @@ def get_cities_league_data():
             
             return total_points + sub_points - hits, captain_name, hits
         
-        # 6) Calculate team points and store picks
+        # 6) Calculate team points and store picks with counts
         team_live_points = {}
         team_captains = {}
-        team_picks = {}  # Store picks for each team: team_name -> set of player_ids
+        team_picks_counter = {}  # Store picks with counts: team_name -> Counter of player_ids
         
         for team_name, entry_ids in TEAMS_FPL_IDS.items():
             total_pts = 0
             captains = []
-            all_picks = set()
+            picks_counter = Counter()  # Count how many managers have each player
             
             for entry_id in entry_ids:
                 # Get picks for this manager (single API call per manager)
                 picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{current_gw}/picks/", cookies)
                 if picks_data:
                     picks = picks_data.get('picks', [])
-                    # Store starting 11 player IDs
+                    # Count starting 11 player IDs
                     for p in picks[:11]:
-                        all_picks.add(p['element'])
+                        picks_counter[p['element']] += 1
                     
                     # Calculate points using the same picks_data
                     pts, cap_name, _ = calculate_points_from_picks(picks_data, entry_id)
@@ -335,22 +335,26 @@ def get_cities_league_data():
             
             team_live_points[team_name] = total_pts
             team_captains[team_name] = captains
-            team_picks[team_name] = all_picks
+            team_picks_counter[team_name] = picks_counter
         
         def get_unique_players(team_1, team_2):
-            """Get unique players for each team (players not in opponent's team)"""
-            picks_1 = team_picks.get(team_1, set())
-            picks_2 = team_picks.get(team_2, set())
+            """Get unique players for each team (players not in opponent's team)
+            Shows count if player appears in multiple managers (x2, x3)"""
+            counter_1 = team_picks_counter.get(team_1, Counter())
+            counter_2 = team_picks_counter.get(team_2, Counter())
             
-            unique_1 = picks_1 - picks_2
-            unique_2 = picks_2 - picks_1
+            # Players in team 1 but not in team 2
+            unique_1_ids = set(counter_1.keys()) - set(counter_2.keys())
+            # Players in team 2 but not in team 1
+            unique_2_ids = set(counter_2.keys()) - set(counter_1.keys())
             
-            def format_unique(player_ids):
+            def format_unique(player_ids, counter):
                 result = []
                 for pid in player_ids:
                     info = player_info.get(pid, {})
                     minutes = live_elements.get(pid, {}).get('minutes', 0)
                     pts = live_elements.get(pid, {}).get('total_points', 0)
+                    count = counter.get(pid, 1)
                     
                     # Determine status
                     if minutes > 0:
@@ -362,18 +366,24 @@ def get_cities_league_data():
                         else:
                             status = 'pending'
                     
+                    # Add count suffix if more than 1 manager has this player
+                    name = info.get('name', 'Unknown')
+                    if count > 1:
+                        name = f"{name} x{count}"
+                    
                     result.append({
-                        'name': info.get('name', 'Unknown'),
-                        'points': pts,
+                        'name': name,
+                        'points': pts * count,  # Total points contribution
                         'status': status,
-                        'minutes': minutes
+                        'minutes': minutes,
+                        'count': count
                     })
                 
                 # Sort by points descending
                 result.sort(key=lambda x: -x['points'])
                 return result
             
-            return format_unique(unique_1), format_unique(unique_2)
+            return format_unique(unique_1_ids, counter_1), format_unique(unique_2_ids, counter_2)
         
         # 7) Build H2H match results and calculate match outcomes
         h2h_matches = []
