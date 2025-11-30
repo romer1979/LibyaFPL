@@ -399,16 +399,31 @@ def get_cities_league_data():
                     info = player_info.get(pid, {})
                     minutes = live_elements.get(pid, {}).get('minutes', 0)
                     pts = live_elements.get(pid, {}).get('total_points', 0)
+                    team_id = info.get('team')
+                    
+                    # Check if game is in progress
+                    game_in_progress = False
+                    game_finished = team_fixture_done.get(team_id, False)
+                    
+                    for fix in fixtures:
+                        if fix['team_h'] == team_id or fix['team_a'] == team_id:
+                            started = fix.get('started', False)
+                            finished = fix.get('finished', False) or fix.get('finished_provisional', False)
+                            if started and not finished:
+                                game_in_progress = True
+                                break
                     
                     # Determine status
                     if minutes > 0:
-                        status = 'played'
-                    else:
-                        team_id = info.get('team')
-                        if team_fixture_done.get(team_id, False):
-                            status = 'benched'
+                        if game_in_progress:
+                            status = 'playing'  # Blue - currently on pitch
                         else:
-                            status = 'pending'
+                            status = 'played'   # Grey - finished playing
+                    else:
+                        if game_finished:
+                            status = 'dnp'      # Red - did not play
+                        else:
+                            status = 'pending'  # Purple/Yellow - game not started
                     
                     # Add count suffix if more than 1
                     name = info.get('name', 'Unknown')
@@ -417,7 +432,7 @@ def get_cities_league_data():
                     
                     result.append({
                         'name': name,
-                        'points': pts * diff_count,  # Points based on difference
+                        'points': pts * diff_count,
                         'status': status,
                         'minutes': minutes,
                         'count': diff_count
