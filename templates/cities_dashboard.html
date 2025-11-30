@@ -9,6 +9,72 @@
     <style>
         /* Cities League specific overrides */
         
+        /* Week Highlights - Team & Star of the Week */
+        .week-highlights {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .highlight-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid var(--border-color);
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .highlight-card.team-of-week {
+            border-color: rgba(245, 200, 66, 0.3);
+            background: linear-gradient(135deg, rgba(245, 200, 66, 0.1), transparent);
+        }
+        
+        .highlight-card.star-of-week {
+            border-color: rgba(102, 126, 234, 0.3);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), transparent);
+        }
+        
+        .highlight-icon {
+            font-size: 2rem;
+        }
+        
+        .highlight-content {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .highlight-label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 0.1rem;
+        }
+        
+        .highlight-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+        }
+        
+        .highlight-points {
+            font-size: 0.85rem;
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .highlight-card.update-info {
+            flex: 0 0 auto;
+            min-width: 150px;
+        }
+        
+        .highlight-card.update-info .highlight-name {
+            font-size: 1rem;
+        }
+        
         /* Rank change arrows */
         .rank-up {
             color: #22c55e;
@@ -57,30 +123,6 @@
         
         .captains-col-header {
             max-width: 100px;
-        }
-        
-        /* Stats row at top */
-        .stats-bar {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        
-        .stat-pill {
-            background: var(--bg-card);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            border: 1px solid var(--border-color);
-        }
-        
-        .stat-pill .value {
-            font-weight: 700;
-            color: var(--primary-purple);
         }
         
         /* Mobile standings change column */
@@ -132,6 +174,18 @@
             .captains-stacked-cell, .captains-col-header {
                 display: none;
             }
+            
+            .week-highlights {
+                flex-direction: column;
+            }
+            
+            .highlight-card {
+                min-width: 100%;
+            }
+            
+            .highlight-card.update-info {
+                flex: 1;
+            }
         }
     </style>
 </head>
@@ -160,26 +214,30 @@
 
     <!-- Main Content -->
     <main class="main-container">
-        <!-- Stats Bar -->
-        <div class="stats-bar">
-            <div class="stat-pill">
-                <span>🏙️</span>
-                <span class="value">{{ data.total_teams or 20 }}</span>
-                <span>فريق</span>
+        <!-- Team & Star of the Week -->
+        <div class="week-highlights">
+            <div class="highlight-card team-of-week">
+                <div class="highlight-icon">🏆</div>
+                <div class="highlight-content">
+                    <span class="highlight-label">فريق الجولة</span>
+                    <span class="highlight-name">{{ data.best_team.name or '-' }}</span>
+                    <span class="highlight-points">{{ data.best_team.points or 0 }} نقطة</span>
+                </div>
             </div>
-            <div class="stat-pill">
-                <span>👥</span>
-                <span class="value">{{ (data.total_teams or 20) * 3 }}</span>
-                <span>مدير</span>
+            <div class="highlight-card star-of-week">
+                <div class="highlight-icon">⭐</div>
+                <div class="highlight-content">
+                    <span class="highlight-label">نجم الجولة</span>
+                    <span class="highlight-name">{{ data.best_manager.name or '-' }}</span>
+                    <span class="highlight-points">{{ data.best_manager.points or 0 }} نقطة</span>
+                </div>
             </div>
-            <div class="stat-pill">
-                <span>⚔️</span>
-                <span class="value">{{ data.matches|length if data.matches else 0 }}</span>
-                <span>مباراة</span>
-            </div>
-            <div class="stat-pill">
-                <span>🕐</span>
-                <span>آخر تحديث: {{ data.last_updated or '-' }}</span>
+            <div class="highlight-card update-info">
+                <div class="highlight-icon">🕐</div>
+                <div class="highlight-content">
+                    <span class="highlight-label">آخر تحديث</span>
+                    <span class="highlight-name">{{ data.last_updated or '-' }}</span>
+                </div>
             </div>
         </div>
 

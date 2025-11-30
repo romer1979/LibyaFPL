@@ -311,6 +311,7 @@ def get_cities_league_data():
         team_live_points = {}
         team_captains = {}
         team_picks_counter = {}  # Store picks with counts: team_name -> Counter of player_ids
+        all_managers = []  # Track all individual managers for star of the week
         
         for team_name, entry_ids in TEAMS_FPL_IDS.items():
             total_pts = 0
@@ -330,12 +331,32 @@ def get_cities_league_data():
                     pts, cap_name, _ = calculate_points_from_picks(picks_data, entry_id)
                     total_pts += pts
                     captains.append(cap_name)
+                    
+                    # Get manager name from entry history
+                    manager_name = picks_data.get('entry_history', {}).get('entry', entry_id)
+                    # Fetch manager name from entry endpoint
+                    entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/", cookies)
+                    if entry_data:
+                        manager_name = entry_data.get('player_first_name', '') + ' ' + entry_data.get('player_last_name', '')
+                    
+                    all_managers.append({
+                        'name': manager_name.strip(),
+                        'points': pts,
+                        'team': team_name,
+                        'entry_id': entry_id
+                    })
                 else:
                     captains.append('-')
             
             team_live_points[team_name] = total_pts
             team_captains[team_name] = captains
             team_picks_counter[team_name] = picks_counter
+        
+        # Find best team (team of the week)
+        best_team = max(team_live_points.items(), key=lambda x: x[1]) if team_live_points else (None, 0)
+        
+        # Find best manager (star of the week)
+        best_manager = max(all_managers, key=lambda x: x['points']) if all_managers else {'name': '-', 'points': 0}
         
         def get_unique_players(team_1, team_2):
             """Get unique players for each team based on count difference.
@@ -488,7 +509,12 @@ def get_cities_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
-            'last_updated': datetime.now().strftime('%H:%M')
+            'last_updated': datetime.now().strftime('%H:%M'),
+            'best_team': {
+                'name': best_team[0],
+                'points': best_team[1]
+            },
+            'best_manager': best_manager
         }
         
         _cache['data'] = result
