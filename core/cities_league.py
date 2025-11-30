@@ -338,23 +338,36 @@ def get_cities_league_data():
             team_picks_counter[team_name] = picks_counter
         
         def get_unique_players(team_1, team_2):
-            """Get unique players for each team (players not in opponent's team)
-            Shows count if player appears in multiple managers (x2, x3)"""
+            """Get unique players for each team based on count difference.
+            If team 1 has 3 Salah and team 2 has 1 Salah, team 1's unique shows 'Salah x2'"""
             counter_1 = team_picks_counter.get(team_1, Counter())
             counter_2 = team_picks_counter.get(team_2, Counter())
             
-            # Players in team 1 but not in team 2
-            unique_1_ids = set(counter_1.keys()) - set(counter_2.keys())
-            # Players in team 2 but not in team 1
-            unique_2_ids = set(counter_2.keys()) - set(counter_1.keys())
+            # All players from both teams
+            all_players = set(counter_1.keys()) | set(counter_2.keys())
             
-            def format_unique(player_ids, counter):
+            unique_1 = []  # Players where team 1 has more
+            unique_2 = []  # Players where team 2 has more
+            
+            for pid in all_players:
+                count_1 = counter_1.get(pid, 0)
+                count_2 = counter_2.get(pid, 0)
+                
+                diff = count_1 - count_2
+                
+                if diff > 0:
+                    # Team 1 has more of this player
+                    unique_1.append((pid, diff))
+                elif diff < 0:
+                    # Team 2 has more of this player
+                    unique_2.append((pid, -diff))
+            
+            def format_unique(player_list):
                 result = []
-                for pid in player_ids:
+                for pid, diff_count in player_list:
                     info = player_info.get(pid, {})
                     minutes = live_elements.get(pid, {}).get('minutes', 0)
                     pts = live_elements.get(pid, {}).get('total_points', 0)
-                    count = counter.get(pid, 1)
                     
                     # Determine status
                     if minutes > 0:
@@ -366,24 +379,24 @@ def get_cities_league_data():
                         else:
                             status = 'pending'
                     
-                    # Add count suffix if more than 1 manager has this player
+                    # Add count suffix if more than 1
                     name = info.get('name', 'Unknown')
-                    if count > 1:
-                        name = f"{name} x{count}"
+                    if diff_count > 1:
+                        name = f"{name} x{diff_count}"
                     
                     result.append({
                         'name': name,
-                        'points': pts * count,  # Total points contribution
+                        'points': pts * diff_count,  # Points based on difference
                         'status': status,
                         'minutes': minutes,
-                        'count': count
+                        'count': diff_count
                     })
                 
                 # Sort by points descending
                 result.sort(key=lambda x: -x['points'])
                 return result
             
-            return format_unique(unique_1_ids, counter_1), format_unique(unique_2_ids, counter_2)
+            return format_unique(unique_1), format_unique(unique_2)
         
         # 7) Build H2H match results and calculate match outcomes
         h2h_matches = []
