@@ -66,6 +66,12 @@
             font-weight: 600;
         }
         
+        .highlight-team {
+            font-size: 0.75rem;
+            color: #f5c842;
+            font-weight: 500;
+        }
+        
         .highlight-card.update-info {
             flex: 0 0 auto;
             min-width: 150px;
@@ -96,6 +102,18 @@
         .rank-change-cell {
             text-align: center;
             min-width: 50px;
+        }
+        
+        /* League points highlight - bold and purple */
+        .league-points-cell {
+            color: var(--primary-purple);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .ms-lp {
+            color: var(--primary-purple);
+            font-weight: 700;
         }
         
         /* Row highlighting for win/loss */
@@ -229,6 +247,7 @@
                 <div class="highlight-content">
                     <span class="highlight-label">نجم الجولة</span>
                     <span class="highlight-name">{{ data.best_manager.name or '-' }}</span>
+                    <span class="highlight-team">{{ data.best_manager.team or '' }}</span>
                     <span class="highlight-points">{{ data.best_manager.points or 0 }} نقطة</span>
                 </div>
             </div>
