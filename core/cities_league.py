@@ -403,7 +403,6 @@ def get_cities_league_data():
                     
                     # Check if game is in progress
                     game_in_progress = False
-                    game_finished = team_fixture_done.get(team_id, False)
                     
                     for fix in fixtures:
                         if fix['team_h'] == team_id or fix['team_a'] == team_id:
@@ -413,19 +412,15 @@ def get_cities_league_data():
                                 game_in_progress = True
                                 break
                     
-                    # Determine status
+                    # Simple status: playing (blue), played (grey), pending (purple)
                     if minutes > 0:
                         if game_in_progress:
                             status = 'playing'  # Blue - currently on pitch
                         else:
-                            status = 'played'   # Grey - finished playing
+                            status = 'played'   # Grey - finished
                     else:
-                        if game_finished:
-                            status = 'dnp'      # Red - did not play
-                        else:
-                            status = 'pending'  # Purple/Yellow - game not started
+                        status = 'pending'      # Purple - yet to play
                     
-                    # Add count suffix if more than 1
                     name = info.get('name', 'Unknown')
                     if diff_count > 1:
                         name = f"{name} x{diff_count}"
@@ -438,7 +433,6 @@ def get_cities_league_data():
                         'count': diff_count
                     })
                 
-                # Sort by points descending
                 result.sort(key=lambda x: -x['points'])
                 return result
             

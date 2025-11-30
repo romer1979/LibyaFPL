@@ -337,16 +337,13 @@ class DashboardData:
             
             def get_player_status(pid, is_sub=False):
                 """
-                Get player status:
+                Get player status (simplified):
                 - 'playing': minutes > 0 and game still in progress (blue)
                 - 'played': minutes > 0 and game finished (grey)
-                - 'dnp': minutes == 0 and team finished (red)
-                - 'sub': auto-sub player (green)
-                - 'pending': minutes == 0 but team has unstarted fixture (default)
+                - 'pending': minutes == 0 - yet to play (purple)
                 """
                 minutes = live_minutes.get(pid, 0)
                 team_id = self.player_info.get(pid, {}).get('team', 0)
-                has_future = team_has_unstarted_fixture(team_id)
                 
                 # Check if player's team game is currently in progress
                 game_in_progress = False
@@ -358,17 +355,13 @@ class DashboardData:
                             game_in_progress = True
                             break
                 
-                if is_sub:
-                    return 'sub'
-                elif minutes > 0:
+                if minutes > 0:
                     if game_in_progress:
-                        return 'playing'  # Currently on the pitch
+                        return 'playing'  # Blue - currently on the pitch
                     else:
-                        return 'played'   # Game finished
-                elif not has_future:
-                    return 'dnp'
+                        return 'played'   # Grey - game finished
                 else:
-                    return 'pending'
+                    return 'pending'      # Purple - yet to play
             
             def simulate_autosubs(picks, chip):
                 """Simulate auto-subs and return XI ids + sub info"""

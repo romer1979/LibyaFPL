@@ -376,7 +376,6 @@ def get_libyan_league_data():
                     
                     # Check if game is in progress
                     game_in_progress = False
-                    game_finished = team_fixture_done.get(team_id, False)
                     
                     for fix in fixtures:
                         if fix['team_h'] == team_id or fix['team_a'] == team_id:
@@ -386,17 +385,14 @@ def get_libyan_league_data():
                                 game_in_progress = True
                                 break
                     
-                    # Determine status
+                    # Simple status: playing (blue), played (grey), pending (purple)
                     if minutes > 0:
                         if game_in_progress:
                             status = 'playing'  # Blue - currently on pitch
                         else:
-                            status = 'played'   # Grey - finished playing
+                            status = 'played'   # Grey - finished
                     else:
-                        if game_finished:
-                            status = 'dnp'      # Red - did not play
-                        else:
-                            status = 'pending'  # Purple/Yellow - game not started
+                        status = 'pending'      # Purple - yet to play
                     
                     name = info.get('name', 'Unknown')
                     if diff_count > 1:
