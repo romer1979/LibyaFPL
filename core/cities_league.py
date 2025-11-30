@@ -318,21 +318,110 @@ def get_cities_league_data():
         team_live_points = {}
         team_captains = {}
         team_picks_counter = {}  # Store picks with counts: team_name -> Counter of player_ids
+        team_picks_raw = {}  # Store raw picks for auto-sub simulation
         all_managers = []  # Track all individual managers for star of the week
+        
+        def simulate_autosubs_for_xi(picks):
+            """Simulate auto-subs and return list of player IDs in final XI"""
+            def pos_of(eid):
+                return player_info.get(eid, {}).get('position', 0)
+            
+            def formation_ok(d, m, f, g):
+                return g == 1 and 3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3
+            
+            def team_done(eid):
+                team_id = player_info.get(eid, {}).get('team')
+                return team_fixture_done.get(team_id, False)
+            
+            starters = picks[:11]
+            bench = picks[11:]
+            
+            # Start with starters
+            xi_ids = [p['element'] for p in starters]
+            
+            d = sum(1 for p in starters if pos_of(p['element']) == 2)
+            m = sum(1 for p in starters if pos_of(p['element']) == 3)
+            f = sum(1 for p in starters if pos_of(p['element']) == 4)
+            g = sum(1 for p in starters if pos_of(p['element']) == 1)
+            
+            # Find non-playing starters whose team has finished
+            non_playing_starters = [
+                p for p in starters
+                if live_elements.get(p['element'], {}).get('minutes', 0) == 0
+                and team_done(p['element'])
+            ]
+            
+            used_bench = set()
+            
+            for starter in non_playing_starters:
+                s_id = starter['element']
+                s_pos = pos_of(s_id)
+                
+                for b in bench:
+                    b_id = b['element']
+                    if b_id in used_bench:
+                        continue
+                    
+                    b_pos = pos_of(b_id)
+                    b_min = live_elements.get(b_id, {}).get('minutes', 0)
+                    b_played = b_min > 0
+                    b_done = team_done(b_id)
+                    
+                    # GK <-> GK only
+                    if (s_pos == 1 and b_pos != 1) or (s_pos != 1 and b_pos == 1):
+                        continue
+                    
+                    # Bench player hasn't played yet but game not done - reserve for this starter
+                    if not b_played and not b_done:
+                        used_bench.add(b_id)
+                        # Remove starter, add bench player (potential sub)
+                        xi_ids.remove(s_id)
+                        xi_ids.append(b_id)
+                        break
+                    
+                    # Bench player didn't play and game done - skip
+                    if not b_played and b_done:
+                        continue
+                    
+                    # Bench player played - check formation
+                    d2, m2, f2, g2 = d, m, f, g
+                    if s_pos == 2: d2 -= 1
+                    elif s_pos == 3: m2 -= 1
+                    elif s_pos == 4: f2 -= 1
+                    elif s_pos == 1: g2 -= 1
+                    
+                    if b_pos == 2: d2 += 1
+                    elif b_pos == 3: m2 += 1
+                    elif b_pos == 4: f2 += 1
+                    elif b_pos == 1: g2 += 1
+                    
+                    if not formation_ok(d2, m2, f2, g2):
+                        continue
+                    
+                    # Valid sub - swap
+                    xi_ids.remove(s_id)
+                    xi_ids.append(b_id)
+                    used_bench.add(b_id)
+                    d, m, f, g = d2, m2, f2, g2
+                    break
+            
+            return xi_ids
         
         for team_name, entry_ids in TEAMS_FPL_IDS.items():
             total_pts = 0
             captains = []
-            picks_counter = Counter()  # Count how many managers have each player
+            picks_counter = Counter()  # Count how many managers have each player in XI (after subs)
             
             for entry_id in entry_ids:
                 # Get picks for this manager (single API call per manager)
                 picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{current_gw}/picks/", cookies)
                 if picks_data:
                     picks = picks_data.get('picks', [])
-                    # Count starting 11 player IDs
-                    for p in picks[:11]:
-                        picks_counter[p['element']] += 1
+                    
+                    # Simulate auto-subs and count final XI players
+                    final_xi = simulate_autosubs_for_xi(picks)
+                    for pid in final_xi:
+                        picks_counter[pid] += 1
                     
                     # Calculate points using the same picks_data
                     pts, cap_name, _ = calculate_points_from_picks(picks_data, entry_id)
