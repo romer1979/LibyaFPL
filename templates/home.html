@@ -442,18 +442,33 @@
                 </div>
             </div>
             
-            <!-- الدوري الليبي - Coming Soon -->
-            <div class="league-card coming-soon">
+            <!-- الدوري الليبي - Active -->
+            <div class="league-card">
                 <div class="league-header">
-                    <div class="league-logo placeholder">🇱🇾</div>
+                    <div class="league-logo">
+                        <img src="{{ url_for('static', filename='libyan_logo.png') }}" alt="الدوري الليبي">
+                    </div>
                     <div class="league-info">
                         <h2>الدوري الليبي</h2>
                     </div>
-                    <span class="coming-soon-badge">قريباً</span>
                 </div>
-                <div class="coming-soon-content">
-                    <div class="icon">🚧</div>
-                    <p>سيتم إضافة هذا الدوري قريباً</p>
+                <div class="league-content">
+                    <div class="league-stats">
+                        <div class="stat">
+                            <span class="stat-value">20</span>
+                            <span class="stat-label">فريق</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">60</span>
+                            <span class="stat-label">مدير</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">H2H</span>
+                            <span class="stat-label">فرق</span>
+                        </div>
+                    </div>
+                    <p class="league-status">🇱🇾 كل فريق 3 مديرين</p>
+                    <a href="/league/libyan" class="league-btn">عرض الدوري</a>
                 </div>
             </div>
             
