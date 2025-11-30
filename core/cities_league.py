@@ -11,10 +11,35 @@ import requests
 import os
 from datetime import datetime
 import time
+from collections import Counter
 
 # Configuration
 CITIES_H2H_LEAGUE_ID = 1011575
 TIMEOUT = 15
+
+# Previous GW standings (GW12)
+PREVIOUS_STANDINGS = {
+    "جالو": 33,
+    "طرميسة": 24,
+    "غريان": 24,
+    "اوجلة": 21,
+    "حي 9 يونيو": 19,
+    "ترهونة": 19,
+    "الهضبة": 19,
+    "المحجوب": 18,
+    "القطرون": 18,
+    "بنغازي": 18,
+    "طرابلس": 18,
+    "درنه": 18,
+    "بوسليم": 16,
+    "الخمس": 16,
+    "البازة": 15,
+    "زليتن": 15,
+    "الفرناج": 15,
+    "الزاوية": 13,
+    "سوق الجمعة": 9,
+    "مصراتة": 9,
+}
 
 # Team definitions: team_name -> list of FPL entry IDs
 TEAMS_FPL_IDS = {
@@ -69,6 +94,29 @@ def fetch_json(url, cookies=None):
     except Exception as e:
         print(f"Fetch error: {e}")
         return None
+
+def format_captains(captains_list):
+    """Format captains list with x2, x3 for duplicates"""
+    if not captains_list:
+        return []
+    
+    counter = Counter(captains_list)
+    formatted = []
+    for cap, count in counter.items():
+        if count > 1:
+            formatted.append(f"{cap} x{count}")
+        else:
+            formatted.append(cap)
+    return formatted
+
+def get_previous_rank(team_name):
+    """Get previous rank based on previous standings"""
+    # Sort previous standings by points (descending)
+    sorted_teams = sorted(PREVIOUS_STANDINGS.items(), key=lambda x: -x[1])
+    for i, (name, _) in enumerate(sorted_teams, 1):
+        if name == team_name:
+            return i
+    return 20  # Default to last if not found
 
 def get_cities_league_data():
     """Fetch all data for Cities League"""
@@ -128,18 +176,11 @@ def get_cities_league_data():
             team_fixture_done[fix['team_h']] = done
             team_fixture_done[fix['team_a']] = done
         
-        # 4) Get H2H league standings
-        league_data = fetch_json(f"https://fantasy.premierleague.com/api/leagues-h2h/{CITIES_H2H_LEAGUE_ID}/standings/", cookies)
-        if not league_data:
-            raise RuntimeError("Failed to fetch league standings")
-        
-        h2h_standings = league_data.get('standings', {}).get('results', [])
-        
-        # 5) Get current GW matches
+        # 4) Get current GW matches from H2H league
         matches_data = fetch_json(f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{CITIES_H2H_LEAGUE_ID}/?event={current_gw}", cookies)
         matches = matches_data.get('results', []) if matches_data else []
         
-        # 6) Calculate live points for each manager
+        # 5) Calculate live points for each manager
         def calculate_manager_points(entry_id):
             """Calculate live points for a single manager with special rules"""
             picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{current_gw}/picks/", cookies)
@@ -269,7 +310,7 @@ def get_cities_league_data():
             
             return sub_points
         
-        # 7) Calculate team points
+        # 6) Calculate team points
         team_live_points = {}
         team_captains = {}
         
@@ -283,8 +324,10 @@ def get_cities_league_data():
             team_live_points[team_name] = total_pts
             team_captains[team_name] = captains
         
-        # 8) Build H2H match results
+        # 7) Build H2H match results and calculate match outcomes
         h2h_matches = []
+        match_results = {}  # team_name -> 'W', 'L', 'D'
+        
         for match in matches:
             entry_1 = match.get('entry_1_entry')
             entry_2 = match.get('entry_2_entry')
@@ -296,41 +339,61 @@ def get_cities_league_data():
                 pts_1 = team_live_points.get(team_1, 0)
                 pts_2 = team_live_points.get(team_2, 0)
                 
+                # Determine match result
+                if pts_1 > pts_2:
+                    match_results[team_1] = 'W'
+                    match_results[team_2] = 'L'
+                elif pts_2 > pts_1:
+                    match_results[team_2] = 'W'
+                    match_results[team_1] = 'L'
+                else:
+                    match_results[team_1] = 'D'
+                    match_results[team_2] = 'D'
+                
                 h2h_matches.append({
                     'team_1': team_1,
                     'team_2': team_2,
                     'points_1': pts_1,
                     'points_2': pts_2,
-                    'captains_1': team_captains.get(team_1, []),
-                    'captains_2': team_captains.get(team_2, []),
+                    'captains_1': format_captains(team_captains.get(team_1, [])),
+                    'captains_2': format_captains(team_captains.get(team_2, [])),
                 })
         
-        # 9) Build standings with live points
-        # Map entry_id to H2H league points
-        entry_league_points = {}
-        for entry in h2h_standings:
-            entry_league_points[entry['entry']] = entry.get('total', 0)
-        
-        # Calculate team league points (sum of all managers' H2H points)
+        # 8) Build standings with projected points
         team_standings = []
-        for team_name, entry_ids in TEAMS_FPL_IDS.items():
-            league_pts = 0
-            for eid in entry_ids:
-                league_pts += entry_league_points.get(eid, 0)
+        for team_name in TEAMS_FPL_IDS.keys():
+            # Previous league points
+            prev_points = PREVIOUS_STANDINGS.get(team_name, 0)
+            prev_rank = get_previous_rank(team_name)
+            
+            # Add points from current GW match
+            result = match_results.get(team_name, '')
+            if result == 'W':
+                added_points = 3
+            elif result == 'D':
+                added_points = 1
+            else:
+                added_points = 0
+            
+            projected_points = prev_points + added_points
             
             team_standings.append({
                 'team_name': team_name,
-                'league_points': league_pts,
+                'league_points': projected_points,
+                'prev_points': prev_points,
                 'live_gw_points': team_live_points.get(team_name, 0),
-                'captains': team_captains.get(team_name, []),
+                'captains': format_captains(team_captains.get(team_name, [])),
+                'result': result,
+                'prev_rank': prev_rank,
             })
         
-        # Sort by league points
+        # Sort by projected league points, then by live GW points
         team_standings.sort(key=lambda x: (-x['league_points'], -x['live_gw_points']))
         
-        # Add ranks
+        # Add ranks and calculate rank changes
         for i, team in enumerate(team_standings, 1):
             team['rank'] = i
+            team['rank_change'] = team['prev_rank'] - i  # Positive = moved up
         
         # Check if live
         is_live = any(f.get('started') and not f.get('finished_provisional') for f in fixtures)

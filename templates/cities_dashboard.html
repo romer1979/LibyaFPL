@@ -23,26 +23,96 @@
             border-radius: 4px;
         }
         
-        .team-points-large {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--primary-purple);
+        /* Rank change arrows */
+        .rank-up {
+            color: #22c55e;
+            font-weight: 700;
+            font-size: 0.8rem;
         }
         
-        .team-points-large.winner {
-            color: var(--success);
+        .rank-down {
+            color: #ef4444;
+            font-weight: 700;
+            font-size: 0.8rem;
         }
         
-        .team-points-large.loser {
-            color: var(--danger);
+        .rank-same {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        
+        .rank-change-cell {
+            text-align: center;
+            min-width: 50px;
+        }
+        
+        /* Row highlighting for win/loss */
+        .row-win {
+            background: rgba(34, 197, 94, 0.08) !important;
+        }
+        
+        .row-loss {
+            background: rgba(239, 68, 68, 0.08) !important;
         }
         
         /* Standings captains column */
         .standings-table .captains-cell {
             font-size: 0.75rem;
             color: #f5c842;
-            max-width: 180px;
+            max-width: 200px;
             text-align: right;
+        }
+        
+        /* Fixtures captains column */
+        .match-captains-cell {
+            font-size: 0.75rem;
+            color: #f5c842;
+            min-width: 180px;
+        }
+        
+        .captains-split {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cap-team1, .cap-team2 {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .cap-vs {
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .captains-header {
+            min-width: 180px;
+        }
+        
+        /* Mobile captains row */
+        .fixture-captains-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: #f5c842;
+            background: rgba(245, 200, 66, 0.05);
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .cap-side {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .cap-divider {
+            padding: 0 0.5rem;
+            font-size: 0.8rem;
         }
         
         /* Stats row at top */
@@ -69,14 +139,24 @@
             color: var(--primary-purple);
         }
         
+        /* Mobile standings change column */
+        .msh-change, .ms-change {
+            width: 40px;
+            text-align: center;
+        }
+        
         /* Mobile adjustments */
         @media (max-width: 768px) {
-            .captains-cell {
+            .captains-cell, .match-captains-cell, .captains-header {
                 display: none;
             }
             
             .team-captains {
                 font-size: 0.65rem;
+            }
+            
+            .fixture-captains-row {
+                display: flex;
             }
         }
     </style>
@@ -149,6 +229,7 @@
                                     <th>النتيجة</th>
                                     <th>الفريق الثاني</th>
                                     <th>الفارق</th>
+                                    <th class="captains-header">الكباتن</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -160,11 +241,6 @@
                                                 {% if match.points_1 > match.points_2 %}<span class="winner-icon">✓</span>{% endif %}
                                                 {{ match.team_1 }}
                                             </span>
-                                            <div class="team-captains">
-                                                {% for cap in match.captains_1 %}
-                                                    <span class="captain-tag">👑 {{ cap }}</span>
-                                                {% endfor %}
-                                            </div>
                                         </div>
                                     </td>
                                     <td class="score-cell">
@@ -178,15 +254,17 @@
                                                 {% if match.points_2 > match.points_1 %}<span class="winner-icon">✓</span>{% endif %}
                                                 {{ match.team_2 }}
                                             </span>
-                                            <div class="team-captains">
-                                                {% for cap in match.captains_2 %}
-                                                    <span class="captain-tag">👑 {{ cap }}</span>
-                                                {% endfor %}
-                                            </div>
                                         </div>
                                     </td>
                                     <td class="diff-cell">
                                         <span class="diff-badge">{{ (match.points_1 - match.points_2)|abs }}</span>
+                                    </td>
+                                    <td class="match-captains-cell">
+                                        <div class="captains-split">
+                                            <span class="cap-team1">{{ match.captains_1|join(' • ') }}</span>
+                                            <span class="cap-vs">|</span>
+                                            <span class="cap-team2">{{ match.captains_2|join(' • ') }}</span>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -204,11 +282,6 @@
                                     <span class="fixture-team-name">
                                         {% if match.points_1 > match.points_2 %}✓ {% endif %}{{ match.team_1 }}
                                     </span>
-                                    <div class="team-captains">
-                                        {% for cap in match.captains_1 %}
-                                            <span class="captain-tag">👑 {{ cap }}</span>
-                                        {% endfor %}
-                                    </div>
                                 </div>
                                 
                                 <!-- Score -->
@@ -228,12 +301,13 @@
                                     <span class="fixture-team-name">
                                         {% if match.points_2 > match.points_1 %}✓ {% endif %}{{ match.team_2 }}
                                     </span>
-                                    <div class="team-captains">
-                                        {% for cap in match.captains_2 %}
-                                            <span class="captain-tag">👑 {{ cap }}</span>
-                                        {% endfor %}
-                                    </div>
                                 </div>
+                            </div>
+                            <!-- Captains row at bottom -->
+                            <div class="fixture-captains-row">
+                                <span class="cap-side">{{ match.captains_1|join(' • ') }}</span>
+                                <span class="cap-divider">👑</span>
+                                <span class="cap-side">{{ match.captains_2|join(' • ') }}</span>
                             </div>
                         </div>
                         {% endfor %}
@@ -260,14 +334,15 @@
                                 <tr>
                                     <th>م</th>
                                     <th>الفريق</th>
-                                    <th class="captains-cell">الكباتن</th>
                                     <th>ن.ج</th>
                                     <th>ن.د</th>
+                                    <th>+/-</th>
+                                    <th class="captains-cell">الكباتن</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for team in data.standings %}
-                                <tr class="{% if loop.index <= 3 %}top-three{% endif %}">
+                                <tr class="{% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}">
                                     <td class="rank-cell">
                                         {% if loop.index == 1 %}
                                             <span class="rank-badge gold">🥇</span>
@@ -280,9 +355,18 @@
                                         {% endif %}
                                     </td>
                                     <td class="name-cell">{{ team.team_name }}</td>
-                                    <td class="captains-cell">{{ team.captains|join(' • ') }}</td>
                                     <td class="gw-points-cell">{{ team.live_gw_points }}</td>
                                     <td class="league-points-cell">{{ team.league_points }}</td>
+                                    <td class="rank-change-cell">
+                                        {% if team.rank_change and team.rank_change > 0 %}
+                                            <span class="rank-up">▲{{ team.rank_change }}</span>
+                                        {% elif team.rank_change and team.rank_change < 0 %}
+                                            <span class="rank-down">▼{{ team.rank_change|abs }}</span>
+                                        {% else %}
+                                            <span class="rank-same">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="captains-cell">{{ team.captains|join(' • ') }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -296,9 +380,10 @@
                             <span class="msh-name">الفريق</span>
                             <span class="msh-gw">ن.ج</span>
                             <span class="msh-lp">ن.د</span>
+                            <span class="msh-change">+/-</span>
                         </div>
                         {% for team in data.standings %}
-                        <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %}">
+                        <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}">
                             <div class="mobile-standing-main">
                                 <span class="ms-rank">
                                     {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ team.rank }}{% endif %}
@@ -306,6 +391,15 @@
                                 <span class="ms-name">{{ team.team_name }}</span>
                                 <span class="ms-gw">{{ team.live_gw_points }}</span>
                                 <span class="ms-lp">{{ team.league_points }}</span>
+                                <span class="ms-change">
+                                    {% if team.rank_change and team.rank_change > 0 %}
+                                        <span class="rank-up">▲{{ team.rank_change }}</span>
+                                    {% elif team.rank_change and team.rank_change < 0 %}
+                                        <span class="rank-down">▼{{ team.rank_change|abs }}</span>
+                                    {% else %}
+                                        <span class="rank-same">-</span>
+                                    {% endif %}
+                                </span>
                             </div>
                         </div>
                         {% endfor %}
