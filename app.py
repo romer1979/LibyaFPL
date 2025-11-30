@@ -20,6 +20,7 @@ from core.stats import get_league_stats, get_manager_history
 from core.the100 import get_the100_standings
 from core.cities_league import get_cities_league_data
 from core.libyan_league import get_libyan_league_data
+from core.arab_league import get_arab_league_data
 from models import db, save_standings, calculate_rank_change
 
 app = Flask(__name__)
@@ -117,6 +118,13 @@ def libyan_dashboard():
     """Libyan League dashboard - Team H2H"""
     data = get_libyan_league_data()
     return render_template('libyan_dashboard.html', data=data)
+
+
+@app.route('/league/arab')
+def arab_dashboard():
+    """Arab Championship dashboard - Team H2H"""
+    data = get_arab_league_data()
+    return render_template('arab_dashboard.html', data=data)
 
 
 @app.route('/api/comparison')
