@@ -13,13 +13,6 @@
             --primary-purple-light: #6b2d7b;
             --primary-purple-dark: #2d0a36;
             --accent-yellow: #f5c842;
-            --accent-yellow-light: #ffd966;
-            --success: #28a745;
-            --danger: #dc3545;
-            --text-primary: #1a1a2e;
-            --text-secondary: #4a4a68;
-            --bg-light: #f8f9fc;
-            --card-bg: #ffffff;
         }
         
         * {
@@ -32,237 +25,83 @@
             font-family: 'Cairo', sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
             min-height: 100vh;
-            color: var(--text-primary);
         }
         
-        /* Header */
-        .main-header {
+        .header {
             background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-dark) 100%);
             color: white;
-            padding: 1.5rem 1rem;
+            padding: 1.5rem;
             text-align: center;
             box-shadow: 0 4px 20px rgba(74, 18, 89, 0.3);
         }
         
-        .main-header h1 {
-            font-size: 1.6rem;
+        .header h1 {
+            font-size: 1.5rem;
             font-weight: 800;
-            margin-bottom: 0.25rem;
         }
         
-        .main-header p {
-            font-size: 0.85rem;
-            opacity: 0.85;
-        }
-        
-        /* Container */
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 1.5rem 1rem;
+            padding: 2rem 1rem;
         }
         
-        /* Leagues Grid */
         .leagues-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
         }
         
-        /* League Card */
         .league-card {
-            background: var(--card-bg);
+            background: white;
             border-radius: 16px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            display: block;
         }
         
         .league-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(74, 18, 89, 0.2);
         }
         
-        .league-card.coming-soon {
-            opacity: 0.7;
-        }
-        
-        .league-card.coming-soon:hover {
-            transform: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-        }
-        
-        /* League Header */
-        .league-header {
+        .league-card-content {
+            padding: 2rem 1.5rem;
             display: flex;
+            flex-direction: column;
             align-items: center;
+            text-align: center;
             gap: 1rem;
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-light) 100%);
-            color: white;
         }
         
         .league-logo {
-            width: 70px;
-            height: 70px;
+            width: 100px;
+            height: 100px;
             border-radius: 12px;
-            background: white;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            flex-shrink: 0;
+            background: #f8f9fa;
         }
         
         .league-logo img {
-            width: 100%;
-            height: 100%;
+            max-width: 90%;
+            max-height: 90%;
             object-fit: contain;
         }
         
-        .league-logo.placeholder {
-            background: rgba(255, 255, 255, 0.2);
-            font-size: 2rem;
-        }
-        
-        .league-info h2 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-        
-        .league-info .league-type {
-            font-size: 0.8rem;
-            opacity: 0.85;
-        }
-        
-        /* Coming Soon Badge */
-        .coming-soon-badge {
-            background: var(--accent-yellow);
-            color: var(--primary-purple-dark);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-right: auto;
-        }
-        
-        /* League Content */
-        .league-content {
-            padding: 1rem;
-        }
-        
-        .coming-soon-content {
-            text-align: center;
-            padding: 2rem 1rem;
-            color: var(--text-secondary);
-        }
-        
-        .coming-soon-content .icon {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .coming-soon-content p {
-            font-size: 0.9rem;
-        }
-        
-        /* Standings Mini Table */
-        .standings-mini {
-            width: 100%;
-        }
-        
-        .standings-mini-header {
-            display: grid;
-            grid-template-columns: 40px 1fr 50px 30px;
-            gap: 0.5rem;
-            padding: 0.5rem 0.75rem;
-            background: #f8f9fc;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-        }
-        
-        .standings-mini-row {
-            display: grid;
-            grid-template-columns: 40px 1fr 50px 30px;
-            gap: 0.5rem;
-            padding: 0.6rem 0.75rem;
-            border-bottom: 1px solid #f0f0f0;
-            align-items: center;
-            font-size: 0.85rem;
-            transition: background 0.2s ease;
-        }
-        
-        .standings-mini-row:hover {
-            background: #fafafa;
-        }
-        
-        .standings-mini-row:last-child {
-            border-bottom: none;
-        }
-        
-        .standings-mini-row.top-3 {
-            background: linear-gradient(90deg, rgba(245, 200, 66, 0.1) 0%, transparent 100%);
-        }
-        
-        .rank {
+        .league-name {
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--primary-purple);
-            text-align: center;
         }
         
-        .rank .medal {
-            font-size: 1rem;
-        }
-        
-        .manager-name {
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .league-points {
-            font-weight: 700;
-            color: var(--primary-purple);
-            text-align: center;
-        }
-        
-        .rank-change {
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        
-        .rank-change.up {
-            color: var(--success);
-        }
-        
-        .rank-change.down {
-            color: var(--danger);
-        }
-        
-        .rank-change.same {
-            color: #999;
-        }
-        
-        /* View League Button */
-        .view-league-btn {
-            display: block;
-            text-align: center;
-            padding: 0.75rem;
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--primary-purple-light) 100%);
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: opacity 0.2s ease;
-        }
-        
-        .view-league-btn:hover {
-            opacity: 0.9;
+        .league-arrow {
+            color: var(--accent-yellow);
+            font-size: 1.5rem;
         }
         
         /* The 100 Dark Theme */
@@ -270,423 +109,106 @@
             background: #1a1a1a;
         }
         
+        .the100-card .league-logo {
+            background: #0a0a0a;
+        }
+        
+        .the100-card .league-name {
+            color: #e8e8e8;
+        }
+        
         .the100-card:hover {
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         }
         
-        .the100-header {
-            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-        }
-        
-        .the100-logo {
-            background: #0a0a0a !important;
-            border-radius: 8px;
-        }
-        
-        .the100-card .league-info h2 {
-            color: #e8e8e8;
-        }
-        
-        .the100-content {
-            background: #141414;
-        }
-        
-        .the100-content .standings-mini-header {
-            background: #252525;
-            color: #888;
-        }
-        
-        .the100-content .standings-mini-row {
-            border-bottom-color: #2a2a2a;
-            color: #c0c0c0;
-        }
-        
-        .the100-content .standings-mini-row:hover {
-            background: #252525;
-        }
-        
-        .the100-content .manager-name {
-            color: #e0e0e0;
-        }
-        
-        .the100-content .league-points {
-            color: #f5c842;
-        }
-        
-        .elimination-badge {
+        .footer {
             text-align: center;
-            padding: 0.6rem;
-            background: linear-gradient(135deg, #8b0000 0%, #5c0000 100%);
-            color: #ff6b6b;
-            font-weight: 700;
+            padding: 2rem;
+            color: #666;
             font-size: 0.85rem;
-            margin-bottom: 0;
         }
         
-        .elimination-zone {
-            background: rgba(139, 0, 0, 0.15) !important;
-        }
-        
-        .elimination-zone:hover {
-            background: rgba(139, 0, 0, 0.25) !important;
-        }
-        
-        .elimination-zone .rank {
-            color: #ff6b6b;
-            font-weight: 700;
-        }
-        
-        .the100-card .coming-soon-content {
-            color: #c0c0c0;
-            background: #141414;
-        }
-        
-        .the100-card .coming-soon-content .icon {
-            opacity: 0.8;
-        }
-        
-        .the100-btn {
-            background: linear-gradient(135deg, #404040 0%, #2d2d2d 100%);
-        }
-        
-        .the100-btn:hover {
-            background: linear-gradient(135deg, #505050 0%, #3d3d3d 100%);
-        }
-        
-        /* Footer */
-        .main-footer {
-            text-align: center;
-            padding: 1.5rem;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .main-header h1 {
-                font-size: 1.3rem;
-            }
-            
+        @media (max-width: 600px) {
             .leagues-grid {
                 grid-template-columns: 1fr;
             }
             
             .league-logo {
-                width: 55px;
-                height: 55px;
+                width: 80px;
+                height: 80px;
             }
             
-            .league-info h2 {
-                font-size: 1.05rem;
-            }
-            
-            .standings-mini-header,
-            .standings-mini-row {
-                grid-template-columns: 35px 1fr 45px 28px;
-                font-size: 0.8rem;
+            .league-name {
+                font-size: 1.1rem;
             }
         }
     </style>
 </head>
 <body>
-    <header class="main-header">
+    <header class="header">
         <h1>🏆 دوريات قروب عشاق الفانتازي في ليبيا</h1>
     </header>
     
     <div class="container">
         <div class="leagues-grid">
-            <!-- Elite League - Active -->
-            <div class="league-card">
-                <div class="league-header">
+            <!-- Elite League -->
+            <a href="/league/elite" class="league-card">
+                <div class="league-card-content">
                     <div class="league-logo">
-                        <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="Elite League">
+                        <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="دوري النخبة">
                     </div>
-                    <div class="league-info">
-                        <h2>دوري النخبة</h2>
-                    </div>
+                    <span class="league-name">دوري النخبة</span>
+                    <span class="league-arrow">←</span>
                 </div>
-                <div class="league-content">
-                    <div class="standings-mini">
-                        <div class="standings-mini-header">
-                            <span>#</span>
-                            <span>المدرب</span>
-                            <span>النقاط</span>
-                            <span></span>
-                        </div>
-                        {% for team in elite_standings[:10] %}
-                        <div class="standings-mini-row {% if loop.index <= 3 %}top-3{% endif %}">
-                            <span class="rank">
-                                {% if loop.index == 1 %}
-                                    <span class="medal">🥇</span>
-                                {% elif loop.index == 2 %}
-                                    <span class="medal">🥈</span>
-                                {% elif loop.index == 3 %}
-                                    <span class="medal">🥉</span>
-                                {% else %}
-                                    {{ loop.index }}
-                                {% endif %}
-                            </span>
-                            <span class="manager-name">{{ team.player_name }}</span>
-                            <span class="league-points">{{ team.projected_league_points }}</span>
-                            <span class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
-                                {% if team.rank_change > 0 %}
-                                    ▲
-                                {% elif team.rank_change < 0 %}
-                                    ▼
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                <a href="/league/elite" class="view-league-btn">عرض الدوري كاملاً ←</a>
-            </div>
+            </a>
             
-            <!-- The 100 - Active -->
-            <div class="league-card the100-card">
-                <div class="league-header the100-header">
-                    <div class="league-logo the100-logo">
+            <!-- The 100 -->
+            <a href="/league/the100" class="league-card the100-card">
+                <div class="league-card-content">
+                    <div class="league-logo">
                         <img src="{{ url_for('static', filename='the100_logo.png') }}" alt="The 100">
                     </div>
-                    <div class="league-info">
-                        <h2>The 100</h2>
-                    </div>
+                    <span class="league-name">The 100</span>
+                    <span class="league-arrow">←</span>
                 </div>
-                <div class="league-content the100-content">
-                    <div class="elimination-badge">🏃 مرحلة الإقصاء جارية</div>
-                    {% if the100_elimination %}
-                    <div class="standings-mini the100-standings">
-                        <div class="standings-mini-header">
-                            <span>#</span>
-                            <span>المدير</span>
-                            <span>النقاط</span>
-                            <span></span>
-                        </div>
-                        {% for team in the100_elimination %}
-                        <div class="standings-mini-row elimination-zone">
-                            <span class="rank">{{ team.live_rank }}</span>
-                            <span class="manager-name">{{ team.manager_name }}</span>
-                            <span class="league-points">{{ team.live_gw_points or '-' }}</span>
-                            <span class="rank-change {% if team.rank_change and team.rank_change > 0 %}up{% elif team.rank_change and team.rank_change < 0 %}down{% else %}same{% endif %}">
-                                {% if team.rank_change and team.rank_change > 0 %}
-                                    ▲
-                                {% elif team.rank_change and team.rank_change < 0 %}
-                                    ▼
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                <a href="/league/the100" class="view-league-btn the100-btn">عرض الدوري ←</a>
-            </div>
+            </a>
             
-            <!-- دوري المدن - Active -->
-            <div class="league-card">
-                <div class="league-header">
+            <!-- Cities League -->
+            <a href="/league/cities" class="league-card">
+                <div class="league-card-content">
                     <div class="league-logo">
                         <img src="{{ url_for('static', filename='cities_logo.png') }}" alt="دوري المدن">
                     </div>
-                    <div class="league-info">
-                        <h2>دوري المدن</h2>
-                    </div>
+                    <span class="league-name">دوري المدن</span>
+                    <span class="league-arrow">←</span>
                 </div>
-                <div class="league-content">
-                    {% if cities_standings %}
-                    <div class="standings-mini">
-                        <div class="standings-mini-header">
-                            <span>#</span>
-                            <span>الفريق</span>
-                            <span>النقاط</span>
-                            <span></span>
-                        </div>
-                        {% for team in cities_standings %}
-                        <div class="standings-mini-row {% if loop.index <= 3 %}top-3{% endif %}">
-                            <span class="rank">
-                                {% if loop.index == 1 %}
-                                    <span class="medal">🥇</span>
-                                {% elif loop.index == 2 %}
-                                    <span class="medal">🥈</span>
-                                {% elif loop.index == 3 %}
-                                    <span class="medal">🥉</span>
-                                {% else %}
-                                    {{ loop.index }}
-                                {% endif %}
-                            </span>
-                            <span class="manager-name">{{ team.team_name }}</span>
-                            <span class="league-points">{{ team.league_points }}</span>
-                            <span class="rank-change {% if team.rank_change and team.rank_change > 0 %}up{% elif team.rank_change and team.rank_change < 0 %}down{% else %}same{% endif %}">
-                                {% if team.rank_change and team.rank_change > 0 %}
-                                    ▲
-                                {% elif team.rank_change and team.rank_change < 0 %}
-                                    ▼
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="league-stats">
-                        <div class="stat">
-                            <span class="stat-value">20</span>
-                            <span class="stat-label">فريق</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value">60</span>
-                            <span class="stat-label">مدير</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value">H2H</span>
-                            <span class="stat-label">فرق</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                <a href="/league/cities" class="view-league-btn">عرض الدوري ←</a>
-            </div>
+            </a>
             
-            <!-- الدوري الليبي - Active -->
-            <div class="league-card">
-                <div class="league-header">
+            <!-- Libyan League -->
+            <a href="/league/libyan" class="league-card">
+                <div class="league-card-content">
                     <div class="league-logo">
                         <img src="{{ url_for('static', filename='libyan_logo.png') }}" alt="الدوري الليبي">
                     </div>
-                    <div class="league-info">
-                        <h2>الدوري الليبي</h2>
-                    </div>
+                    <span class="league-name">الدوري الليبي</span>
+                    <span class="league-arrow">←</span>
                 </div>
-                <div class="league-content">
-                    {% if libyan_standings %}
-                    <div class="standings-mini">
-                        <div class="standings-mini-header">
-                            <span>#</span>
-                            <span>الفريق</span>
-                            <span>النقاط</span>
-                            <span></span>
-                        </div>
-                        {% for team in libyan_standings %}
-                        <div class="standings-mini-row {% if loop.index <= 3 %}top-3{% endif %}">
-                            <span class="rank">
-                                {% if loop.index == 1 %}
-                                    <span class="medal">🥇</span>
-                                {% elif loop.index == 2 %}
-                                    <span class="medal">🥈</span>
-                                {% elif loop.index == 3 %}
-                                    <span class="medal">🥉</span>
-                                {% else %}
-                                    {{ loop.index }}
-                                {% endif %}
-                            </span>
-                            <span class="manager-name">{{ team.team_name }}</span>
-                            <span class="league-points">{{ team.league_points }}</span>
-                            <span class="rank-change {% if team.rank_change and team.rank_change > 0 %}up{% elif team.rank_change and team.rank_change < 0 %}down{% else %}same{% endif %}">
-                                {% if team.rank_change and team.rank_change > 0 %}
-                                    ▲
-                                {% elif team.rank_change and team.rank_change < 0 %}
-                                    ▼
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="league-stats">
-                        <div class="stat">
-                            <span class="stat-value">20</span>
-                            <span class="stat-label">فريق</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value">60</span>
-                            <span class="stat-label">مدير</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value">H2H</span>
-                            <span class="stat-label">فرق</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                <a href="/league/libyan" class="view-league-btn">عرض الدوري ←</a>
-            </div>
+            </a>
             
-            <!-- البطولة العربية - Active -->
-            <div class="league-card">
-                <div class="league-header">
+            <!-- Arab Championship -->
+            <a href="/league/arab" class="league-card">
+                <div class="league-card-content">
                     <div class="league-logo">
                         <img src="{{ url_for('static', filename='arab_logo.png') }}" alt="البطولة العربية">
                     </div>
-                    <div class="league-info">
-                        <h2>البطولة العربية</h2>
-                    </div>
+                    <span class="league-name">البطولة العربية</span>
+                    <span class="league-arrow">←</span>
                 </div>
-                <div class="league-content">
-                    {% if arab_standings %}
-                    <div class="standings-mini">
-                        <div class="standings-mini-header">
-                            <span>#</span>
-                            <span>الفريق</span>
-                            <span>النقاط</span>
-                            <span></span>
-                        </div>
-                        {% for team in arab_standings %}
-                        <div class="standings-mini-row {% if loop.index <= 3 %}top-3{% endif %}">
-                            <span class="rank">
-                                {% if loop.index == 1 %}
-                                    <span class="medal">🥇</span>
-                                {% elif loop.index == 2 %}
-                                    <span class="medal">🥈</span>
-                                {% elif loop.index == 3 %}
-                                    <span class="medal">🥉</span>
-                                {% else %}
-                                    {{ loop.index }}
-                                {% endif %}
-                            </span>
-                            <span class="manager-name">{{ team.team_name }}</span>
-                            <span class="league-points">{{ team.league_points }}</span>
-                            <span class="rank-change {% if team.rank_change and team.rank_change > 0 %}up{% elif team.rank_change and team.rank_change < 0 %}down{% else %}same{% endif %}">
-                                {% if team.rank_change and team.rank_change > 0 %}
-                                    ▲
-                                {% elif team.rank_change and team.rank_change < 0 %}
-                                    ▼
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="league-stats">
-                        <div class="stat">
-                            <span class="stat-value">20</span>
-                            <span class="stat-label">فريق</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value">60</span>
-                            <span class="stat-label">مدير</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value">H2H</span>
-                            <span class="stat-label">فرق</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                <a href="/league/arab" class="view-league-btn">عرض البطولة ←</a>
-            </div>
+            </a>
         </div>
     </div>
     
-    <footer class="main-footer">
+    <footer class="footer">
         <p>© 2024 قروب عشاق الفانتازي في ليبيا</p>
     </footer>
 </body>
