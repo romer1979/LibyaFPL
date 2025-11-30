@@ -2,347 +2,81 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>دوري المدن - Libya FPL</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Cairo', sans-serif;
-            background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-        
-        /* Header */
-        .header {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-        
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
+        /* Cities League specific overrides */
+        .team-captains {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
-        }
-        
-        .logo-img {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-        }
-        
-        .logo-text {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .logo-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #fff;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .logo-subtitle {
-            font-size: 0.7rem;
-            color: #888;
-        }
-        
-        .header-nav {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .nav-link {
-            color: #888;
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
-        
-        .home-btn {
-            background: rgba(102, 126, 234, 0.2);
-            color: #667eea;
-        }
-        
-        .live-badge {
-            background: #ef4444;
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        /* Main Content */
-        .main-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .stat-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-value {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            color: #888;
+            flex-wrap: wrap;
+            gap: 0.25rem;
             margin-top: 0.25rem;
         }
         
-        /* Section */
-        .section {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            overflow: hidden;
+        .captain-tag {
+            font-size: 0.7rem;
+            color: #f5c842;
+            background: rgba(245, 200, 66, 0.1);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
         }
         
-        .section-header {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 1rem 1.25rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-        
-        .section-content {
-            padding: 1rem;
-        }
-        
-        /* Matches Grid */
-        .matches-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-        }
-        
-        .match-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .match-teams {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-        
-        .match-team {
-            text-align: center;
-            flex: 1;
-        }
-        
-        .team-name {
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .team-points {
+        .team-points-large {
             font-size: 1.5rem;
             font-weight: 800;
-            color: #667eea;
+            color: var(--primary-purple);
         }
         
-        .team-points.winner {
-            color: #4ade80;
+        .team-points-large.winner {
+            color: var(--success);
         }
         
-        .team-points.loser {
-            color: #f87171;
+        .team-points-large.loser {
+            color: var(--danger);
         }
         
-        .match-vs {
-            font-size: 0.9rem;
-            color: #666;
-            padding: 0 0.5rem;
-        }
-        
-        .match-captains {
-            font-size: 0.75rem;
-            color: #fbbf24;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 0.5rem;
-            margin-top: 0.5rem;
-        }
-        
-        .captains-row {
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .captains-list {
-            flex: 1;
-            text-align: center;
-        }
-        
-        /* Standings Table */
-        .standings-container {
-            overflow-x: auto;
-        }
-        
-        .standings-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        
-        .standings-table th {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 0.75rem 0.5rem;
-            text-align: center;
-            font-weight: 600;
-            color: #888;
-            font-size: 0.8rem;
-        }
-        
-        .standings-table td {
-            padding: 0.75rem 0.5rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .standings-table tr:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .standings-table .rank {
-            font-weight: 700;
-            color: #667eea;
-            width: 40px;
-        }
-        
-        .standings-table .team-cell {
-            text-align: right;
-            font-weight: 600;
-        }
-        
+        /* Standings captains column */
         .standings-table .captains-cell {
-            color: #fbbf24;
-            font-size: 0.8rem;
-            max-width: 200px;
+            font-size: 0.75rem;
+            color: #f5c842;
+            max-width: 180px;
+            text-align: right;
         }
         
-        .standings-table .points {
+        /* Stats row at top */
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .stat-pill {
+            background: var(--bg-card);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .stat-pill .value {
             font-weight: 700;
-            color: #667eea;
+            color: var(--primary-purple);
         }
         
-        .standings-table .gw-points {
-            color: #4ade80;
-            font-weight: 600;
-        }
-        
-        .medal {
-            font-size: 1.2rem;
-        }
-        
-        /* Top 3 highlighting */
-        .standings-table tr:nth-child(1) td,
-        .standings-table tr:nth-child(2) td,
-        .standings-table tr:nth-child(3) td {
-            background: rgba(102, 126, 234, 0.1);
-        }
-        
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-            font-size: 0.8rem;
-        }
-        
-        /* Responsive */
+        /* Mobile adjustments */
         @media (max-width: 768px) {
-            .standings-table {
-                font-size: 0.8rem;
-            }
-            
-            .standings-table th,
-            .standings-table td {
-                padding: 0.5rem 0.25rem;
-            }
-            
             .captains-cell {
                 display: none;
             }
             
-            .matches-grid {
-                grid-template-columns: 1fr;
+            .team-captains {
+                font-size: 0.65rem;
             }
         }
     </style>
@@ -351,142 +85,242 @@
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/league/cities" class="logo">
-                <img src="{{ url_for('static', filename='cities_logo.png') }}" alt="دوري المدن" class="logo-img" onerror="this.style.display='none'">
+            <a href="/" class="logo">
+                <img src="{{ url_for('static', filename='cities_logo.png') }}" alt="دوري المدن" class="logo-img">
                 <div class="logo-text">
                     <span class="logo-title">دوري المدن</span>
                     <span class="logo-subtitle">CITIES LEAGUE</span>
                 </div>
             </a>
-            <div class="header-nav">
-                <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
+            <div class="gameweek-info">
+                <span class="gw-label">الجولة</span>
+                <span class="gw-number">{{ data.gameweek or '-' }}</span>
                 {% if data.is_live %}
-                <span class="live-badge">🔴 مباشر</span>
+                    <span class="status-badge live">🔴 مباشر</span>
                 {% endif %}
-                <a href="/" class="nav-link home-btn">🏠</a>
+                <button class="refresh-btn" onclick="location.reload()">🔄</button>
+                <a href="/" class="stats-link">🏠</a>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">🏙️</div>
-                <div class="stat-value">{{ data.total_teams or 20 }}</div>
-                <div class="stat-label">فريق</div>
+    <main class="main-container">
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-pill">
+                <span>🏙️</span>
+                <span class="value">{{ data.total_teams or 20 }}</span>
+                <span>فريق</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-value">{{ (data.total_teams or 20) * 3 }}</div>
-                <div class="stat-label">مدير</div>
+            <div class="stat-pill">
+                <span>👥</span>
+                <span class="value">{{ (data.total_teams or 20) * 3 }}</span>
+                <span>مدير</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">⚔️</div>
-                <div class="stat-value">{{ data.matches|length if data.matches else 0 }}</div>
-                <div class="stat-label">مباراة</div>
+            <div class="stat-pill">
+                <span>⚔️</span>
+                <span class="value">{{ data.matches|length if data.matches else 0 }}</span>
+                <span>مباراة</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">📅</div>
-                <div class="stat-value">{{ data.gameweek or '-' }}</div>
-                <div class="stat-label">الجولة</div>
+            <div class="stat-pill">
+                <span>🕐</span>
+                <span>آخر تحديث: {{ data.last_updated or '-' }}</span>
             </div>
         </div>
 
-        <!-- H2H Matches -->
-        {% if data.matches %}
-        <div class="section">
-            <div class="section-header">
-                <h2 class="section-title">⚔️ مباريات الجولة {{ data.gameweek }}</h2>
-            </div>
-            <div class="section-content">
-                <div class="matches-grid">
-                    {% for match in data.matches %}
-                    <div class="match-card">
-                        <div class="match-teams">
-                            <div class="match-team">
-                                <div class="team-name">{{ match.team_1 }}</div>
-                                <div class="team-points {% if match.points_1 > match.points_2 %}winner{% elif match.points_1 < match.points_2 %}loser{% endif %}">
-                                    {{ match.points_1 }}
-                                </div>
-                            </div>
-                            <div class="match-vs">VS</div>
-                            <div class="match-team">
-                                <div class="team-name">{{ match.team_2 }}</div>
-                                <div class="team-points {% if match.points_2 > match.points_1 %}winner{% elif match.points_2 < match.points_1 %}loser{% endif %}">
-                                    {{ match.points_2 }}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="match-captains">
-                            <div class="captains-row">
-                                <div class="captains-list">{{ match.captains_1|join(' • ') }}</div>
-                                <div class="captains-list">{{ match.captains_2|join(' • ') }}</div>
-                            </div>
-                        </div>
+        <div class="dashboard-grid">
+            <!-- Fixtures Section (Right side in RTL) -->
+            <section class="fixtures-section">
+                <h2 class="section-title">
+                    ⚔️ مباريات الجولة
+                    {% if data.is_live %}
+                        <span class="live-badge">🔴 مباشر</span>
+                    {% endif %}
+                </h2>
+                
+                {% if data.matches %}
+                    <!-- Desktop Table View -->
+                    <div class="fixtures-table-container desktop-only">
+                        <table class="fixtures-table">
+                            <thead>
+                                <tr>
+                                    <th>الفريق الأول</th>
+                                    <th>النتيجة</th>
+                                    <th>الفريق الثاني</th>
+                                    <th>الفارق</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for match in data.matches %}
+                                <tr class="fixture-row">
+                                    <td class="team-cell {% if match.points_1 > match.points_2 %}winner{% endif %}">
+                                        <div class="team-info-cell">
+                                            <span class="team-name">
+                                                {% if match.points_1 > match.points_2 %}<span class="winner-icon">✓</span>{% endif %}
+                                                {{ match.team_1 }}
+                                            </span>
+                                            <div class="team-captains">
+                                                {% for cap in match.captains_1 %}
+                                                    <span class="captain-tag">👑 {{ cap }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="score-cell">
+                                        <span class="score {% if match.points_1 > match.points_2 %}score-win{% endif %}">{{ match.points_1 }}</span>
+                                        <span class="vs">-</span>
+                                        <span class="score {% if match.points_2 > match.points_1 %}score-win{% endif %}">{{ match.points_2 }}</span>
+                                    </td>
+                                    <td class="team-cell {% if match.points_2 > match.points_1 %}winner{% endif %}">
+                                        <div class="team-info-cell">
+                                            <span class="team-name">
+                                                {% if match.points_2 > match.points_1 %}<span class="winner-icon">✓</span>{% endif %}
+                                                {{ match.team_2 }}
+                                            </span>
+                                            <div class="team-captains">
+                                                {% for cap in match.captains_2 %}
+                                                    <span class="captain-tag">👑 {{ cap }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="diff-cell">
+                                        <span class="diff-badge">{{ (match.points_1 - match.points_2)|abs }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Standings -->
-        <div class="section">
-            <div class="section-header">
-                <h2 class="section-title">🏆 ترتيب الدوري</h2>
-                <span style="color: #888; font-size: 0.75rem;">آخر تحديث: {{ data.last_updated or '-' }}</span>
-            </div>
-            <div class="section-content">
-                {% if data.standings %}
-                <div class="standings-container">
-                    <table class="standings-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>الفريق</th>
-                                <th>الكباتن</th>
-                                <th>GW</th>
-                                <th>النقاط</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for team in data.standings %}
-                            <tr>
-                                <td class="rank">
-                                    {% if team.rank == 1 %}
-                                        <span class="medal">🥇</span>
-                                    {% elif team.rank == 2 %}
-                                        <span class="medal">🥈</span>
-                                    {% elif team.rank == 3 %}
-                                        <span class="medal">🥉</span>
-                                    {% else %}
-                                        {{ team.rank }}
-                                    {% endif %}
-                                </td>
-                                <td class="team-cell">{{ team.team_name }}</td>
-                                <td class="captains-cell">{{ team.captains|join(' • ') }}</td>
-                                <td class="gw-points">{{ team.live_gw_points }}</td>
-                                <td class="points">{{ team.league_points }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    
+                    <!-- Mobile Cards View -->
+                    <div class="mobile-fixtures mobile-only">
+                        {% for match in data.matches %}
+                        <div class="fixture-card">
+                            <div class="fixture-card-main">
+                                <!-- Team 1 -->
+                                <div class="fixture-team {% if match.points_1 > match.points_2 %}winner{% endif %}">
+                                    <span class="fixture-team-name">
+                                        {% if match.points_1 > match.points_2 %}✓ {% endif %}{{ match.team_1 }}
+                                    </span>
+                                    <div class="team-captains">
+                                        {% for cap in match.captains_1 %}
+                                            <span class="captain-tag">👑 {{ cap }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Score -->
+                                <div class="fixture-score-block">
+                                    <div class="fixture-scores">
+                                        <span class="fixture-pts {% if match.points_1 > match.points_2 %}winning{% endif %}">{{ match.points_1 }}</span>
+                                        <span class="fixture-separator">-</span>
+                                        <span class="fixture-pts {% if match.points_2 > match.points_1 %}winning{% endif %}">{{ match.points_2 }}</span>
+                                    </div>
+                                    <div class="fixture-diff">
+                                        <span class="fixture-diff-badge">{{ (match.points_1 - match.points_2)|abs }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Team 2 -->
+                                <div class="fixture-team {% if match.points_2 > match.points_1 %}winner{% endif %}">
+                                    <span class="fixture-team-name">
+                                        {% if match.points_2 > match.points_1 %}✓ {% endif %}{{ match.team_2 }}
+                                    </span>
+                                    <div class="team-captains">
+                                        {% for cap in match.captains_2 %}
+                                            <span class="captain-tag">👑 {{ cap }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 {% else %}
-                <div style="text-align: center; padding: 2rem; color: #888;">
-                    <p>جاري تحميل البيانات...</p>
-                </div>
+                    <div class="no-data">لا توجد مباريات</div>
                 {% endif %}
-            </div>
+            </section>
+
+            <!-- Standings Section (Left side in RTL) -->
+            <section class="standings-section">
+                <h2 class="section-title">
+                    🏆 ترتيب الدوري
+                    {% if data.is_live %}
+                        <span class="live-badge">🔴 مباشر</span>
+                    {% endif %}
+                </h2>
+                
+                {% if data.standings %}
+                    <!-- Desktop Table -->
+                    <div class="standings-table-container desktop-only">
+                        <table class="standings-table">
+                            <thead>
+                                <tr>
+                                    <th>م</th>
+                                    <th>الفريق</th>
+                                    <th class="captains-cell">الكباتن</th>
+                                    <th>ن.ج</th>
+                                    <th>ن.د</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for team in data.standings %}
+                                <tr class="{% if loop.index <= 3 %}top-three{% endif %}">
+                                    <td class="rank-cell">
+                                        {% if loop.index == 1 %}
+                                            <span class="rank-badge gold">🥇</span>
+                                        {% elif loop.index == 2 %}
+                                            <span class="rank-badge silver">🥈</span>
+                                        {% elif loop.index == 3 %}
+                                            <span class="rank-badge bronze">🥉</span>
+                                        {% else %}
+                                            {{ team.rank }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="name-cell">{{ team.team_name }}</td>
+                                    <td class="captains-cell">{{ team.captains|join(' • ') }}</td>
+                                    <td class="gw-points-cell">{{ team.live_gw_points }}</td>
+                                    <td class="league-points-cell">{{ team.league_points }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Mobile Standings -->
+                    <div class="mobile-standings mobile-only">
+                        <div class="mobile-standings-header">
+                            <span class="msh-rank">م</span>
+                            <span class="msh-name">الفريق</span>
+                            <span class="msh-gw">ن.ج</span>
+                            <span class="msh-lp">ن.د</span>
+                        </div>
+                        {% for team in data.standings %}
+                        <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %}">
+                            <div class="mobile-standing-main">
+                                <span class="ms-rank">
+                                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ team.rank }}{% endif %}
+                                </span>
+                                <span class="ms-name">{{ team.team_name }}</span>
+                                <span class="ms-gw">{{ team.live_gw_points }}</span>
+                                <span class="ms-lp">{{ team.league_points }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-data">جاري تحميل البيانات...</div>
+                {% endif %}
+            </section>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer style="text-align: center; padding: 2rem; color: #888; font-size: 0.8rem;">
         <p>دوري المدن - بطولة عشاق الفانتازي في ليبيا</p>
-        <p style="margin-top: 0.5rem;">كل فريق يتكون من 3 مديرين</p>
+        <p style="margin-top: 0.25rem; color: #666;">كل فريق يتكون من 3 مديرين</p>
     </footer>
 </body>
 </html>
