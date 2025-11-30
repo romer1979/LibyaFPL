@@ -157,8 +157,67 @@ def get_arab_league_data():
             e['id']: {
                 'total_points': e['stats']['total_points'],
                 'minutes': e['stats']['minutes'],
+                'bps': e['stats']['bps'],
+                'bonus': e['stats'].get('bonus', 0),
             } for e in live_data['elements']
         }
+        
+        # Calculate and apply projected bonus points (same as Elite League)
+        def assign_bonus_points(group):
+            """Assign bonus points based on BPS"""
+            group = group.copy()
+            group['bonus'] = 0
+            group = group.sort_values(by='bps', ascending=False)
+            unique_bps = group['bps'].unique()
+            position = 1
+            
+            for bps_score in unique_bps:
+                if position > 3:
+                    break
+                players = group[group['bps'] == bps_score]
+                num = len(players)
+                
+                if position == 1:
+                    group.loc[players.index, 'bonus'] = 3
+                    position += 2 if num > 1 else 1
+                elif position == 2:
+                    group.loc[players.index, 'bonus'] = 2
+                    position = min(position + num, 4)
+                elif position == 3:
+                    group.loc[players.index, 'bonus'] = 1
+                    position += 1
+            
+            return group
+        
+        # Build player list for bonus calculation
+        bonus_players = []
+        for player_data in live_data['elements']:
+            player_id = player_data['id']
+            bps = player_data['stats']['bps']
+            minutes = player_data['stats']['minutes']
+            
+            for fixture_info in player_data.get('explain', []):
+                fixture_id = fixture_info['fixture']
+                if bps > 0 or minutes > 0:
+                    bonus_players.append({
+                        'player_id': player_id,
+                        'fixture_id': fixture_id,
+                        'bps': bps,
+                        'total_points': player_data['stats']['total_points'],
+                        'bonus': 0
+                    })
+                    break
+        
+        if bonus_players:
+            import pandas as pd
+            df = pd.DataFrame(bonus_players)
+            df = df.groupby('fixture_id', group_keys=False).apply(assign_bonus_points)
+            bonus_points_dict = df.set_index('player_id')['bonus'].to_dict()
+            
+            for player_id, stats in live_elements.items():
+                new_bonus = bonus_points_dict.get(player_id, 0)
+                stats['total_points'] += new_bonus - stats.get('bonus', 0)
+                stats['bonus'] = new_bonus
         
         # 3) Get fixtures
         fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
