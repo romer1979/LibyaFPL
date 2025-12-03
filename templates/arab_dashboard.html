@@ -274,10 +274,30 @@
                 <div class="highlight-icon">🕐</div>
                 <div class="highlight-content">
                     <span class="highlight-label">آخر تحديث</span>
-                    <span class="highlight-name">{{ data.last_updated or '-' }}</span>
+                    <span class="highlight-name" id="last-updated-time" data-utc="{{ data.last_updated_utc or '' }}">-</span>
                 </div>
             </div>
         </div>
+
+        <script>
+            // Convert UTC time to user's local timezone
+            (function() {
+                const el = document.getElementById('last-updated-time');
+                const utcTime = el.getAttribute('data-utc');
+                if (utcTime) {
+                    const date = new Date(utcTime);
+                    const options = {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    };
+                    el.textContent = date.toLocaleString('en-GB', options).replace(',', ' -');
+                }
+            })();
+        </script>
 
         <div class="dashboard-grid">
             <!-- Fixtures Section (Right side in RTL) -->

@@ -817,7 +817,7 @@ def get_cities_league_data():
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
             'base_gw': base_gw,  # For debugging
-            'last_updated': datetime.now().strftime('%H:%M'),
+            'last_updated_utc': datetime.utcnow().isoformat() + 'Z',  # UTC ISO format for JS conversion
             'best_team': {
                 'name': best_team[0],
                 'points': best_team[1]

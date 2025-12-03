@@ -777,7 +777,7 @@ def get_libyan_league_data():
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
             'base_gw': base_gw,
-            'last_updated': datetime.now().strftime('%H:%M'),
+            'last_updated_utc': datetime.utcnow().isoformat() + 'Z',
             'best_team': {
                 'name': best_team[0],
                 'points': best_team[1]
