@@ -55,6 +55,13 @@ class DashboardData:
         
         # Check if any fixture in current GW has started
         self.fixtures_started = check_any_fixture_started(self.current_gameweek)
+        
+        # Also check if ALL fixtures are finished (backup check)
+        if not self.gw_finished and self.fixtures_started:
+            fixtures = get_fixtures(self.current_gameweek)
+            all_finished = all(f.get('finished', False) or f.get('finished_provisional', False) for f in fixtures) if fixtures else False
+            if all_finished:
+                self.gw_finished = True
     
     def _initialize_live_data(self):
         """Initialize live data for current gameweek"""

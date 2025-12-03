@@ -12,13 +12,17 @@ import os
 from datetime import datetime
 import time
 from collections import Counter
+from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings
 
 # Configuration
 CITIES_H2H_LEAGUE_ID = 1011575
 TIMEOUT = 15
+LEAGUE_TYPE = 'cities'
 
-# Previous GW standings (GW12)
-PREVIOUS_STANDINGS = {
+# Previous GW standings (GW12) - INITIAL BASELINE ONLY
+# These are used ONLY if no database standings exist
+INITIAL_STANDINGS_GW = 12
+INITIAL_STANDINGS = {
     "جالو": 33,
     "طرميسة": 24,
     "غريان": 24,
@@ -109,14 +113,28 @@ def format_captains(captains_list):
             formatted.append(cap)
     return formatted
 
-def get_previous_rank(team_name):
-    """Get previous rank based on previous standings"""
-    # Sort previous standings by points (descending)
-    sorted_teams = sorted(PREVIOUS_STANDINGS.items(), key=lambda x: -x[1])
+def get_previous_rank(team_name, standings_dict):
+    """Get previous rank based on standings dictionary"""
+    # Sort standings by points (descending)
+    sorted_teams = sorted(standings_dict.items(), key=lambda x: -x[1])
     for i, (name, _) in enumerate(sorted_teams, 1):
         if name == team_name:
             return i
     return 20  # Default to last if not found
+
+def get_base_standings(current_gw):
+    """Get the base standings to build upon.
+    Returns (standings_dict, source_gw) where source_gw is the GW the standings are from.
+    """
+    # Try to get standings from previous gameweek from database
+    prev_gw = current_gw - 1
+    if prev_gw >= INITIAL_STANDINGS_GW:
+        db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
+        if db_standings:
+            return db_standings, prev_gw
+    
+    # Fall back to initial standings
+    return INITIAL_STANDINGS.copy(), INITIAL_STANDINGS_GW
 
 def get_cities_league_data():
     """Fetch all data for Cities League"""
@@ -695,12 +713,15 @@ def get_cities_league_data():
                     'team_2_unique': unique_2,
                 })
         
-        # 8) Build standings with projected points
+        # 8) Get base standings from database or initial standings
+        base_standings, base_gw = get_base_standings(current_gw)
+        
+        # 9) Build standings with projected points
         team_standings = []
         for team_name in TEAMS_FPL_IDS.keys():
-            # Previous league points
-            prev_points = PREVIOUS_STANDINGS.get(team_name, 0)
-            prev_rank = get_previous_rank(team_name)
+            # Previous league points from base standings
+            prev_points = base_standings.get(team_name, 0)
+            prev_rank = get_previous_rank(team_name, base_standings)
             
             # Add points from current GW match
             result = match_results.get(team_name, '')
@@ -731,8 +752,15 @@ def get_cities_league_data():
             team['rank'] = i
             team['rank_change'] = team['prev_rank'] - i  # Positive = moved up
         
-        # Check if live
+        # Check if GW is finished (all fixtures done)
         is_live = any(f.get('started') and not f.get('finished_provisional') for f in fixtures)
+        all_finished = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
+        
+        # 10) Save standings to database if GW is finished
+        if all_finished and not is_live:
+            # Build standings dict to save
+            final_standings = {team['team_name']: team['league_points'] for team in team_standings}
+            save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings)
         
         result = {
             'standings': team_standings,
@@ -740,6 +768,7 @@ def get_cities_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
+            'base_gw': base_gw,  # For debugging
             'last_updated': datetime.now().strftime('%H:%M'),
             'best_team': {
                 'name': best_team[0],

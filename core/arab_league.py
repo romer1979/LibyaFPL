@@ -12,13 +12,16 @@ import os
 from datetime import datetime
 import time
 from collections import Counter
+from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings
 
 # Configuration
 ARAB_H2H_LEAGUE_ID = 1015271
 TIMEOUT = 15
+LEAGUE_TYPE = 'arab'
 
-# Previous GW standings (GW12)
-PREVIOUS_STANDINGS = {
+# Previous GW standings (GW12) - INITIAL BASELINE ONLY
+INITIAL_STANDINGS_GW = 12
+INITIAL_STANDINGS = {
     "العربي القطري": 28,
     "العين": 27,
     "القوة الجوية": 24,
@@ -109,13 +112,22 @@ def format_captains(captains_list):
             formatted.append(cap)
     return formatted
 
-def get_previous_rank(team_name):
-    """Get previous rank based on previous standings"""
-    sorted_teams = sorted(PREVIOUS_STANDINGS.items(), key=lambda x: -x[1])
+def get_previous_rank(team_name, standings_dict):
+    """Get previous rank based on standings dictionary"""
+    sorted_teams = sorted(standings_dict.items(), key=lambda x: -x[1])
     for i, (name, _) in enumerate(sorted_teams, 1):
         if name == team_name:
             return i
     return 20
+
+def get_base_standings(current_gw):
+    """Get the base standings to build upon."""
+    prev_gw = current_gw - 1
+    if prev_gw >= INITIAL_STANDINGS_GW:
+        db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
+        if db_standings:
+            return db_standings, prev_gw
+    return INITIAL_STANDINGS.copy(), INITIAL_STANDINGS_GW
 
 def get_arab_league_data():
     """Fetch all data for Arab Championship"""
@@ -667,11 +679,14 @@ def get_arab_league_data():
                     'team_2_unique': unique_2,
                 })
         
-        # 8) Build standings
+        # 8) Get base standings from database or initial standings
+        base_standings, base_gw = get_base_standings(current_gw)
+        
+        # 9) Build standings
         team_standings = []
         for team_name in TEAMS_FPL_IDS.keys():
-            prev_points = PREVIOUS_STANDINGS.get(team_name, 0)
-            prev_rank = get_previous_rank(team_name)
+            prev_points = base_standings.get(team_name, 0)
+            prev_rank = get_previous_rank(team_name, base_standings)
             
             result = match_results.get(team_name, '')
             if result == 'W':
@@ -700,6 +715,12 @@ def get_arab_league_data():
             team['rank_change'] = team['prev_rank'] - i
         
         is_live = any(f.get('started') and not f.get('finished_provisional') for f in fixtures)
+        all_finished = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
+        
+        # 10) Save standings to database if GW is finished
+        if all_finished and not is_live:
+            final_standings = {team['team_name']: team['league_points'] for team in team_standings}
+            save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings)
         
         result = {
             'standings': team_standings,
@@ -707,6 +728,7 @@ def get_arab_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
+            'base_gw': base_gw,
             'last_updated': datetime.now().strftime('%H:%M'),
             'best_team': {
                 'name': best_team[0],

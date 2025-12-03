@@ -153,3 +153,77 @@ def calculate_rank_change(current_gameweek, entry_id, current_rank):
         return previous.rank - current_rank
     
     return 0
+
+
+class TeamLeagueStandings(db.Model):
+    """Stores team-based league standings (Cities, Libyan, Arab)"""
+    __tablename__ = 'team_league_standings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    league_type = db.Column(db.String(20), nullable=False)  # 'cities', 'libyan', 'arab'
+    gameweek = db.Column(db.Integer, nullable=False)
+    team_name = db.Column(db.String(100), nullable=False)
+    league_points = db.Column(db.Integer, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('league_type', 'gameweek', 'team_name', name='unique_team_league_gw'),
+    )
+    
+    def __repr__(self):
+        return f'<TeamLeagueStandings {self.league_type} GW{self.gameweek} {self.team_name}: {self.league_points}>'
+
+
+def get_team_league_standings(league_type, gameweek):
+    """Get standings for a specific gameweek"""
+    standings = TeamLeagueStandings.query.filter_by(
+        league_type=league_type,
+        gameweek=gameweek
+    ).all()
+    return {s.team_name: s.league_points for s in standings}
+
+
+def get_latest_team_league_standings(league_type):
+    """Get the most recent saved standings for a league"""
+    # Find the latest gameweek that has standings
+    latest = db.session.query(db.func.max(TeamLeagueStandings.gameweek)).filter_by(
+        league_type=league_type
+    ).scalar()
+    
+    if latest:
+        return get_team_league_standings(league_type, latest), latest
+    return {}, 0
+
+
+def save_team_league_standings(league_type, gameweek, standings_dict):
+    """Save standings for a gameweek
+    standings_dict: {team_name: league_points}
+    """
+    for team_name, points in standings_dict.items():
+        existing = TeamLeagueStandings.query.filter_by(
+            league_type=league_type,
+            gameweek=gameweek,
+            team_name=team_name
+        ).first()
+        
+        if existing:
+            existing.league_points = points
+            existing.updated_at = datetime.utcnow()
+        else:
+            new_standing = TeamLeagueStandings(
+                league_type=league_type,
+                gameweek=gameweek,
+                team_name=team_name,
+                league_points=points
+            )
+            db.session.add(new_standing)
+    
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving team league standings: {e}")
+        return False
