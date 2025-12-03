@@ -762,11 +762,13 @@ def get_arab_league_data():
             team['rank'] = i
             team['rank_change'] = team['prev_rank'] - i
         
-        is_live = any(f.get('started') and not f.get('finished_provisional') for f in fixtures)
+        # Check GW status
+        any_started = any(f.get('started', False) for f in fixtures)
         all_finished = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
+        is_live = any_started and not all_finished
         
         # 10) Save standings to database if GW is finished
-        if all_finished and not is_live:
+        if all_finished:
             final_standings = {team['team_name']: team['league_points'] for team in team_standings}
             save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings)
         
@@ -776,7 +778,7 @@ def get_arab_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
-            'gw_finished': all_finished and not is_live,
+            'gw_finished': all_finished,
             'base_gw': base_gw,
             'last_updated_utc': datetime.utcnow().isoformat() + 'Z',
             'best_team': {
