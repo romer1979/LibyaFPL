@@ -227,7 +227,17 @@ def save_team_league_standings(league_type, gameweek, standings_dict):
         db.session.rollback()
         print(f"Error saving team league standings: {e}")
         return False
-True)
+
+
+# ============================================
+# THE 100 LEAGUE MODELS
+# ============================================
+
+class The100QualifiedManager(db.Model):
+    """Stores the 100 qualified managers after GW19"""
+    __tablename__ = 'the100_qualified'
+    
+    id = db.Column(db.Integer, primary_key=True)
     entry_id = db.Column(db.Integer, nullable=False, unique=True)
     manager_name = db.Column(db.String(100), nullable=False)
     team_name = db.Column(db.String(100))
