@@ -266,3 +266,56 @@ def check_any_fixture_started(gameweek):
         return any(f.get('started', False) for f in fixtures)
     except:
         return False
+
+
+def is_gameweek_finished(gameweek, fixtures=None):
+    """
+    Check if a gameweek is truly finished.
+    Returns True only if:
+    1. All fixtures have finished
+    2. At least 24 hours have passed since the last match ended
+    
+    This ensures bonus points and corrections are finalized.
+    """
+    from datetime import datetime, timezone, timedelta
+    
+    if fixtures is None:
+        try:
+            fixtures = get_fixtures(gameweek)
+        except:
+            return False
+    
+    if not fixtures:
+        return False
+    
+    # Check if all fixtures have finished
+    all_finished = all(
+        f.get('finished', False) or f.get('finished_provisional', False) 
+        for f in fixtures
+    )
+    
+    if not all_finished:
+        return False
+    
+    # Find the latest kickoff time
+    latest_kickoff = None
+    for f in fixtures:
+        kickoff_str = f.get('kickoff_time')
+        if kickoff_str:
+            try:
+                # Parse kickoff time (format: 2024-01-13T14:00:00Z)
+                kickoff = datetime.fromisoformat(kickoff_str.replace('Z', '+00:00'))
+                if latest_kickoff is None or kickoff > latest_kickoff:
+                    latest_kickoff = kickoff
+            except:
+                pass
+    
+    if latest_kickoff is None:
+        return False
+    
+    # Add ~2.5 hours for match duration + 24 hours buffer = 26.5 hours
+    # This ensures bonus points and corrections are finalized
+    finish_threshold = latest_kickoff + timedelta(hours=26, minutes=30)
+    now_utc = datetime.now(timezone.utc)
+    
+    return now_utc >= finish_threshold
