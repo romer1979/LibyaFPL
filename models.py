@@ -227,3 +227,159 @@ def save_team_league_standings(league_type, gameweek, standings_dict):
         db.session.rollback()
         print(f"Error saving team league standings: {e}")
         return False
+True)
+    entry_id = db.Column(db.Integer, nullable=False, unique=True)
+    manager_name = db.Column(db.String(100), nullable=False)
+    team_name = db.Column(db.String(100))
+    qualification_rank = db.Column(db.Integer, nullable=False)
+    qualification_total = db.Column(db.Integer, default=0)
+    is_winner = db.Column(db.Boolean, default=False)  # Previous season champion
+    
+    # Elimination tracking
+    eliminated_gw = db.Column(db.Integer, nullable=True)  # GW when eliminated (null = still in)
+    final_rank = db.Column(db.Integer, nullable=True)  # Final rank when eliminated
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<The100Qualified {self.manager_name} Q#{self.qualification_rank}>'
+
+
+class The100EliminationResult(db.Model):
+    """Stores weekly elimination results"""
+    __tablename__ = 'the100_eliminations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    gameweek = db.Column(db.Integer, nullable=False)
+    entry_id = db.Column(db.Integer, nullable=False)
+    manager_name = db.Column(db.String(100))
+    team_name = db.Column(db.String(100))
+    gw_points = db.Column(db.Integer, default=0)
+    gw_rank = db.Column(db.Integer)  # Rank within that GW (e.g., 95-100 for bottom 6)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('gameweek', 'entry_id', name='unique_the100_elim_gw_entry'),
+    )
+    
+    def __repr__(self):
+        return f'<The100Elimination GW{self.gameweek} {self.manager_name}>'
+
+
+class The100ChampionshipMatch(db.Model):
+    """Stores championship bracket matches (GW34-37)"""
+    __tablename__ = 'the100_championship'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    gameweek = db.Column(db.Integer, nullable=False)
+    round_name = db.Column(db.String(20))  # 'round_16', 'quarter', 'semi', 'final'
+    match_number = db.Column(db.Integer)  # 1-8 for R16, 1-4 for QF, etc.
+    
+    # Participants
+    entry_1_id = db.Column(db.Integer)
+    entry_1_name = db.Column(db.String(100))
+    entry_1_points = db.Column(db.Integer, default=0)
+    
+    entry_2_id = db.Column(db.Integer)
+    entry_2_name = db.Column(db.String(100))
+    entry_2_points = db.Column(db.Integer, default=0)
+    
+    # Result
+    winner_id = db.Column(db.Integer, nullable=True)
+    is_complete = db.Column(db.Boolean, default=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('gameweek', 'round_name', 'match_number', name='unique_the100_champ_match'),
+    )
+    
+    def __repr__(self):
+        return f'<The100Championship GW{self.gameweek} {self.round_name} #{self.match_number}>'
+
+
+# Helper functions for The 100
+def get_the100_qualified_managers():
+    """Get all qualified managers"""
+    return The100QualifiedManager.query.filter(
+        The100QualifiedManager.eliminated_gw.is_(None)
+    ).order_by(The100QualifiedManager.qualification_rank).all()
+
+
+def get_the100_eliminated_in_gw(gameweek):
+    """Get managers eliminated in a specific gameweek"""
+    return The100EliminationResult.query.filter_by(gameweek=gameweek).all()
+
+
+def save_the100_qualified_managers(managers_list):
+    """
+    Save the initial 100 qualified managers (called after GW19)
+    managers_list: list of dicts with entry_id, manager_name, team_name, qualification_rank, qualification_total, is_winner
+    """
+    for manager in managers_list:
+        existing = The100QualifiedManager.query.filter_by(
+            entry_id=manager['entry_id']
+        ).first()
+        
+        if not existing:
+            new_manager = The100QualifiedManager(
+                entry_id=manager['entry_id'],
+                manager_name=manager['manager_name'],
+                team_name=manager['team_name'],
+                qualification_rank=manager['qualification_rank'],
+                qualification_total=manager.get('qualification_total', 0),
+                is_winner=manager.get('is_winner', False)
+            )
+            db.session.add(new_manager)
+    
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving The 100 qualified managers: {e}")
+        return False
+
+
+def save_the100_elimination(gameweek, eliminated_managers):
+    """
+    Save elimination results for a gameweek
+    eliminated_managers: list of dicts with entry_id, manager_name, team_name, gw_points, gw_rank
+    """
+    for manager in eliminated_managers:
+        # Save to elimination results
+        existing = The100EliminationResult.query.filter_by(
+            gameweek=gameweek,
+            entry_id=manager['entry_id']
+        ).first()
+        
+        if not existing:
+            new_elim = The100EliminationResult(
+                gameweek=gameweek,
+                entry_id=manager['entry_id'],
+                manager_name=manager['manager_name'],
+                team_name=manager.get('team_name', ''),
+                gw_points=manager.get('gw_points', 0),
+                gw_rank=manager.get('gw_rank', 0)
+            )
+            db.session.add(new_elim)
+        
+        # Update qualified manager record
+        qualified = The100QualifiedManager.query.filter_by(
+            entry_id=manager['entry_id']
+        ).first()
+        
+        if qualified:
+            qualified.eliminated_gw = gameweek
+            qualified.final_rank = manager.get('gw_rank', 0)
+    
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving The 100 eliminations: {e}")
+        return False
