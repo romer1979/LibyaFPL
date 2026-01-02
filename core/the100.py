@@ -660,6 +660,35 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                 is_live = elim_data['is_live']
                 gw_started = elim_data['gw_started']
                 gw_finished = elim_data['gw_finished']
+                
+                # AUTO-PROCESS ELIMINATIONS when gameweek is finished
+                if gw_finished and DB_AVAILABLE and standings:
+                    try:
+                        # Check if this GW's eliminations have already been processed
+                        existing_elim = The100EliminationResult.query.filter_by(
+                            gameweek=current_gw
+                        ).first()
+                        
+                        if not existing_elim:
+                            # Get bottom 6 (to be eliminated)
+                            # But only from managers who haven't been eliminated yet
+                            active_standings = [s for s in standings if s.get('live_rank')]
+                            
+                            if len(active_standings) > ELIMINATIONS_PER_GW:
+                                eliminated = active_standings[-ELIMINATIONS_PER_GW:]
+                                
+                                eliminated_list = [{
+                                    'entry_id': m['entry_id'],
+                                    'manager_name': m['manager_name'],
+                                    'team_name': m['team_name'],
+                                    'gw_points': m['live_gw_points'],
+                                    'gw_rank': m['live_rank']
+                                } for m in eliminated]
+                                
+                                save_the100_elimination(current_gw, eliminated_list)
+                                print(f"Auto-processed GW{current_gw} eliminations: {[m['manager_name'] for m in eliminated_list]}")
+                    except Exception as e:
+                        print(f"Error auto-processing eliminations: {e}")
             else:
                 standings = qualified
                 is_live = False
