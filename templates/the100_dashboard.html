@@ -49,7 +49,7 @@
             background: #222;
         }
         
-        /* Safe Zone - Top 100 */
+        /* Safe Zone - Qualified / Safe */
         .standings-table tr.safe-zone {
             background: rgba(74, 222, 128, 0.05);
         }
@@ -79,12 +79,12 @@
             color: #fbbf24;
         }
         
-        /* Cutoff Row - 100th place */
+        /* Cutoff Row - 99th place (qualification) or safe line (elimination) */
         .standings-table tr.cutoff-row {
             border-bottom: 3px solid #4ade80;
         }
         
-        /* Danger Zone - 101+ */
+        /* Danger Zone - Outside qualification / Elimination zone */
         .standings-table tr.danger-zone {
             background: rgba(248, 113, 113, 0.05);
         }
@@ -95,6 +95,20 @@
         
         .standings-table tr.danger-zone .rank {
             color: #f87171;
+        }
+        
+        /* Elimination zone (bottom 6) */
+        .standings-table tr.elimination-zone {
+            background: rgba(248, 113, 113, 0.15);
+        }
+        
+        .standings-table tr.elimination-zone:hover {
+            background: rgba(248, 113, 113, 0.2);
+        }
+        
+        .standings-table tr.elimination-zone .rank {
+            color: #f87171;
+            font-weight: 800;
         }
         
         /* Top 3 medals */
@@ -198,6 +212,12 @@
             color: #f87171;
         }
         
+        .zone-indicator.elimination {
+            background: rgba(248, 113, 113, 0.3);
+            color: #f87171;
+            border: 1px solid #f87171;
+        }
+        
         /* Search box */
         .search-box {
             padding: 0.75rem 1rem;
@@ -268,6 +288,16 @@
             50% { opacity: 0.5; }
         }
         
+        /* Qualification rank badge */
+        .qual-rank {
+            font-size: 0.7rem;
+            color: #666;
+            background: #222;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            margin-right: 0.25rem;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .standings-table {
@@ -295,6 +325,10 @@
             .chip:not(.active) {
                 display: none;
             }
+            
+            .qual-rank {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -311,6 +345,9 @@
             </a>
             <div class="header-nav">
                 <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
+                {% if data.is_live %}
+                <span class="live-badge">LIVE</span>
+                {% endif %}
                 <a href="/" class="nav-link home-btn">🏠</a>
             </div>
         </div>
@@ -320,22 +357,24 @@
     <main class="main-container">
         <!-- Phase Tabs -->
         <div class="phase-tabs">
-            <button class="phase-tab active" onclick="showPhase('qualification')">
+            <button class="phase-tab {% if data.phase == 'qualification' %}active{% endif %}" onclick="showPhase('qualification')">
                 <span class="tab-icon">🏃</span>
                 مرحلة التأهل
             </button>
-            <button class="phase-tab" onclick="showPhase('elimination')">
+            <button class="phase-tab {% if data.phase == 'elimination' %}active{% endif %}" onclick="showPhase('elimination')">
                 <span class="tab-icon">⚔️</span>
                 مرحلة الإقصاء
             </button>
-            <button class="phase-tab" onclick="showPhase('championship')">
+            <button class="phase-tab {% if data.phase == 'championship' %}active{% endif %}" onclick="showPhase('championship')">
                 <span class="tab-icon">🏆</span>
                 مرحلة البطولة
             </button>
         </div>
 
-        <!-- Qualification Phase -->
-        <div id="phase-qualification" class="phase-content active">
+        <!-- ============================================ -->
+        <!-- QUALIFICATION PHASE -->
+        <!-- ============================================ -->
+        <div id="phase-qualification" class="phase-content {% if data.phase == 'qualification' %}active{% endif %}">
             <!-- Stats Overview -->
             <div class="section">
                 <div class="section-header">
@@ -351,7 +390,7 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">✅</div>
-                            <div class="stat-value">99+</div>
+                            <div class="stat-value">100</div>
                             <div class="stat-label">المتأهلين</div>
                         </div>
                         <div class="stat-card">
@@ -380,13 +419,13 @@
                 </div>
                 <div class="section-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                        <input type="text" class="search-box" id="searchBox" placeholder="🔍 ابحث عن مدير..." oninput="filterTable()">
+                        <input type="text" class="search-box" id="searchBoxQual" placeholder="🔍 ابحث عن مدير..." oninput="filterTable('qualification')">
                         <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
                     </div>
                     
-                    {% if data.standings %}
+                    {% if data.phase == 'qualification' and data.standings %}
                     <div class="standings-container">
-                        <table class="standings-table" id="standingsTable">
+                        <table class="standings-table" id="standingsTableQual">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -432,6 +471,12 @@
                             </tbody>
                         </table>
                     </div>
+                    {% elif data.phase != 'qualification' %}
+                    <div class="coming-soon-message">
+                        <div class="icon">✅</div>
+                        <h3>انتهت مرحلة التأهل</h3>
+                        <p>تم تحديد المتأهلين الـ 100 للمرحلة التالية</p>
+                    </div>
                     {% else %}
                     <div class="loading">
                         <div class="loading-spinner"></div>
@@ -442,19 +487,21 @@
             </div>
         </div>
 
-        <!-- Elimination Phase -->
-        <div id="phase-elimination" class="phase-content">
+        <!-- ============================================ -->
+        <!-- ELIMINATION PHASE -->
+        <!-- ============================================ -->
+        <div id="phase-elimination" class="phase-content {% if data.phase == 'elimination' %}active{% endif %}">
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">⚔️ إحصائيات الإقصاء</h2>
-                    <span class="section-badge">الجولات 20-34</span>
+                    <span class="section-badge">الجولات 20-33</span>
                 </div>
                 <div class="section-content">
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon">👥</div>
-                            <div class="stat-value">100</div>
-                            <div class="stat-label">بداية المرحلة</div>
+                            <div class="stat-value">{{ data.remaining_managers or 100 }}</div>
+                            <div class="stat-label">المتبقين</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">🎯</div>
@@ -463,13 +510,13 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">💀</div>
-                            <div class="stat-value">6</div>
+                            <div class="stat-value">{{ data.eliminations_per_gw or 6 }}</div>
                             <div class="stat-label">يخرجون كل جولة</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">📅</div>
-                            <div class="stat-value">-</div>
-                            <div class="stat-label">الجولة الحالية</div>
+                            <div class="stat-value">{{ data.gws_remaining or '-' }}</div>
+                            <div class="stat-label">جولات متبقية</div>
                         </div>
                     </div>
                 </div>
@@ -477,24 +524,88 @@
 
             <div class="section">
                 <div class="section-header">
-                    <h2 class="section-title">📋 ترتيب الإقصاء</h2>
+                    <h2 class="section-title">📋 ترتيب الجولة {% if data.is_live %}<span class="live-badge">LIVE</span>{% endif %}</h2>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <span class="zone-indicator safe">✅ آمن ({{ data.safe_count or '-' }})</span>
+                        <span class="zone-indicator winner">🏆 البطل</span>
+                        <span class="zone-indicator elimination">💀 منطقة الإقصاء ({{ data.eliminations_per_gw or 6 }})</span>
+                    </div>
                 </div>
                 <div class="section-content">
+                    {% if data.phase == 'elimination' and data.standings %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <input type="text" class="search-box" id="searchBoxElim" placeholder="🔍 ابحث عن مدير..." oninput="filterTable('elimination')">
+                        <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
+                    </div>
+                    
+                    <div class="standings-container">
+                        <table class="standings-table" id="standingsTableElim">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>المدرب</th>
+                                    <th>اسم الفريق</th>
+                                    <th>الكابتن</th>
+                                    <th>نقاط GW</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for team in data.standings %}
+                                <tr class="{% if team.is_winner %}winner-zone{% elif team.in_elimination_zone %}elimination-zone{% elif team.is_safe %}safe-zone{% endif %}{% if team.live_rank == data.safe_count %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}">
+                                    <td class="rank">
+                                        {% if team.live_rank == 1 %}
+                                            <span class="medal">🥇</span>
+                                        {% elif team.live_rank == 2 %}
+                                            <span class="medal">🥈</span>
+                                        {% elif team.live_rank == 3 %}
+                                            <span class="medal">🥉</span>
+                                        {% else %}
+                                            {{ team.live_rank }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="manager-cell">
+                                        <span class="qual-rank">#{{ team.qualification_rank }}</span>
+                                        {{ team.manager_name }}
+                                        {% if team.is_winner %}🏆{% endif %}
+                                    </td>
+                                    <td class="team-name-cell">{{ team.team_name }}</td>
+                                    <td class="captain">{{ team.captain or '-' }}</td>
+                                    <td class="total-points">{{ team.live_gw_points }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% elif data.phase == 'qualification' %}
                     <div class="coming-soon-message">
                         <div class="icon">⏳</div>
                         <h3>لم تبدأ بعد</h3>
                         <p>مرحلة الإقصاء تبدأ من الجولة 20</p>
                     </div>
+                    {% elif data.phase == 'championship' %}
+                    <div class="coming-soon-message">
+                        <div class="icon">✅</div>
+                        <h3>انتهت مرحلة الإقصاء</h3>
+                        <p>تم تحديد الـ 16 المتأهلين لمرحلة البطولة</p>
+                    </div>
+                    {% else %}
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>جاري تحميل البيانات...</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Championship Phase -->
-        <div id="phase-championship" class="phase-content">
+        <!-- ============================================ -->
+        <!-- CHAMPIONSHIP PHASE -->
+        <!-- ============================================ -->
+        <div id="phase-championship" class="phase-content {% if data.phase == 'championship' %}active{% endif %}">
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏆 مرحلة البطولة</h2>
-                    <span class="section-badge">الجولات 35-38</span>
+                    <span class="section-badge">الجولات 34-37</span>
                 </div>
                 <div class="section-content">
                     <div class="stats-grid">
@@ -527,11 +638,18 @@
                     <h2 class="section-title">🏅 شجرة البطولة</h2>
                 </div>
                 <div class="section-content">
+                    {% if data.phase == 'championship' and data.bracket %}
+                    <!-- Championship bracket will be rendered here -->
+                    <div class="bracket-container">
+                        <p>شجرة البطولة قيد الإنشاء...</p>
+                    </div>
+                    {% else %}
                     <div class="coming-soon-message">
                         <div class="icon">⏳</div>
                         <h3>لم تبدأ بعد</h3>
-                        <p>مرحلة البطولة تبدأ من الجولة 35</p>
+                        <p>مرحلة البطولة تبدأ من الجولة 34</p>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -557,9 +675,18 @@
             event.target.closest('.phase-tab').classList.add('active');
         }
         
-        function filterTable() {
-            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-            const rows = document.querySelectorAll('#standingsTable tbody tr');
+        function filterTable(phase) {
+            let searchBoxId, tableId;
+            if (phase === 'qualification') {
+                searchBoxId = 'searchBoxQual';
+                tableId = 'standingsTableQual';
+            } else if (phase === 'elimination') {
+                searchBoxId = 'searchBoxElim';
+                tableId = 'standingsTableElim';
+            }
+            
+            const searchTerm = document.getElementById(searchBoxId).value.toLowerCase();
+            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
             
             rows.forEach(row => {
                 const manager = row.getAttribute('data-manager') || '';
@@ -572,6 +699,13 @@
                 }
             });
         }
+        
+        // Auto-refresh every 60 seconds if live
+        {% if data.is_live %}
+        setTimeout(function() {
+            location.reload();
+        }, 60000);
+        {% endif %}
     </script>
 </body>
 </html>
