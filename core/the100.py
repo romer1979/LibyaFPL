@@ -380,30 +380,12 @@ def get_elimination_standings(current_gw, qualified_managers):
     # Check if all fixtures finished
     all_fixtures_finished = all(f.get('finished', False) or f.get('finished_provisional', False) for f in fixtures) if fixtures else False
     
-    # Check if 24 hours have passed since the last match ended
-    gw_finished = False
-    if all_fixtures_finished and fixtures:
-        from datetime import timezone, timedelta
-        
-        # Find the latest kickoff time
-        latest_kickoff = None
-        for f in fixtures:
-            kickoff_str = f.get('kickoff_time')
-            if kickoff_str:
-                try:
-                    # Parse kickoff time (format: 2024-01-13T14:00:00Z)
-                    kickoff = datetime.fromisoformat(kickoff_str.replace('Z', '+00:00'))
-                    if latest_kickoff is None or kickoff > latest_kickoff:
-                        latest_kickoff = kickoff
-                except:
-                    pass
-        
-        if latest_kickoff:
-            # Add ~2.5 hours for match duration + 24 hours buffer = 26.5 hours
-            # This ensures bonus points and corrections are finalized
-            finish_threshold = latest_kickoff + timedelta(hours=26, minutes=30)
-            now_utc = datetime.now(timezone.utc)
-            gw_finished = now_utc >= finish_threshold
+    # Use the shared 24-hour buffer check ONLY for auto-saving eliminations
+    from core.fpl_api import is_gameweek_finished as check_gw_finished
+    gw_finished_for_save = check_gw_finished(current_gw, fixtures)
+    
+    # For display: GW is finished when all matches are done
+    gw_finished_display = all_fixtures_finished
     
     # Get live data
     live_data = fetch_json(f"https://fantasy.premierleague.com/api/event/{current_gw}/live/", cookies)
@@ -481,8 +463,9 @@ def get_elimination_standings(current_gw, qualified_managers):
         'standings': standings,
         'gameweek': current_gw,
         'gw_started': gw_started,
-        'gw_finished': gw_finished,
-        'is_live': gw_started and not gw_finished,
+        'gw_finished': gw_finished_display,  # For display
+        'gw_finished_for_save': gw_finished_for_save,  # For auto-save logic
+        'is_live': gw_started and not all_fixtures_finished,
     }
 
 
@@ -686,9 +669,10 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                 is_live = elim_data['is_live']
                 gw_started = elim_data['gw_started']
                 gw_finished = elim_data['gw_finished']
+                gw_finished_for_save = elim_data.get('gw_finished_for_save', False)
                 
-                # AUTO-PROCESS ELIMINATIONS when gameweek is finished
-                if gw_finished and DB_AVAILABLE and standings:
+                # AUTO-PROCESS ELIMINATIONS when 24 hours have passed
+                if gw_finished_for_save and DB_AVAILABLE and standings:
                     try:
                         # Check if this GW's eliminations have already been processed
                         existing_elim = The100EliminationResult.query.filter_by(
