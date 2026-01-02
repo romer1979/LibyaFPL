@@ -13,6 +13,7 @@ from datetime import datetime
 import time
 from collections import Counter
 from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings
+from core.fpl_api import is_gameweek_finished
 
 # Configuration
 CITIES_H2H_LEAGUE_ID = 1011575
@@ -802,11 +803,14 @@ def get_cities_league_data():
         
         # Check GW status
         any_started = any(f.get('started', False) for f in fixtures)
-        all_finished = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
-        is_live = any_started and not all_finished
+        all_matches_done = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
         
-        # 10) Save standings to database if GW is finished
-        if all_finished:
+        # Use 24-hour buffer for gw_finished (for saving standings)
+        gw_finished = is_gameweek_finished(current_gw, fixtures)
+        is_live = any_started and not all_matches_done
+        
+        # 10) Save standings to database if GW is finished (24 hours after last match)
+        if gw_finished:
             # Build standings dict to save
             final_standings = {team['team_name']: team['league_points'] for team in team_standings}
             save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings)
@@ -817,7 +821,7 @@ def get_cities_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
-            'gw_finished': all_finished,
+            'gw_finished': gw_finished,
             'base_gw': base_gw,  # For debugging
             'last_updated_utc': datetime.utcnow().isoformat() + 'Z',  # UTC ISO format for JS conversion
             'best_team': {
