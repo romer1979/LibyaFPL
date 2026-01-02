@@ -324,6 +324,178 @@ def init_gw13_standings():
     })
 
 
+@app.route('/admin/the100/init-qualified')
+def init_the100_qualified():
+    """Initialize the 100 qualified managers after GW19 - run once"""
+    from models import The100QualifiedManager, save_the100_qualified_managers
+    from core.the100 import get_qualification_standings, WINNER_ENTRY_ID, THE100_LEAGUE_ID
+    
+    # Check if already initialized
+    existing = The100QualifiedManager.query.first()
+    if existing:
+        count = The100QualifiedManager.query.count()
+        return jsonify({
+            'status': 'already_exists',
+            'message': f'Qualified managers already initialized ({count} managers)'
+        })
+    
+    # Fetch qualification standings
+    qual_standings = get_qualification_standings(THE100_LEAGUE_ID)
+    
+    if not qual_standings:
+        return jsonify({'status': 'error', 'message': 'Could not fetch qualification standings'})
+    
+    # Determine qualified managers (top 99 + winner)
+    qualified = []
+    winner_in_top_99 = False
+    
+    # Check if winner is in top 99
+    for row in qual_standings:
+        if row.get('entry') == WINNER_ENTRY_ID and row.get('rank', 0) <= 99:
+            winner_in_top_99 = True
+            break
+    
+    # Build qualified list
+    count_non_winner = 0
+    for row in qual_standings:
+        entry_id = row.get('entry')
+        rank = row.get('rank', 0)
+        is_winner = (entry_id == WINNER_ENTRY_ID)
+        
+        if winner_in_top_99:
+            if rank <= 100:
+                qualified.append({
+                    'entry_id': entry_id,
+                    'manager_name': row.get('player_name', ''),
+                    'team_name': row.get('entry_name', ''),
+                    'qualification_rank': rank,
+                    'qualification_total': row.get('total', 0),
+                    'is_winner': is_winner
+                })
+        else:
+            if is_winner:
+                qualified.append({
+                    'entry_id': entry_id,
+                    'manager_name': row.get('player_name', ''),
+                    'team_name': row.get('entry_name', ''),
+                    'qualification_rank': rank,
+                    'qualification_total': row.get('total', 0),
+                    'is_winner': True
+                })
+            elif count_non_winner < 99:
+                qualified.append({
+                    'entry_id': entry_id,
+                    'manager_name': row.get('player_name', ''),
+                    'team_name': row.get('entry_name', ''),
+                    'qualification_rank': rank,
+                    'qualification_total': row.get('total', 0),
+                    'is_winner': False
+                })
+                count_non_winner += 1
+        
+        if len(qualified) >= 100:
+            break
+    
+    # Save to database
+    success = save_the100_qualified_managers(qualified)
+    
+    if success:
+        return jsonify({
+            'status': 'success',
+            'message': f'Initialized {len(qualified)} qualified managers',
+            'qualified_count': len(qualified),
+            'winner_in_top_99': winner_in_top_99
+        })
+    else:
+        return jsonify({'status': 'error', 'message': 'Failed to save to database'})
+
+
+@app.route('/admin/the100/process-elimination/<int:gameweek>')
+def process_the100_elimination(gameweek):
+    """Process elimination for a specific gameweek"""
+    from models import (
+        The100QualifiedManager, The100EliminationResult,
+        save_the100_elimination
+    )
+    from core.the100 import (
+        get_elimination_standings, ELIMINATION_START_GW, 
+        ELIMINATION_END_GW, ELIMINATIONS_PER_GW
+    )
+    
+    # Validate gameweek
+    if gameweek < ELIMINATION_START_GW or gameweek > ELIMINATION_END_GW:
+        return jsonify({
+            'status': 'error',
+            'message': f'Invalid gameweek. Elimination phase is GW{ELIMINATION_START_GW}-{ELIMINATION_END_GW}'
+        })
+    
+    # Check if already processed
+    existing = The100EliminationResult.query.filter_by(gameweek=gameweek).first()
+    if existing:
+        count = The100EliminationResult.query.filter_by(gameweek=gameweek).count()
+        return jsonify({
+            'status': 'already_processed',
+            'message': f'GW{gameweek} elimination already processed ({count} eliminated)'
+        })
+    
+    # Get remaining qualified managers (not yet eliminated)
+    remaining = The100QualifiedManager.query.filter(
+        The100QualifiedManager.eliminated_gw.is_(None)
+    ).order_by(The100QualifiedManager.qualification_rank).all()
+    
+    if not remaining:
+        return jsonify({'status': 'error', 'message': 'No remaining managers found'})
+    
+    qualified = [{
+        'entry_id': m.entry_id,
+        'manager_name': m.manager_name,
+        'team_name': m.team_name,
+        'qualification_rank': m.qualification_rank,
+        'qualification_total': m.qualification_total,
+        'is_winner': m.is_winner
+    } for m in remaining]
+    
+    # Get standings for this gameweek
+    elim_data = get_elimination_standings(gameweek, qualified)
+    
+    if not elim_data or not elim_data.get('standings'):
+        return jsonify({'status': 'error', 'message': 'Could not fetch elimination standings'})
+    
+    standings = elim_data['standings']
+    
+    # Get bottom 6 (to be eliminated)
+    eliminated = standings[-ELIMINATIONS_PER_GW:]
+    
+    eliminated_list = [{
+        'entry_id': m['entry_id'],
+        'manager_name': m['manager_name'],
+        'team_name': m['team_name'],
+        'gw_points': m['live_gw_points'],
+        'gw_rank': m['live_rank']
+    } for m in eliminated]
+    
+    # Save eliminations
+    success = save_the100_elimination(gameweek, eliminated_list)
+    
+    if success:
+        return jsonify({
+            'status': 'success',
+            'message': f'Processed GW{gameweek} elimination',
+            'eliminated': [m['manager_name'] for m in eliminated_list],
+            'remaining_count': len(qualified) - ELIMINATIONS_PER_GW
+        })
+    else:
+        return jsonify({'status': 'error', 'message': 'Failed to save eliminations'})
+
+
+@app.route('/api/the100')
+def api_the100():
+    """API endpoint for The 100 data"""
+    data = get_the100_standings()
+    data['timestamp'] = datetime.now().strftime('%H:%M:%S')
+    return jsonify(data)
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     app.run(debug=False, host='0.0.0.0', port=port)
