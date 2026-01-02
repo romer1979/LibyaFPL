@@ -804,13 +804,17 @@ def get_cities_league_data():
         # Check GW status
         any_started = any(f.get('started', False) for f in fixtures)
         all_matches_done = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
-        
-        # Use 24-hour buffer for gw_finished (for saving standings)
-        gw_finished = is_gameweek_finished(current_gw, fixtures)
         is_live = any_started and not all_matches_done
         
+        # Use 24-hour buffer ONLY for saving standings to database
+        # This ensures bonus points are finalized before saving
+        gw_finished_for_save = is_gameweek_finished(current_gw, fixtures)
+        
+        # For display purposes, GW is "finished" when all matches are done
+        gw_finished_display = all_matches_done
+        
         # 10) Save standings to database if GW is finished (24 hours after last match)
-        if gw_finished:
+        if gw_finished_for_save:
             # Build standings dict to save
             final_standings = {team['team_name']: team['league_points'] for team in team_standings}
             save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings)
@@ -821,7 +825,7 @@ def get_cities_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
-            'gw_finished': gw_finished,
+            'gw_finished': gw_finished_display,
             'base_gw': base_gw,  # For debugging
             'last_updated_utc': datetime.utcnow().isoformat() + 'Z',  # UTC ISO format for JS conversion
             'best_team': {
