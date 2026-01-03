@@ -79,12 +79,12 @@
             color: #fbbf24;
         }
         
-        /* Cutoff Row - 99th place (qualification) or safe line (elimination) */
+        /* Cutoff Row */
         .standings-table tr.cutoff-row {
             border-bottom: 3px solid #4ade80;
         }
         
-        /* Danger Zone - Outside qualification / Elimination zone */
+        /* Danger Zone */
         .standings-table tr.danger-zone {
             background: rgba(248, 113, 113, 0.05);
         }
@@ -128,6 +128,17 @@
             font-weight: 500;
         }
         
+        .manager-link {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .manager-link:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+        
         .team-name {
             font-size: 0.75rem;
             color: #666;
@@ -168,24 +179,6 @@
         
         .chip.active {
             color: #a78bfa;
-        }
-        
-        /* Rank change arrows */
-        .rank-change {
-            font-size: 0.85rem;
-            min-width: 35px;
-        }
-        
-        .rank-change.up {
-            color: #4ade80;
-        }
-        
-        .rank-change.down {
-            color: #f87171;
-        }
-        
-        .rank-change.same {
-            color: #666;
         }
         
         /* Zone indicator */
@@ -261,7 +254,7 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Live badge */
+        /* Live badge - Arabic */
         .live-badge {
             display: inline-flex;
             align-items: center;
@@ -298,6 +291,177 @@
             margin-right: 0.25rem;
         }
         
+        /* Player dropdown styles */
+        .player-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-toggle {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        
+        .dropdown-toggle:hover {
+            background: #3a3a3a;
+            border-color: #555;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            min-width: 280px;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            padding: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        
+        .dropdown-content.show {
+            display: block;
+        }
+        
+        .player-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            font-size: 0.8rem;
+        }
+        
+        .player-item:hover {
+            background: #2a2a2a;
+        }
+        
+        .player-name {
+            flex: 1;
+        }
+        
+        .player-points {
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .player-badge {
+            font-size: 0.65rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            margin-left: 0.25rem;
+        }
+        
+        /* Player status colors */
+        .player-playing {
+            background: rgba(59, 130, 246, 0.15);
+            border-right: 3px solid #3b82f6;
+        }
+        .player-playing .player-points { color: #3b82f6; }
+        
+        .player-played {
+            background: rgba(156, 163, 175, 0.1);
+            border-right: 3px solid #9ca3af;
+        }
+        .player-played .player-points { color: #9ca3af; }
+        
+        .player-pending {
+            background: rgba(168, 85, 247, 0.1);
+            border-right: 3px solid #a855f7;
+        }
+        .player-pending .player-points { color: #a855f7; }
+        
+        .player-benched {
+            background: rgba(248, 113, 113, 0.1);
+            border-right: 3px solid #f87171;
+        }
+        .player-benched .player-points { color: #f87171; }
+        
+        .player-bench-unused {
+            background: rgba(75, 85, 99, 0.2);
+            border-right: 3px solid #4b5563;
+            opacity: 0.7;
+        }
+        .player-bench-unused .player-points { color: #6b7280; }
+        
+        .player-auto-sub {
+            background: rgba(34, 197, 94, 0.15);
+            border-right: 3px solid #22c55e;
+        }
+        .player-auto-sub .player-points { color: #22c55e; }
+        
+        .captain-badge {
+            background: #fbbf24;
+            color: #000;
+        }
+        
+        .vice-badge {
+            background: #60a5fa;
+            color: #000;
+        }
+        
+        .sub-in-badge {
+            background: #22c55e;
+            color: #000;
+        }
+        
+        .sub-out-badge {
+            background: #ef4444;
+            color: #fff;
+        }
+        
+        .separator {
+            border-top: 1px dashed #444;
+            margin: 0.5rem 0;
+            padding-top: 0.25rem;
+        }
+        
+        .separator-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-align: center;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-top: 1px solid #333;
+            margin-top: 0.5rem;
+            font-size: 0.65rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .standings-table {
@@ -322,12 +486,17 @@
                 display: none;
             }
             
-            .chip:not(.active) {
+            .qual-rank {
                 display: none;
             }
             
-            .qual-rank {
-                display: none;
+            .dropdown-content {
+                position: fixed;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 350px;
             }
         }
     </style>
@@ -346,7 +515,7 @@
             <div class="header-nav">
                 <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
                 {% if data.is_live %}
-                <span class="live-badge">LIVE</span>
+                <span class="live-badge">مباشر</span>
                 {% endif %}
                 <a href="/" class="nav-link home-btn">🏠</a>
             </div>
@@ -433,7 +602,6 @@
                                     <th>اسم الفريق</th>
                                     <th>GW</th>
                                     <th>المجموع</th>
-                                    <th>+/-</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -451,21 +619,14 @@
                                         {% endif %}
                                     </td>
                                     <td class="manager-cell">
-                                        {{ team.manager_name }}
+                                        <a href="https://fantasy.premierleague.com/entry/{{ team.entry_id }}/event/{{ data.gameweek }}" target="_blank" class="manager-link">
+                                            {{ team.manager_name }}
+                                        </a>
                                         {% if team.is_winner %}🏆{% endif %}
                                     </td>
                                     <td class="team-name-cell">{{ team.team_name }}</td>
                                     <td class="gw-points">{{ team.live_gw_points }}</td>
                                     <td class="total-points">{{ team.live_total }}</td>
-                                    <td class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
-                                        {% if team.rank_change > 0 %}
-                                            ▲{{ team.rank_change }}
-                                        {% elif team.rank_change < 0 %}
-                                            ▼{{ team.rank_change|abs }}
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -524,7 +685,7 @@
 
             <div class="section">
                 <div class="section-header">
-                    <h2 class="section-title">📋 ترتيب الجولة {% if data.is_live %}<span class="live-badge">LIVE</span>{% endif %}</h2>
+                    <h2 class="section-title">📋 ترتيب الجولة {% if data.is_live %}<span class="live-badge">مباشر</span>{% endif %}</h2>
                     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                         <span class="zone-indicator safe">✅ آمن ({{ data.safe_count or '-' }})</span>
                         <span class="zone-indicator winner">🏆 البطل</span>
@@ -547,6 +708,7 @@
                                     <th>اسم الفريق</th>
                                     <th>الكابتن</th>
                                     <th>نقاط GW</th>
+                                    <th>الفريق</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -565,12 +727,66 @@
                                     </td>
                                     <td class="manager-cell">
                                         <span class="qual-rank">#{{ team.qualification_rank }}</span>
-                                        {{ team.manager_name }}
+                                        <a href="https://fantasy.premierleague.com/entry/{{ team.entry_id }}/event/{{ data.gameweek }}" target="_blank" class="manager-link">
+                                            {{ team.manager_name }}
+                                        </a>
                                         {% if team.is_winner %}🏆{% endif %}
                                     </td>
                                     <td class="team-name-cell">{{ team.team_name }}</td>
                                     <td class="captain">{{ team.captain or '-' }}</td>
                                     <td class="total-points">{{ team.live_gw_points }}</td>
+                                    <td>
+                                        {% if team.players %}
+                                        <div class="player-dropdown">
+                                            <button class="dropdown-toggle" onclick="toggleDropdown(event, 'dropdown-{{ team.entry_id }}')">
+                                                👥 عرض
+                                            </button>
+                                            <div id="dropdown-{{ team.entry_id }}" class="dropdown-content">
+                                                <div class="player-list">
+                                                    <!-- Starting XI -->
+                                                    {% for player in team.players[:11] %}
+                                                    <div class="player-item {% if player.is_auto_sub_out %}player-benched{% elif player.status == 'playing' %}player-playing{% elif player.status == 'played' %}player-played{% elif player.status == 'pending' %}player-pending{% else %}player-benched{% endif %}">
+                                                        <span class="player-name">
+                                                            {{ player.name }}
+                                                            {% if player.is_captain %}<span class="player-badge captain-badge">C</span>{% endif %}
+                                                            {% if player.is_vice %}<span class="player-badge vice-badge">V</span>{% endif %}
+                                                            {% if player.is_auto_sub_out %}<span class="player-badge sub-out-badge">خرج</span>{% endif %}
+                                                        </span>
+                                                        <span class="player-points">{{ player.points if player.points is not none else '-' }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                    
+                                                    <!-- Bench separator -->
+                                                    <div class="separator">
+                                                        <div class="separator-label">البدلاء</div>
+                                                    </div>
+                                                    
+                                                    <!-- Bench -->
+                                                    {% for player in team.players[11:] %}
+                                                    <div class="player-item {% if player.is_auto_sub_in %}player-auto-sub{% elif player.status == 'played' or player.status == 'playing' %}player-bench-unused{% else %}player-bench-unused{% endif %}">
+                                                        <span class="player-name">
+                                                            {{ player.name }}
+                                                            {% if player.is_auto_sub_in %}<span class="player-badge sub-in-badge">دخل</span>{% endif %}
+                                                        </span>
+                                                        <span class="player-points">{{ player.points if player.points is not none else '-' }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                
+                                                <!-- Legend -->
+                                                <div class="legend">
+                                                    <div class="legend-item"><span class="legend-color" style="background:#3b82f6;"></span> يلعب الآن</div>
+                                                    <div class="legend-item"><span class="legend-color" style="background:#9ca3af;"></span> لعب</div>
+                                                    <div class="legend-item"><span class="legend-color" style="background:#a855f7;"></span> لم يلعب بعد</div>
+                                                    <div class="legend-item"><span class="legend-color" style="background:#22c55e;"></span> بديل دخل</div>
+                                                    <div class="legend-item"><span class="legend-color" style="background:#f87171;"></span> لم يلعب</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -699,6 +915,30 @@
                 }
             });
         }
+        
+        function toggleDropdown(event, dropdownId) {
+            event.stopPropagation();
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown-content.show').forEach(dd => {
+                if (dd.id !== dropdownId) {
+                    dd.classList.remove('show');
+                }
+            });
+            
+            // Toggle this dropdown
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.classList.toggle('show');
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.player-dropdown')) {
+                document.querySelectorAll('.dropdown-content.show').forEach(dd => {
+                    dd.classList.remove('show');
+                });
+            }
+        });
         
         // Auto-refresh every 60 seconds if live
         {% if data.is_live %}
