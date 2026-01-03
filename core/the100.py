@@ -21,6 +21,8 @@ import os
 from datetime import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import Counter
+from config import get_chip_arabic
 
 # Configuration
 THE100_LEAGUE_ID = 8921
@@ -902,5 +904,181 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
             'gameweek': None,
             'total_managers': 0,
             'is_live': False,
+            'error': str(e)
+        }
+
+
+def get_the100_stats():
+    """
+    Get statistics for The 100 league
+    """
+    try:
+        # Get current standings data
+        standings_data = get_the100_standings()
+        
+        if not standings_data or standings_data.get('error'):
+            return {
+                'success': False,
+                'error': standings_data.get('error', 'Failed to fetch standings')
+            }
+        
+        standings = standings_data.get('standings', [])
+        phase = standings_data.get('phase', 'unknown')
+        gameweek = standings_data.get('gameweek')
+        is_live = standings_data.get('is_live', False)
+        
+        if not standings:
+            return {
+                'success': False,
+                'error': 'No standings data available'
+            }
+        
+        # Get bootstrap data for player info
+        bootstrap_data = get_bootstrap_data()
+        player_info = build_player_info(bootstrap_data)
+        
+        # Initialize collectors
+        gw_points = []
+        manager_points = {}
+        captains = []
+        chips_used = []
+        player_ownership = Counter()
+        
+        for team in standings:
+            manager_name = team.get('manager_name', 'Unknown')
+            points = team.get('live_gw_points', 0)
+            
+            gw_points.append(points)
+            manager_points[manager_name] = points
+            
+            # Captain
+            captain_name = team.get('captain', '-')
+            if captain_name and captain_name != '-':
+                captains.append({
+                    'manager': manager_name,
+                    'captain_name': captain_name
+                })
+            
+            # Chips
+            chip = team.get('chip')
+            if chip:
+                chips_used.append({
+                    'manager': manager_name,
+                    'chip': chip,
+                    'chip_ar': get_chip_arabic(chip)
+                })
+            
+            # Player ownership from players list
+            players = team.get('players', [])
+            for i, player in enumerate(players):
+                if i >= 11 and not player.get('is_auto_sub_in'):
+                    continue  # Skip bench players unless they auto-subbed in
+                
+                p_id = player.get('id')
+                if not p_id:
+                    continue
+                
+                if player.get('is_captain'):
+                    if chip == '3xc':
+                        player_ownership[p_id] += 3
+                    else:
+                        player_ownership[p_id] += 2
+                else:
+                    player_ownership[p_id] += 1
+        
+        # Calculate captain stats
+        captain_counts = Counter([c['captain_name'] for c in captains])
+        captain_stats = [
+            {'name': name, 'count': count}
+            for name, count in captain_counts.most_common()
+        ]
+        
+        # Calculate points stats
+        if gw_points:
+            n = len(gw_points)
+            min_points = min(gw_points)
+            max_points = max(gw_points)
+            
+            min_managers = [name for name, pts in manager_points.items() if pts == min_points]
+            max_managers = [name for name, pts in manager_points.items() if pts == max_points]
+            
+            points_stats = {
+                'min': min_points,
+                'min_managers': min_managers,
+                'max': max_points,
+                'max_managers': max_managers,
+                'avg': round(sum(gw_points) / n, 1),
+                'total_managers': n
+            }
+        else:
+            points_stats = {
+                'min': 0, 'min_managers': [],
+                'max': 0, 'max_managers': [],
+                'avg': 0, 'total_managers': 0
+            }
+        
+        # Calculate effective ownership (top 15 players)
+        effective_ownership = []
+        total_managers = len(standings)
+        
+        for element_id, count in player_ownership.most_common(15):
+            player = player_info.get(element_id, {})
+            team_id = player.get('team', 0)
+            team_name = ''
+            for t in bootstrap_data.get('teams', []):
+                if t['id'] == team_id:
+                    team_name = t['short_name']
+                    break
+            
+            percentage = round((count / total_managers) * 100, 1) if total_managers > 0 else 0
+            
+            effective_ownership.append({
+                'name': player.get('name', 'Unknown'),
+                'team': team_name,
+                'count': count,
+                'percentage': percentage
+            })
+        
+        # Elimination phase specific stats
+        elimination_stats = None
+        if phase == 'elimination':
+            remaining = standings_data.get('remaining_managers', 100)
+            eliminated_count = 100 - remaining
+            gws_remaining = standings_data.get('gws_remaining', 0)
+            
+            # Get managers in danger zone
+            danger_zone = [
+                team['manager_name'] 
+                for team in standings 
+                if team.get('in_elimination_zone')
+            ]
+            
+            elimination_stats = {
+                'remaining': remaining,
+                'eliminated': eliminated_count,
+                'gws_remaining': gws_remaining,
+                'danger_zone': danger_zone
+            }
+        
+        return {
+            'success': True,
+            'gameweek': gameweek,
+            'phase': phase,
+            'is_live': is_live,
+            'captain_stats': captain_stats,
+            'chips_used': chips_used,
+            'points_stats': points_stats,
+            'effective_ownership': effective_ownership,
+            'total_managers': total_managers,
+            'elimination_stats': elimination_stats,
+            'last_updated': standings_data.get('last_updated')
+        }
+        
+    except Exception as e:
+        print(f"Error getting The 100 stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
             'error': str(e)
         }
