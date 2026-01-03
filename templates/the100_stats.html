@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>إحصائيات The 100</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
+    <style>
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .page-title h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-title p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .stats-section {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .points-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .point-card {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .point-card.success { border-top: 3px solid #4ade80; }
+        .point-card.danger { border-top: 3px solid #f87171; }
+        .point-card.info { border-top: 3px solid #60a5fa; }
+        
+        .point-card .emoji {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .point-card .label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 0.25rem;
+        }
+        
+        .point-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .point-card .managers {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: 0.25rem;
+        }
+        
+        .point-card.success .value { color: #4ade80; }
+        .point-card.danger .value { color: #f87171; }
+        .point-card.info .value { color: #60a5fa; }
+        
+        /* Captain list */
+        .captain-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .captain-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+        
+        .captain-name {
+            font-weight: 500;
+        }
+        
+        .captain-count {
+            background: #fbbf24;
+            color: #000;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        /* Ownership list */
+        .ownership-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .ownership-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+        
+        .ownership-player {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .ownership-rank {
+            color: #888;
+            font-size: 0.8rem;
+            min-width: 20px;
+        }
+        
+        .ownership-name {
+            font-weight: 500;
+        }
+        
+        .ownership-team {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .ownership-percentage {
+            background: #3b82f6;
+            color: #fff;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        /* Chips list */
+        .chips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .chip-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+        
+        .chip-badge {
+            background: #a78bfa;
+            color: #000;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        /* Elimination stats */
+        .elimination-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .elim-card {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+        
+        .elim-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .elim-card .label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .elim-card.safe .value { color: #4ade80; }
+        .elim-card.eliminated .value { color: #f87171; }
+        .elim-card.remaining .value { color: #60a5fa; }
+        
+        .danger-zone-list {
+            margin-top: 1rem;
+        }
+        
+        .danger-zone-title {
+            font-size: 0.9rem;
+            color: #f87171;
+            margin-bottom: 0.5rem;
+        }
+        
+        .danger-zone-managers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .danger-manager {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        /* No data */
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 2rem;
+        }
+        
+        /* Live badge */
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .live-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .phase-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        
+        .phase-badge.qualification {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        
+        .phase-badge.elimination {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+        
+        .phase-badge.championship {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+        
+        /* Error box */
+        .error-box {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid #f87171;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        /* Header nav */
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .nav-link {
+            color: #888;
+            text-decoration: none;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+        
+        .back-btn {
+            background: #2a2a2a;
+            border: 1px solid #444;
+        }
+        
+        @media (max-width: 768px) {
+            .points-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .elimination-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/league/the100" class="logo">
+                <img src="{{ url_for('static', filename='the100_logo.png') }}" alt="The 100" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-title">The 100</span>
+                    <span class="logo-subtitle">FANTASY PREMIER LEAGUE</span>
+                </div>
+            </a>
+            <div class="header-nav">
+                <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
+                {% if data.is_live %}
+                <span class="live-badge">مباشر</span>
+                {% endif %}
+                <a href="/league/the100" class="nav-link back-btn">← العودة</a>
+                <a href="/" class="nav-link home-btn">🏠</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="stats-container">
+        {% if not data.success %}
+            <div class="error-box">
+                <h2>⚠️ خطأ</h2>
+                <p>{{ data.error }}</p>
+            </div>
+        {% else %}
+            <!-- Page Title -->
+            <div class="page-title">
+                <h1>📊 إحصائيات The 100</h1>
+                <p>
+                    <span class="phase-badge {{ data.phase }}">
+                        {% if data.phase == 'qualification' %}مرحلة التأهل
+                        {% elif data.phase == 'elimination' %}مرحلة الإقصاء
+                        {% elif data.phase == 'championship' %}مرحلة البطولة
+                        {% endif %}
+                    </span>
+                    الجولة {{ data.gameweek }} - {{ data.total_managers }} مدير
+                    {% if data.is_live %}<span class="live-badge">مباشر</span>{% endif %}
+                </p>
+            </div>
+            
+            <div class="stats-grid">
+                <!-- Points Stats -->
+                <div class="stats-section">
+                    <h2 class="section-title">📈 إحصائيات النقاط</h2>
+                    <div class="points-cards">
+                        <div class="point-card success">
+                            <div class="emoji">👑</div>
+                            <div class="label">أعلى نقاط</div>
+                            <div class="value">{{ data.points_stats.max }}</div>
+                            <div class="managers">
+                                {% for m in data.points_stats.max_managers[:2] %}
+                                    {{ m }}{% if not loop.last %}، {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="point-card info">
+                            <div class="emoji">📊</div>
+                            <div class="label">المعدل</div>
+                            <div class="value">{{ data.points_stats.avg }}</div>
+                        </div>
+                        <div class="point-card danger">
+                            <div class="emoji">🪤</div>
+                            <div class="label">أقل نقاط</div>
+                            <div class="value">{{ data.points_stats.min }}</div>
+                            <div class="managers">
+                                {% for m in data.points_stats.min_managers[:2] %}
+                                    {{ m }}{% if not loop.last %}، {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Elimination Stats (only in elimination phase) -->
+                {% if data.phase == 'elimination' and data.elimination_stats %}
+                <div class="stats-section">
+                    <h2 class="section-title">⚔️ إحصائيات الإقصاء</h2>
+                    <div class="elimination-stats">
+                        <div class="elim-card safe">
+                            <div class="value">{{ data.elimination_stats.remaining }}</div>
+                            <div class="label">متبقين</div>
+                        </div>
+                        <div class="elim-card eliminated">
+                            <div class="value">{{ data.elimination_stats.eliminated }}</div>
+                            <div class="label">خرجوا</div>
+                        </div>
+                        <div class="elim-card remaining">
+                            <div class="value">{{ data.elimination_stats.gws_remaining }}</div>
+                            <div class="label">جولات متبقية</div>
+                        </div>
+                    </div>
+                    
+                    {% if data.elimination_stats.danger_zone %}
+                    <div class="danger-zone-list">
+                        <div class="danger-zone-title">💀 منطقة الإقصاء هذه الجولة:</div>
+                        <div class="danger-zone-managers">
+                            {% for manager in data.elimination_stats.danger_zone %}
+                            <span class="danger-manager">{{ manager }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Captain Stats -->
+                <div class="stats-section">
+                    <h2 class="section-title">👑 الكباتن</h2>
+                    {% if data.captain_stats %}
+                    <div class="captain-list">
+                        {% for captain in data.captain_stats[:10] %}
+                        <div class="captain-item">
+                            <span class="captain-name">{{ captain.name }}</span>
+                            <span class="captain-count">{{ captain.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="no-data">لا توجد بيانات</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Effective Ownership -->
+                <div class="stats-section">
+                    <h2 class="section-title">📊 نسبة الملكية الفعلية</h2>
+                    {% if data.effective_ownership %}
+                    <div class="ownership-list">
+                        {% for player in data.effective_ownership %}
+                        <div class="ownership-item">
+                            <div class="ownership-player">
+                                <span class="ownership-rank">{{ loop.index }}.</span>
+                                <span class="ownership-name">{{ player.name }}</span>
+                                <span class="ownership-team">({{ player.team }})</span>
+                            </div>
+                            <span class="ownership-percentage">{{ player.percentage }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="no-data">لا توجد بيانات</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Chips Used -->
+                <div class="stats-section">
+                    <h2 class="section-title">🎯 الشرائح المستخدمة</h2>
+                    {% if data.chips_used %}
+                    <div class="chips-list">
+                        {% for chip in data.chips_used %}
+                        <div class="chip-item">
+                            <span class="manager-name">{{ chip.manager }}</span>
+                            <span class="chip-badge">{{ chip.chip_ar }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="no-data">لا توجد شرائح مستخدمة هذه الجولة</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if data.last_updated %}
+            <p style="text-align: center; color: #666; font-size: 0.8rem; margin-top: 2rem;">
+                آخر تحديث: {{ data.last_updated }}
+            </p>
+            {% endif %}
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2024 قروب عشاق الفانتازي في ليبيا - The 100</p>
+    </footer>
+</body>
+</html>
