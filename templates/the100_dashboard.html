@@ -773,7 +773,7 @@
                 </div>
                 <div class="section-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                        <input type="text" class="search-box" id="searchBoxQual" placeholder="🔍 ابحث عن مدير..." oninput="filterTable('qualification')">
+                        <input type="text" class="search-box" id="searchBoxQual" placeholder="🔍 ابحث عن مدرب..." oninput="filterTable('qualification')">
                         <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
                     </div>
                     
@@ -839,7 +839,7 @@
         <div id="phase-elimination" class="phase-content {% if data.phase == 'elimination' %}active{% endif %}">
             <div class="section">
                 <div class="section-header">
-                    <h2 class="section-title">⚔️ إحصائيات الإقصاء</h2>
+                    <h2 class="section-title">⚔️ تفاصيل مرحلة الإقصاء</h2>
                     <span class="section-badge">الجولات 20-33</span>
                 </div>
                 <div class="section-content">
@@ -852,7 +852,7 @@
                         <div class="stat-card">
                             <div class="stat-icon">🎯</div>
                             <div class="stat-value">16</div>
-                            <div class="stat-label">المتأهلين للبطولة</div>
+                            <div class="stat-label">المتأهلين لمرحلة البطولة</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">💀</div>
@@ -1003,7 +1003,7 @@
         <div id="phase-championship" class="phase-content {% if data.phase == 'championship' %}active{% endif %}">
             <div class="section">
                 <div class="section-header">
-                    <h2 class="section-title">🏆 مرحلة البطولة</h2>
+                    <h2 class="section-title">🏆 تفاصيل مرحلة البطولة</h2>
                     <span class="section-badge">الجولات 34-37</span>
                 </div>
                 <div class="section-content">
@@ -1056,7 +1056,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>© 2024 قروب عشاق الفانتازي في ليبيا - The 100</p>
+        <p>© 2026 قروب عشاق الفانتازي في ليبيا </p>
         {% if data.last_updated %}
         <p style="margin-top: 0.5rem; font-size: 0.75rem;">آخر تحديث: {{ data.last_updated }}</p>
         {% endif %}
