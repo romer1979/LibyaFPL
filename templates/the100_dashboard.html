@@ -472,95 +472,142 @@
             background: #333 !important;
         }
         
-        /* Modal styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
+        /* Expandable player details row */
+        .player-details-row {
+            background: #111 !important;
         }
         
-        .modal-overlay.show {
-            display: flex;
+        .player-details-row:hover {
+            background: #111 !important;
         }
         
-        .modal-box {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
+        .player-details-row td {
+            padding: 0 !important;
+        }
+        
+        .player-details-content {
             padding: 1rem;
-            position: relative;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border-top: 1px solid #333;
+            border-bottom: 2px solid #444;
         }
         
-        .modal-close {
-            position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            background: #333;
-            border: none;
-            color: #fff;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
+        .players-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
         }
         
-        .modal-close:hover {
-            background: #f87171;
+        .players-section {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 0.75rem;
         }
         
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
+        .players-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.25rem;
             border-bottom: 1px solid #333;
         }
         
-        .modal-title {
+        .bench-section {
+            background: #151515;
+        }
+        
+        .player-row {
             display: flex;
-            flex-direction: column;
-        }
-        
-        .modal-title strong {
-            font-size: 1.1rem;
-            color: #fff;
-        }
-        
-        .modal-team-name {
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.35rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 2px;
             font-size: 0.8rem;
+        }
+        
+        .player-row .player-name {
+            flex: 1;
+        }
+        
+        .player-row .player-points {
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        /* Player status colors for expandable row */
+        .player-row.player-playing {
+            background: rgba(59, 130, 246, 0.15);
+            border-right: 3px solid #3b82f6;
+        }
+        .player-row.player-playing .player-points { color: #3b82f6; }
+        
+        .player-row.player-played {
+            background: rgba(156, 163, 175, 0.1);
+            border-right: 3px solid #9ca3af;
+        }
+        .player-row.player-played .player-points { color: #9ca3af; }
+        
+        .player-row.player-pending {
+            background: rgba(168, 85, 247, 0.1);
+            border-right: 3px solid #a855f7;
+        }
+        .player-row.player-pending .player-points { color: #a855f7; }
+        
+        .player-row.player-benched {
+            background: rgba(248, 113, 113, 0.1);
+            border-right: 3px solid #f87171;
+        }
+        .player-row.player-benched .player-points { color: #f87171; }
+        
+        .player-row.player-bench-unused {
+            background: rgba(75, 85, 99, 0.2);
+            border-right: 3px solid #4b5563;
+            opacity: 0.7;
+        }
+        .player-row.player-bench-unused .player-points { color: #6b7280; }
+        
+        .player-row.player-auto-sub {
+            background: rgba(34, 197, 94, 0.15);
+            border-right: 3px solid #22c55e;
+        }
+        .player-row.player-auto-sub .player-points { color: #22c55e; }
+        
+        /* Players legend */
+        .players-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #333;
+            font-size: 0.7rem;
             color: #888;
         }
         
-        .fpl-link {
-            background: #3b82f6;
-            color: #fff;
-            padding: 0.4rem 0.75rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.75rem;
-            transition: background 0.2s;
+        .players-legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
         
-        .fpl-link:hover {
-            background: #2563eb;
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        
+        .legend-dot.playing { background: #3b82f6; }
+        .legend-dot.played { background: #9ca3af; }
+        .legend-dot.pending { background: #a855f7; }
+        .legend-dot.sub-in { background: #22c55e; }
+        .legend-dot.benched { background: #f87171; }
+        
+        .no-players {
+            text-align: center;
+            color: #666;
+            padding: 1rem;
         }
         
         /* Responsive */
@@ -591,9 +638,12 @@
                 display: none;
             }
             
-            .modal-box {
-                width: 95%;
-                max-height: 85vh;
+            .players-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .player-details-content {
+                padding: 0.5rem;
             }
         }
     </style>
@@ -802,14 +852,14 @@
                                 <tr>
                                     <th>#</th>
                                     <th>المدرب</th>
-                                    <th>اسم الفريق</th>
+                                    <th class="team-name-cell">اسم الفريق</th>
                                     <th>الكابتن</th>
                                     <th>نقاط GW</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for team in data.standings %}
-                                <tr class="clickable-row {% if team.is_winner %}winner-zone{% elif team.in_elimination_zone %}elimination-zone{% elif team.is_safe %}safe-zone{% endif %}{% if team.live_rank == data.safe_count %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}" onclick="showPlayerModal('{{ team.entry_id }}', '{{ team.manager_name }}', '{{ team.team_name }}', {{ data.gameweek }})" data-entry-id="{{ team.entry_id }}">
+                                <tr class="clickable-row {% if team.is_winner %}winner-zone{% elif team.in_elimination_zone %}elimination-zone{% elif team.is_safe %}safe-zone{% endif %}{% if team.live_rank == data.safe_count %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}" onclick="togglePlayerRow({{ loop.index }})">
                                     <td class="rank">
                                         {% if team.live_rank == 1 %}
                                             <span class="medal">🥇</span>
@@ -832,10 +882,57 @@
                                     <td class="captain">{{ team.captain or '-' }}</td>
                                     <td class="total-points">{{ team.live_gw_points }}</td>
                                 </tr>
-                                <!-- Hidden player data for modal -->
-                                <script type="application/json" id="players-{{ team.entry_id }}">
-                                    {{ team.players | tojson | safe if team.players else '[]' }}
-                                </script>
+                                <!-- Expandable player details row -->
+                                <tr class="player-details-row" id="player-row-{{ loop.index }}" style="display: none;">
+                                    <td colspan="5">
+                                        <div class="player-details-content">
+                                            {% if team.players %}
+                                            <div class="players-grid">
+                                                <!-- Starting XI -->
+                                                <div class="players-section">
+                                                    <div class="players-section-title">التشكيلة الأساسية</div>
+                                                    {% for player in team.players[:11] %}
+                                                    <div class="player-row {% if player.is_auto_sub_out %}player-benched{% elif player.status == 'playing' %}player-playing{% elif player.status == 'played' %}player-played{% elif player.status == 'pending' %}player-pending{% else %}player-benched{% endif %}">
+                                                        <span class="player-name">
+                                                            {{ player.name }}
+                                                            {% if player.is_captain %}<span class="player-badge captain-badge">C</span>{% endif %}
+                                                            {% if player.is_vice %}<span class="player-badge vice-badge">V</span>{% endif %}
+                                                            {% if player.is_auto_sub_out %}<span class="player-badge sub-out-badge">خرج</span>{% endif %}
+                                                        </span>
+                                                        <span class="player-points">{{ player.points if player.points is not none else '-' }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                
+                                                <!-- Bench -->
+                                                <div class="players-section bench-section">
+                                                    <div class="players-section-title">البدلاء</div>
+                                                    {% for player in team.players[11:] %}
+                                                    <div class="player-row {% if player.is_auto_sub_in %}player-auto-sub{% else %}player-bench-unused{% endif %}">
+                                                        <span class="player-name">
+                                                            {{ player.name }}
+                                                            {% if player.is_auto_sub_in %}<span class="player-badge sub-in-badge">دخل</span>{% endif %}
+                                                        </span>
+                                                        <span class="player-points">{{ player.points if player.points is not none else '-' }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Legend -->
+                                            <div class="players-legend">
+                                                <span class="legend-item"><span class="legend-dot playing"></span> يلعب</span>
+                                                <span class="legend-item"><span class="legend-dot played"></span> لعب</span>
+                                                <span class="legend-item"><span class="legend-dot pending"></span> لم يلعب بعد</span>
+                                                <span class="legend-item"><span class="legend-dot sub-in"></span> بديل دخل</span>
+                                                <span class="legend-item"><span class="legend-dot benched"></span> لم يلعب</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="no-players">لا توجد بيانات اللاعبين</div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -919,14 +1016,6 @@
         </div>
     </main>
 
-    <!-- Player Modal -->
-    <div id="player-modal" class="modal-overlay">
-        <div class="modal-box">
-            <button class="modal-close" onclick="closeModal()">✕</button>
-            <div id="modal-content"></div>
-        </div>
-    </div>
-
     <!-- Footer -->
     <footer class="footer">
         <p>© 2024 قروب عشاق الفانتازي في ليبيا - The 100</p>
@@ -958,126 +1047,44 @@
             }
             
             const searchTerm = document.getElementById(searchBoxId).value.toLowerCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+            const rows = document.querySelectorAll('#' + tableId + ' tbody tr.clickable-row');
             
             rows.forEach(row => {
                 const manager = row.getAttribute('data-manager') || '';
                 const team = row.getAttribute('data-team') || '';
                 
+                // Get the next row (player details)
+                const nextRow = row.nextElementSibling;
+                
                 if (manager.includes(searchTerm) || team.includes(searchTerm)) {
                     row.style.display = '';
+                    // Keep details row hidden unless it was expanded
                 } else {
                     row.style.display = 'none';
+                    if (nextRow && nextRow.classList.contains('player-details-row')) {
+                        nextRow.style.display = 'none';
+                    }
                 }
             });
         }
         
-        function showPlayerModal(entryId, managerName, teamName, gameweek) {
-            const playersData = document.getElementById('players-' + entryId);
-            if (!playersData) return;
+        function togglePlayerRow(index) {
+            const detailsRow = document.getElementById('player-row-' + index);
+            if (!detailsRow) return;
             
-            let players;
-            try {
-                players = JSON.parse(playersData.textContent);
-            } catch(e) {
-                console.error('Error parsing players:', e);
-                return;
-            }
+            // Check if currently visible
+            const isVisible = detailsRow.style.display !== 'none';
             
-            if (!players || players.length === 0) return;
-            
-            // Build modal content
-            let html = `
-                <div class="modal-header">
-                    <div class="modal-title">
-                        <strong>${managerName}</strong>
-                        <span class="modal-team-name">${teamName}</span>
-                    </div>
-                    <a href="https://fantasy.premierleague.com/entry/${entryId}/event/${gameweek}" target="_blank" class="fpl-link">عرض في FPL ↗</a>
-                </div>
-                <div class="player-list">
-            `;
-            
-            // Starting XI
-            players.slice(0, 11).forEach(player => {
-                let statusClass = 'player-pending';
-                if (player.is_auto_sub_out) statusClass = 'player-benched';
-                else if (player.status === 'playing') statusClass = 'player-playing';
-                else if (player.status === 'played') statusClass = 'player-played';
-                else if (player.status === 'benched') statusClass = 'player-benched';
-                
-                let badges = '';
-                if (player.is_captain) badges += '<span class="player-badge captain-badge">C</span>';
-                if (player.is_vice) badges += '<span class="player-badge vice-badge">V</span>';
-                if (player.is_auto_sub_out) badges += '<span class="player-badge sub-out-badge">خرج</span>';
-                
-                const points = player.points !== null ? player.points : '-';
-                
-                html += `
-                    <div class="player-item ${statusClass}">
-                        <span class="player-name">${player.name} ${badges}</span>
-                        <span class="player-points">${points}</span>
-                    </div>
-                `;
+            // Close all other expanded rows
+            document.querySelectorAll('.player-details-row').forEach(row => {
+                row.style.display = 'none';
             });
             
-            // Bench separator
-            html += `
-                <div class="separator">
-                    <div class="separator-label">البدلاء</div>
-                </div>
-            `;
-            
-            // Bench
-            players.slice(11).forEach(player => {
-                let statusClass = 'player-bench-unused';
-                if (player.is_auto_sub_in) statusClass = 'player-auto-sub';
-                
-                let badges = '';
-                if (player.is_auto_sub_in) badges += '<span class="player-badge sub-in-badge">دخل</span>';
-                
-                const points = player.points !== null ? player.points : '-';
-                
-                html += `
-                    <div class="player-item ${statusClass}">
-                        <span class="player-name">${player.name} ${badges}</span>
-                        <span class="player-points">${points}</span>
-                    </div>
-                `;
-            });
-            
-            html += `
-                </div>
-                <div class="legend">
-                    <div class="legend-item"><span class="legend-color" style="background:#3b82f6;"></span> يلعب الآن</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#9ca3af;"></span> لعب</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#a855f7;"></span> لم يلعب بعد</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#22c55e;"></span> بديل دخل</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#f87171;"></span> لم يلعب</div>
-                </div>
-            `;
-            
-            document.getElementById('modal-content').innerHTML = html;
-            document.getElementById('player-modal').classList.add('show');
-        }
-        
-        function closeModal() {
-            document.getElementById('player-modal').classList.remove('show');
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('player-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
+            // Toggle this row
+            if (!isVisible) {
+                detailsRow.style.display = 'table-row';
             }
-        });
-        
-        // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-            }
-        });
+        }
         
         // Auto-refresh every 60 seconds if live
         {% if data.is_live %}
