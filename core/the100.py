@@ -519,11 +519,22 @@ def get_elimination_standings(current_gw, qualified_managers):
                 is_captain = pick.get('is_captain', False)
                 is_vice = pick.get('is_vice_captain', False)
                 
+                # Check if captain's team has played
+                captain_team = player_info.get(captain_id, {}).get('team') if captain_id else None
+                captain_team_played = False
+                if captain_team:
+                    for f in fixtures:
+                        if f.get('team_h') == captain_team or f.get('team_a') == captain_team:
+                            captain_team_played = f.get('started', False) or f.get('finished', False)
+                            break
+                
+                captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
+                
                 if minutes > 0 or status == 'benched':
                     if is_captain and minutes > 0:
                         display_points = points * (3 if chip == '3xc' else 2)
-                    elif is_vice and captain_id and live_elements.get(captain_id, {}).get('minutes', 0) == 0:
-                        # Vice becomes captain if captain didn't play
+                    elif is_vice and captain_team_played and captain_minutes == 0 and minutes > 0:
+                        # Vice becomes captain ONLY if captain's team played AND captain didn't play
                         display_points = points * (3 if chip == '3xc' else 2)
                     else:
                         display_points = points
