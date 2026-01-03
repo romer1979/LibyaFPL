@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import LEAGUE_ID, ARABIC
 from core.dashboard import get_dashboard
 from core.stats import get_league_stats, get_manager_history
-from core.the100 import get_the100_standings
+from core.the100 import get_the100_standings, get_the100_stats
 from core.cities_league import get_cities_league_data
 from core.libyan_league import get_libyan_league_data
 from core.arab_league import get_arab_league_data
@@ -85,6 +85,13 @@ def the100_dashboard():
     """The 100 League dashboard"""
     data = get_the100_standings()
     return render_template('the100_dashboard.html', data=data)
+
+
+@app.route('/league/the100/stats')
+def the100_stats():
+    """The 100 League statistics page"""
+    data = get_the100_stats()
+    return render_template('the100_stats.html', data=data)
 
 
 @app.route('/league/cities')
