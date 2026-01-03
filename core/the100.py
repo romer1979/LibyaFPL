@@ -440,6 +440,110 @@ def get_elimination_standings(current_gw, qualified_managers):
         captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
         captain_name = player_info.get(captain_id, {}).get('name', '-') if captain_id else '-'
         
+        # Build player picks list with status
+        player_picks = []
+        if picks:
+            # Determine auto-subs
+            auto_subbed_in = set()
+            auto_subbed_out = set()
+            
+            if gw_started and chip != 'bboost':
+                # Calculate which players got auto-subbed
+                starters = picks[:11]
+                bench = picks[11:15]
+                
+                for starter in starters:
+                    s_id = starter['element']
+                    s_data = live_elements.get(s_id, {})
+                    s_team = player_info.get(s_id, {}).get('team')
+                    s_team_played = any(
+                        (f.get('team_h') == s_team or f.get('team_a') == s_team) and 
+                        (f.get('started', False) or f.get('finished', False))
+                        for f in fixtures
+                    ) if s_team else True
+                    
+                    # Starter didn't play but team has played
+                    if s_data.get('minutes', 0) == 0 and s_team_played:
+                        auto_subbed_out.add(s_id)
+                        
+                        # Find the bench player who came in
+                        for b in bench:
+                            b_id = b['element']
+                            if b_id in auto_subbed_in:
+                                continue
+                            b_data = live_elements.get(b_id, {})
+                            if b_data.get('minutes', 0) > 0:
+                                # Check position compatibility (simplified)
+                                s_pos = player_info.get(s_id, {}).get('position', 0)
+                                b_pos = player_info.get(b_id, {}).get('position', 0)
+                                # GK can only be replaced by GK
+                                if (s_pos == 1 and b_pos == 1) or (s_pos != 1 and b_pos != 1):
+                                    auto_subbed_in.add(b_id)
+                                    break
+            
+            for i, pick in enumerate(picks):
+                p_id = pick['element']
+                p_info = player_info.get(p_id, {})
+                p_data = live_elements.get(p_id, {})
+                
+                minutes = p_data.get('minutes', 0)
+                points = p_data.get('total_points', 0)
+                
+                # Determine player status
+                p_team = p_info.get('team')
+                team_started = False
+                team_finished = False
+                
+                for f in fixtures:
+                    if f.get('team_h') == p_team or f.get('team_a') == p_team:
+                        team_started = f.get('started', False)
+                        team_finished = f.get('finished', False) or f.get('finished_provisional', False)
+                        break
+                
+                if minutes > 0:
+                    if team_finished:
+                        status = 'played'  # Game finished, player played
+                    else:
+                        status = 'playing'  # Currently on pitch
+                elif team_started or team_finished:
+                    status = 'benched'  # Team played but player didn't
+                else:
+                    status = 'pending'  # Team hasn't played yet
+                
+                # Is this a starter or bench?
+                is_starter = i < 11
+                is_auto_sub_in = p_id in auto_subbed_in
+                is_auto_sub_out = p_id in auto_subbed_out
+                
+                # Calculate display points
+                is_captain = pick.get('is_captain', False)
+                is_vice = pick.get('is_vice_captain', False)
+                
+                if minutes > 0 or status == 'benched':
+                    if is_captain and minutes > 0:
+                        display_points = points * (3 if chip == '3xc' else 2)
+                    elif is_vice and captain_id and live_elements.get(captain_id, {}).get('minutes', 0) == 0:
+                        # Vice becomes captain if captain didn't play
+                        display_points = points * (3 if chip == '3xc' else 2)
+                    else:
+                        display_points = points
+                else:
+                    display_points = None  # Will show as "-"
+                
+                player_picks.append({
+                    'id': p_id,
+                    'name': p_info.get('name', 'Unknown'),
+                    'position': p_info.get('position', 0),
+                    'points': display_points,
+                    'minutes': minutes,
+                    'status': status,
+                    'is_captain': is_captain,
+                    'is_vice': is_vice,
+                    'is_starter': is_starter,
+                    'is_auto_sub_in': is_auto_sub_in,
+                    'is_auto_sub_out': is_auto_sub_out,
+                })
+        
         standings.append({
             'entry_id': entry_id,
             'manager_name': manager['manager_name'],
@@ -449,7 +553,8 @@ def get_elimination_standings(current_gw, qualified_managers):
             'live_gw_points': live_gw_points,
             'captain': captain_name,
             'chip': chip,
-            'is_winner': manager.get('is_winner', False)
+            'is_winner': manager.get('is_winner', False),
+            'players': player_picks,
         })
     
     # Sort by GW points (highest first)
