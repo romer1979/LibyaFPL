@@ -281,6 +281,42 @@
             50% { opacity: 0.5; }
         }
         
+        /* Refresh and Stats buttons */
+        .refresh-btn {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #3a3a3a;
+            border-color: #555;
+        }
+        
+        .refresh-btn.loading {
+            animation: spin 1s linear infinite;
+        }
+        
+        .stats-btn {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .stats-btn:hover {
+            background: #3a3a3a;
+            border-color: #555;
+        }
+        
         /* Qualification rank badge */
         .qual-rank {
             font-size: 0.7rem;
@@ -664,6 +700,8 @@
                 {% if data.is_live %}
                 <span class="live-badge">مباشر</span>
                 {% endif %}
+                <button class="refresh-btn" onclick="refreshPage()" id="refresh-btn" title="تحديث">🔄</button>
+                <a href="/league/the100/stats" class="nav-link stats-btn" title="إحصائيات">📊</a>
                 <a href="/" class="nav-link home-btn">🏠</a>
             </div>
         </div>
@@ -1084,6 +1122,13 @@
             if (!isVisible) {
                 detailsRow.style.display = 'table-row';
             }
+        }
+        
+        function refreshPage() {
+            const btn = document.getElementById('refresh-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            location.reload();
         }
         
         // Auto-refresh every 60 seconds if live
