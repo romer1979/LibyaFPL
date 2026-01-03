@@ -23,6 +23,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter
 from config import get_chip_arabic
+from core.fpl_api import get_bootstrap_data, build_player_info
 
 # Configuration
 THE100_LEAGUE_ID = 8921
