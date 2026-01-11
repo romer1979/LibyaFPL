@@ -16,7 +16,7 @@ from app import app, db
 from models import TeamLeagueStandings
 
 TIMEOUT = 15
-LIBYAN_H2H_LEAGUE_ID = 1015262  # Libyan League H2H ID
+LIBYAN_H2H_LEAGUE_ID = 1231867  # Libyan League H2H ID
 
 # Team definitions: team_name -> list of FPL entry IDs
 TEAMS_FPL_IDS = {
