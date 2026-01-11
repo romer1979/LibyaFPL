@@ -235,8 +235,8 @@ def calculate_manager_points(picks_data, live_elements, player_info):
     return total - hits
 
 
-def calculate_league_gw21(league_type, league_config, player_info):
-    """Calculate what GW21 standings should be by processing all gameweeks"""
+def calculate_league_gw12(league_type, league_config, player_info):
+    """Calculate what GW12 standings should be by processing GW1-12"""
     teams = league_config['teams']
     h2h_id = league_config['h2h_id']
     
@@ -249,9 +249,9 @@ def calculate_league_gw21(league_type, league_config, player_info):
     league_standings = {team: 0 for team in teams.keys()}
     fpl_totals = {team: 0 for team in teams.keys()}
     
-    print(f"\n  Calculating {league_type} from GW1-21...")
+    print(f"\n  Calculating {league_type} from GW1-12...")
     
-    for gw in range(1, 22):
+    for gw in range(1, 13):  # GW1 to GW12
         print(f"    GW{gw}...", end=" ", flush=True)
         
         live_data = get_live_data(gw)
@@ -315,7 +315,7 @@ def calculate_league_gw21(league_type, league_config, player_info):
     return league_standings, fpl_totals
 
 
-def get_current_db_standings(league_type, gameweek=21):
+def get_current_db_standings(league_type, gameweek=12):
     """Get current standings from database"""
     standings = TeamLeagueStandings.query.filter_by(
         league_type=league_type,
@@ -324,22 +324,93 @@ def get_current_db_standings(league_type, gameweek=21):
     return {s.team_name: s.league_points for s in standings}
 
 
-def compare_standings(league_type, calculated, current_db):
-    """Compare calculated vs database standings"""
+# Hardcoded GW12 standings (your known good baseline)
+HARDCODED_GW12 = {
+    'arab': {
+        "العربي القطري": 28,
+        "العين": 27,
+        "القوة الجوية": 24,
+        "الفتح السعودي": 24,
+        "نيوم": 24,
+        "اتحاد العاصمة": 22,
+        "المريخ": 19,
+        "النصر السعودي": 18,
+        "النجم الساحلي": 18,
+        "الترجي": 18,
+        "الجزيرة الإماراتي": 16,
+        "الأهلي المصري": 15,
+        "الأفريقي": 15,
+        "الاتحاد السعودي": 15,
+        "الوداد": 15,
+        "الرجاء": 15,
+        "شبيبة القبائل": 12,
+        "الهلال السعودي": 12,
+        "أربيل": 9,
+        "الهلال السوداني": 9,
+    },
+    'libyan': {
+        "الأخضر": 28,
+        "يفرن": 27,
+        "الصقور": 24,
+        "المستقبل": 24,
+        "الظهرة": 24,
+        "العروبة": 24,
+        "الشط": 22,
+        "النصر": 21,
+        "الجزيرة": 21,
+        "الصداقة": 18,
+        "الأولمبي": 18,
+        "الملعب": 18,
+        "النصر زليتن": 15,
+        "الأفريقي درنة": 15,
+        "الإخاء": 12,
+        "المدينة": 12,
+        "دارنس": 9,
+        "الأهلي طرابلس": 9,
+        "الشرارة": 9,
+        "السويحلي": 9,
+    },
+    'cities': {
+        "جالو": 33,
+        "طرميسة": 24,
+        "غريان": 24,
+        "اوجلة": 21,
+        "حي 9 يونيو": 19,
+        "ترهونة": 19,
+        "الهضبة": 19,
+        "المحجوب": 18,
+        "القطرون": 18,
+        "بنغازي": 18,
+        "طرابلس": 18,
+        "درنه": 18,
+        "بوسليم": 16,
+        "الخمس": 16,
+        "البازة": 15,
+        "زليتن": 15,
+        "الفرناج": 15,
+        "الزاوية": 13,
+        "سوق الجمعة": 9,
+        "مصراتة": 9,
+    }
+}
+
+
+def compare_standings(league_type, calculated, hardcoded):
+    """Compare calculated vs hardcoded GW12 standings"""
     print(f"\n{'='*70}")
-    print(f"  {league_type.upper()} LEAGUE - GW21 Comparison")
+    print(f"  {league_type.upper()} LEAGUE - GW12 Comparison")
     print(f"{'='*70}")
-    print(f"{'Team':<25} {'DB Now':>10} {'Calculated':>12} {'Diff':>8} {'Status':>10}")
+    print(f"{'Team':<25} {'Hardcoded':>10} {'Calculated':>12} {'Diff':>8} {'Status':>10}")
     print("-" * 70)
     
     all_match = True
     
-    # Sort by calculated points
-    sorted_teams = sorted(calculated.items(), key=lambda x: -x[1])
+    # Sort by hardcoded points
+    sorted_teams = sorted(hardcoded.items(), key=lambda x: -x[1])
     
-    for team, calc_pts in sorted_teams:
-        db_pts = current_db.get(team, 0)
-        diff = calc_pts - db_pts
+    for team, hc_pts in sorted_teams:
+        calc_pts = calculated.get(team, 0)
+        diff = calc_pts - hc_pts
         
         if diff == 0:
             status = "✓ Match"
@@ -348,15 +419,15 @@ def compare_standings(league_type, calculated, current_db):
             all_match = False
         
         diff_str = f"+{diff}" if diff > 0 else str(diff)
-        print(f"{team:<25} {db_pts:>10} {calc_pts:>12} {diff_str:>8} {status:>10}")
+        print(f"{team:<25} {hc_pts:>10} {calc_pts:>12} {diff_str:>8} {status:>10}")
     
     return all_match
 
 
 def main():
     print("=" * 70)
-    print("  VERIFY STANDINGS SCRIPT")
-    print("  This compares current DB standings vs calculated standings")
+    print("  VERIFY GW12 STANDINGS SCRIPT")
+    print("  This compares hardcoded GW12 standings vs calculated standings")
     print("  NO CHANGES will be made to the database")
     print("=" * 70)
     
@@ -372,22 +443,21 @@ def main():
     
     all_results = {}
     
-    with app.app_context():
-        for league_type, league_config in LEAGUES.items():
-            # Calculate what it should be
-            calc_standings, calc_fpl = calculate_league_gw21(league_type, league_config, player_info)
-            
-            # Get current DB
-            db_standings = get_current_db_standings(league_type, 21)
-            
-            # Compare
-            match = compare_standings(league_type, calc_standings, db_standings)
-            all_results[league_type] = {
-                'match': match,
-                'calculated': calc_standings,
-                'calculated_fpl': calc_fpl,
-                'db': db_standings
-            }
+    for league_type, league_config in LEAGUES.items():
+        # Calculate what it should be (GW1-12)
+        calc_standings, calc_fpl = calculate_league_gw12(league_type, league_config, player_info)
+        
+        # Get hardcoded GW12
+        hardcoded = HARDCODED_GW12.get(league_type, {})
+        
+        # Compare
+        match = compare_standings(league_type, calc_standings, hardcoded)
+        all_results[league_type] = {
+            'match': match,
+            'calculated': calc_standings,
+            'calculated_fpl': calc_fpl,
+            'hardcoded': hardcoded
+        }
     
     # Summary
     print("\n" + "=" * 70)
@@ -401,11 +471,13 @@ def main():
     all_ok = all(r['match'] for r in all_results.values())
     
     if all_ok:
-        print("\n✅ All leagues match! Safe to proceed with rebuild.")
+        print("\n✅ All GW12 standings match your hardcoded values!")
+        print("   This confirms the calculation logic is correct.")
+        print("   Safe to proceed with full rebuild.")
     else:
-        print("\n⚠️  Some differences found. Review above before proceeding.")
-        print("   Note: Differences are EXPECTED if current data is wrong.")
-        print("   The rebuild will FIX these differences.")
+        print("\n⚠️  Some differences found between calculated and hardcoded GW12.")
+        print("   Please review the differences above.")
+        print("   Either the hardcoded values or the calculation may need adjustment.")
 
 
 if __name__ == '__main__':
