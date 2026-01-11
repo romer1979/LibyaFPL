@@ -12,6 +12,7 @@ from models import TeamLeagueStandings
 
 TIMEOUT = 15
 ARAB_H2H_LEAGUE_ID = 1015271
+GW_TO_FIX = 13
 
 # Team definitions: team_name -> list of FPL entry IDs
 TEAMS_FPL_IDS = {
@@ -81,33 +82,206 @@ def fetch_json(url):
         return None
 
 
+def get_bootstrap_data():
+    """Get bootstrap data for player info"""
+    return fetch_json("https://fantasy.premierleague.com/api/bootstrap-static/")
+
+
+def get_live_data(gameweek):
+    """Get live data for a gameweek"""
+    return fetch_json(f"https://fantasy.premierleague.com/api/event/{gameweek}/live/")
+
+
+def get_picks(entry_id, gameweek):
+    """Get picks for an entry in a gameweek"""
+    return fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{gameweek}/picks/")
+
+
+def build_player_info(bootstrap):
+    """Build player info dictionary"""
+    player_info = {}
+    for p in bootstrap.get('elements', []):
+        player_info[p['id']] = {
+            'name': p['web_name'],
+            'team': p['team'],
+            'position': p['element_type'],
+        }
+    return player_info
+
+
+def build_live_elements(live_data):
+    """Build live elements dictionary"""
+    live_elements = {}
+    for elem in live_data.get('elements', []):
+        live_elements[elem['id']] = {
+            'total_points': elem['stats']['total_points'],
+            'minutes': elem['stats']['minutes'],
+        }
+    return live_elements
+
+
+def calculate_auto_subs(picks, live_elements, player_info):
+    """
+    Calculate auto-sub points following league rules.
+    """
+    def pos_of(eid):
+        return player_info.get(eid, {}).get('position', 0)
+    
+    def formation_ok(d, m, f, g):
+        return (g == 1 and 3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3)
+    
+    starters = picks[:11]
+    bench = picks[11:]
+    
+    # Baseline formation
+    d = sum(1 for p in starters if pos_of(p['element']) == 2)
+    m = sum(1 for p in starters if pos_of(p['element']) == 3)
+    f = sum(1 for p in starters if pos_of(p['element']) == 4)
+    g = sum(1 for p in starters if pos_of(p['element']) == 1)
+    
+    # Non-playing starters (GW is finished so all teams are done)
+    non_playing_starters = [
+        p for p in starters
+        if live_elements.get(p['element'], {}).get('minutes', 0) == 0
+    ]
+    
+    used_bench_ids = set()
+    sub_points = 0
+    
+    for starter in non_playing_starters:
+        s_id = starter['element']
+        s_pos = pos_of(s_id)
+        
+        for b in bench:
+            b_id = b['element']
+            if b_id in used_bench_ids:
+                continue
+            
+            b_pos = pos_of(b_id)
+            b_min = live_elements.get(b_id, {}).get('minutes', 0)
+            
+            # GK ↔ GK only; outfield ↔ outfield only
+            if (s_pos == 1 and b_pos != 1) or (s_pos != 1 and b_pos == 1):
+                continue
+            
+            # Bench player didn't play -> skip
+            if b_min == 0:
+                continue
+            
+            # Simulate swap and validate formation
+            d2, m2, f2, g2 = d, m, f, g
+            if   s_pos == 2: d2 -= 1
+            elif s_pos == 3: m2 -= 1
+            elif s_pos == 4: f2 -= 1
+            elif s_pos == 1: g2 -= 1
+            
+            if   b_pos == 2: d2 += 1
+            elif b_pos == 3: m2 += 1
+            elif b_pos == 4: f2 += 1
+            elif b_pos == 1: g2 += 1
+            
+            if not formation_ok(d2, m2, f2, g2):
+                continue
+            
+            # Accept this bench player
+            sub_points += live_elements.get(b_id, {}).get('total_points', 0)
+            used_bench_ids.add(b_id)
+            d, m, f, g = d2, m2, f2, g2
+            break
+    
+    return sub_points
+
+
+def calculate_manager_points(picks_data, live_elements, player_info):
+    """
+    Calculate points for a manager following league rules:
+    - Captain: always 2x (no 3x for triple captain)
+    - Bench boost: ignored (only first 11 + auto-subs)
+    - Transfer hits: subtracted
+    """
+    if not picks_data:
+        return 0
+    
+    picks = picks_data.get('picks', [])
+    hits = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
+    
+    if not picks:
+        return 0
+    
+    # Find captain and vice-captain
+    captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+    vice_captain_id = next((p['element'] for p in picks if p.get('is_vice_captain')), None)
+    
+    captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
+    captain_played = captain_minutes > 0
+    
+    total_points = 0
+    for pick in picks[:11]:
+        pid = pick['element']
+        pts = live_elements.get(pid, {}).get('total_points', 0)
+        
+        # Captain logic (always 2x, no 3xc)
+        if pick.get('is_captain'):
+            if captain_played:
+                pts *= 2
+            else:
+                pts = 0  # Captain didn't play, VC takes over
+        
+        # Vice-captain logic
+        elif pick.get('is_vice_captain'):
+            if not captain_played:
+                vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
+                if vc_minutes > 0:
+                    pts *= 2  # VC becomes captain
+        
+        total_points += pts
+    
+    # Add auto-sub points
+    sub_points = calculate_auto_subs(picks, live_elements, player_info)
+    
+    return total_points + sub_points - hits
+
+
 def get_gw13_team_points():
     """
-    Calculate total points for each team in GW13 by fetching each manager's GW13 history.
+    Calculate total points for each team in GW13 using correct league rules.
     """
-    print("\n=== Fetching GW13 points for all managers ===\n")
+    print("\n=== Fetching GW13 data ===\n")
+    
+    # Get bootstrap and live data
+    bootstrap = get_bootstrap_data()
+    if not bootstrap:
+        print("Failed to fetch bootstrap data!")
+        return None
+    
+    live_data = get_live_data(GW_TO_FIX)
+    if not live_data:
+        print("Failed to fetch live data!")
+        return None
+    
+    player_info = build_player_info(bootstrap)
+    live_elements = build_live_elements(live_data)
+    
+    print(f"Loaded {len(player_info)} players, {len(live_elements)} live elements\n")
     
     team_points = {team: 0 for team in TEAMS_FPL_IDS.keys()}
     
     for team_name, entry_ids in TEAMS_FPL_IDS.items():
         total = 0
+        print(f"{team_name}:")
+        
         for entry_id in entry_ids:
-            url = f"https://fantasy.premierleague.com/api/entry/{entry_id}/history/"
-            data = fetch_json(url)
+            picks_data = get_picks(entry_id, GW_TO_FIX)
             
-            if data and 'current' in data:
-                gw13_data = next((gw for gw in data['current'] if gw['event'] == 13), None)
-                if gw13_data:
-                    points = gw13_data.get('points', 0)
-                    total += points
-                    print(f"  {team_name} - Entry {entry_id}: {points} pts")
-                else:
-                    print(f"  {team_name} - Entry {entry_id}: GW13 not found!")
+            if picks_data:
+                points = calculate_manager_points(picks_data, live_elements, player_info)
+                total += points
+                print(f"  Entry {entry_id}: {points} pts")
             else:
-                print(f"  {team_name} - Entry {entry_id}: Failed to fetch history")
+                print(f"  Entry {entry_id}: Failed to fetch picks!")
         
         team_points[team_name] = total
-        print(f"  {team_name} TOTAL: {total} pts\n")
+        print(f"  TOTAL: {total} pts\n")
     
     return team_points
 
@@ -118,7 +292,7 @@ def get_gw13_h2h_matches():
     """
     print("\n=== Fetching GW13 H2H Matches ===\n")
     
-    url = f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{ARAB_H2H_LEAGUE_ID}/?event=13"
+    url = f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{ARAB_H2H_LEAGUE_ID}/?event={GW_TO_FIX}"
     data = fetch_json(url)
     
     if not data or 'results' not in data:
@@ -155,7 +329,7 @@ def calculate_gw13_results(team_points, matches):
     """
     print("\n=== GW13 Match Results ===\n")
     
-    results = {}  # team_name -> 'W', 'D', or 'L'
+    results = {}
     
     for match in matches:
         team_1 = match['team_1']
@@ -209,24 +383,23 @@ def show_gw13_standings(points_to_add):
     for team_name, base_points in GW12_STANDINGS.items():
         gw13_standings[team_name] = base_points + points_to_add.get(team_name, 0)
     
-    # Sort by points
     sorted_standings = sorted(gw13_standings.items(), key=lambda x: -x[1])
     
     for i, (team, pts) in enumerate(sorted_standings, 1):
         added = points_to_add.get(team, 0)
-        print(f"{i:2}. {team}: {pts} (+{added})")
+        result = 'W' if added == 3 else ('D' if added == 1 else 'L')
+        print(f"{i:2}. {team}: {pts} (+{added} {result})")
     
     return gw13_standings
 
 
 def fix_database(points_to_add, dry_run=True):
     """
-    Add missing GW13 points to all saved gameweeks (GW14-GW21).
+    Add missing GW13 points to all saved gameweeks (GW14+).
     """
     print(f"\n=== {'DRY RUN - ' if dry_run else ''}Fixing Database ===\n")
     
     with app.app_context():
-        # Get all Arab league standings
         all_standings = TeamLeagueStandings.query.filter_by(
             league_type='arab'
         ).order_by(TeamLeagueStandings.gameweek).all()
@@ -244,7 +417,6 @@ def fix_database(points_to_add, dry_run=True):
                 if not dry_run:
                     standing.league_points = new_points
         
-        # Also save GW13 standings
         print(f"\n{'Would save' if dry_run else 'Saving'} GW13 standings...")
         for team_name, base_points in GW12_STANDINGS.items():
             gw13_points = base_points + points_to_add.get(team_name, 0)
@@ -280,10 +452,18 @@ def fix_database(points_to_add, dry_run=True):
 def main():
     print("=" * 60)
     print("  Arab League GW13 Fix Script")
+    print("  Using correct league scoring rules:")
+    print("  - Captain: 2x only (no 3x triple captain)")
+    print("  - Bench boost: ignored (only first 11 + auto-subs)")
+    print("  - Transfer hits: subtracted")
     print("=" * 60)
     
-    # Step 1: Get GW13 team points
+    # Step 1: Get GW13 team points using correct rules
     team_points = get_gw13_team_points()
+    
+    if not team_points:
+        print("\n❌ Could not calculate team points. Aborting.")
+        return
     
     # Step 2: Get GW13 H2H matches
     matches = get_gw13_h2h_matches()
@@ -301,7 +481,7 @@ def main():
     # Step 5: Show GW13 standings
     gw13_standings = show_gw13_standings(points_to_add)
     
-    # Step 6: Show what will be fixed (DRY RUN first)
+    # Step 6: DRY RUN first
     print("\n" + "=" * 60)
     print("  PHASE 1: DRY RUN (showing what would change)")
     print("=" * 60)
