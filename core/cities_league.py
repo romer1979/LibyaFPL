@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 import time
 from collections import Counter
-from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings, get_team_league_standings_full
+from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings, get_team_league_standings_full, save_team_league_matches
 from core.fpl_api import is_gameweek_finished
 
 # Configuration
@@ -822,12 +822,23 @@ def get_cities_league_data():
         # For display purposes, GW is "finished" when all matches are done
         gw_finished_display = all_matches_done
         
-        # 10) Save standings to database if GW is finished (24 hours after last match)
+        # 10) Save standings and matches to database if GW is finished (24 hours after last match)
         if gw_finished_for_save:
             # Build standings dict to save
             final_standings = {team['team_name']: team['league_points'] for team in team_standings}
             final_fpl_totals = {team['team_name']: team['total_fpl_points'] for team in team_standings}
             save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings, final_fpl_totals)
+            
+            # Build matches list to save
+            matches_to_save = []
+            for match in h2h_matches:
+                matches_to_save.append({
+                    'team1': match['team_1'],
+                    'team2': match['team_2'],
+                    'points1': match['points_1'],
+                    'points2': match['points_2'],
+                })
+            save_team_league_matches(LEAGUE_TYPE, current_gw, matches_to_save)
         
         result = {
             'standings': team_standings,
