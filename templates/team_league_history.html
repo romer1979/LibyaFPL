@@ -278,6 +278,13 @@
     <!-- Main Content -->
     <main class="main-container">
         <div class="history-container">
+            {% if no_data %}
+            <div class="section-card" style="text-align: center; padding: 3rem;">
+                <h2 style="color: var(--primary-purple); margin-bottom: 1rem;">📭 لا توجد بيانات</h2>
+                <p style="color: #888;">لم يتم حفظ سجل الجولات بعد.</p>
+                <p style="color: #888; font-size: 0.9rem;">يرجى تشغيل سكريبت إعادة البناء أولاً.</p>
+            </div>
+            {% else %}
             <div class="history-header">
                 <h1 class="history-title">📜 سجل الجولات السابقة</h1>
                 <div class="gw-selector">
@@ -290,7 +297,7 @@
             </div>
             
             {% for gw in gameweeks|reverse %}
-            <div id="gw-{{ gw }}" class="gw-content {% if loop.first %}active{% endif %}">
+            <div id="gw-{{ gw }}" class="gw-content {% if loop.first %}active{% endif %}">>
                 <!-- Match Results -->
                 <div class="section-card">
                     <h2 class="section-title">⚔️ نتائج المباريات - الجولة {{ gw }}</h2>
@@ -368,6 +375,7 @@
                 </div>
             </div>
             {% endfor %}
+            {% endif %}
         </div>
     </main>
 
