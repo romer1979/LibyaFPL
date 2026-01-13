@@ -6,7 +6,7 @@ Provides historical data for Arab, Libyan, and Cities leagues.
 Reads from database for fast loading.
 """
 
-from models import TeamLeagueStandings, db
+from models import TeamLeagueStandings, TeamLeagueMatches, db
 
 # League configurations
 LEAGUE_CONFIGS = {
@@ -34,7 +34,7 @@ LEAGUE_CONFIGS = {
 def get_league_history_from_db(league_type):
     """
     Get history from database.
-    Returns dict with gameweek data including standings.
+    Returns dict with gameweek data including standings and matches.
     """
     if league_type not in LEAGUE_CONFIGS:
         return None
@@ -47,10 +47,19 @@ def get_league_history_from_db(league_type):
     if not all_standings:
         return None
     
+    # Get all matches for this league from database
+    try:
+        all_matches = TeamLeagueMatches.query.filter_by(
+            league_type=league_type
+        ).order_by(TeamLeagueMatches.gameweek).all()
+    except:
+        all_matches = []
+    
     # Group by gameweek
     history = {}
     gameweeks = set()
     
+    # Process standings
     for s in all_standings:
         gw = s.gameweek
         gameweeks.add(gw)
@@ -58,15 +67,26 @@ def get_league_history_from_db(league_type):
         if gw not in history:
             history[gw] = {
                 'standings': [],
-                'matches': []  # We don't store matches in DB, will be empty for now
+                'matches': []
             }
         
         history[gw]['standings'].append({
             'name': s.team_name,
             'league_points': s.league_points,
             'total_fpl_points': s.total_fpl_points or 0,
-            'gw_result': '-',  # Will calculate below
+            'gw_result': '-',
         })
+    
+    # Process matches
+    for m in all_matches:
+        gw = m.gameweek
+        if gw in history:
+            history[gw]['matches'].append({
+                'team1': m.team1_name,
+                'team2': m.team2_name,
+                'points1': m.team1_points,
+                'points2': m.team2_points,
+            })
     
     # Sort standings within each gameweek and calculate GW results
     for gw in history:
