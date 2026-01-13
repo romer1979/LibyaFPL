@@ -60,122 +60,129 @@
             display: block;
         }
         
-        /* Two column layout matching dashboard */
+        /* Two column layout - matches RIGHT, standings LEFT (like dashboard) */
         .history-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1.5rem;
         }
         
-        /* Match card styling from dashboard */
-        .match-row {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem;
+        /* Matches table styling from dashboard */
+        .fixtures-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .fixtures-table th {
+            background: rgba(102, 126, 234, 0.15);
+            padding: 0.75rem 0.5rem;
+            font-weight: 600;
+            color: var(--primary-purple);
+            font-size: 0.85rem;
+            border-bottom: 2px solid var(--primary-purple);
+        }
+        
+        .fixtures-table td {
+            padding: 0.75rem 0.5rem;
             border-bottom: 1px solid var(--border-color);
-            gap: 0.5rem;
+            vertical-align: middle;
         }
         
-        .match-row:last-child {
-            border-bottom: none;
+        .fixtures-table .team-cell {
+            min-width: 100px;
         }
         
-        .match-team {
-            flex: 1;
+        .fixtures-table .team-info {
             display: flex;
             flex-direction: column;
             gap: 0.2rem;
         }
         
-        .match-team.team-right {
-            text-align: left;
-            align-items: flex-start;
-        }
-        
-        .match-team.team-left {
-            text-align: right;
-            align-items: flex-end;
-        }
-        
-        .match-team-name {
-            font-weight: 700;
+        .fixtures-table .team-name {
+            font-weight: 600;
             font-size: 0.9rem;
-            color: var(--text-primary);
         }
         
-        .match-team.winner .match-team-name {
+        .fixtures-table .team-name.winner {
             color: #22c55e;
         }
         
-        .match-team.winner .match-team-name::before {
+        .fixtures-table .team-name.winner::before {
             content: '✓ ';
         }
         
-        .match-score-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: 100px;
+        .fixtures-table .score-cell {
+            text-align: center;
         }
         
-        .match-scores {
+        .fixtures-table .score-display {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
             font-size: 1.1rem;
             font-weight: 700;
         }
         
-        .match-pts {
-            padding: 0.25rem 0.5rem;
+        .fixtures-table .score-pts {
+            padding: 0.3rem 0.6rem;
             border-radius: 6px;
-            min-width: 45px;
+            min-width: 50px;
+            display: inline-block;
             text-align: center;
         }
         
-        .match-pts.winning {
+        .fixtures-table .score-pts.winning {
             background: rgba(34, 197, 94, 0.2);
             color: #22c55e;
         }
         
-        .match-pts.losing {
+        .fixtures-table .score-pts.losing {
             background: rgba(239, 68, 68, 0.1);
             color: #ef4444;
         }
         
-        .match-pts.draw {
+        .fixtures-table .score-pts.draw {
             background: rgba(251, 191, 36, 0.2);
             color: #f59e0b;
         }
         
-        .match-separator {
-            color: #666;
+        .fixtures-table .diff-cell {
+            text-align: center;
         }
         
-        .match-diff {
-            font-size: 0.75rem;
-            color: #888;
-            margin-top: 0.25rem;
+        .fixtures-table .diff-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary-purple);
         }
         
-        /* Standings styling from dashboard */
+        /* Standings table styling from dashboard */
         .standings-table {
             width: 100%;
             border-collapse: collapse;
         }
         
-        .standings-table th,
+        .standings-table th {
+            background: rgba(102, 126, 234, 0.15);
+            padding: 0.75rem 0.5rem;
+            font-weight: 600;
+            color: var(--primary-purple);
+            font-size: 0.85rem;
+            border-bottom: 2px solid var(--primary-purple);
+            text-align: center;
+        }
+        
         .standings-table td {
             padding: 0.6rem 0.5rem;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
-        }
-        
-        .standings-table th {
-            background: rgba(102, 126, 234, 0.1);
-            font-weight: 600;
-            color: var(--primary-purple);
-            font-size: 0.8rem;
         }
         
         .standings-table .name-cell {
@@ -200,23 +207,23 @@
         
         .standings-table .total-fpl-cell {
             color: #888;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
         
-        .standings-table .top-three {
+        .standings-table tr.top-three {
             background: rgba(245, 200, 66, 0.05);
         }
         
-        .standings-table .row-win {
+        .standings-table tr.row-win {
             background: rgba(34, 197, 94, 0.05);
         }
         
-        .standings-table .row-loss {
+        .standings-table tr.row-loss {
             background: rgba(239, 68, 68, 0.03);
         }
         
         .rank-badge {
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
         
         /* Back button */
@@ -257,16 +264,22 @@
                 white-space: nowrap;
             }
             
-            .match-team-name {
+            .fixtures-table th,
+            .fixtures-table td {
+                padding: 0.5rem 0.3rem;
                 font-size: 0.8rem;
             }
             
-            .match-scores {
+            .fixtures-table .team-name {
+                font-size: 0.8rem;
+            }
+            
+            .fixtures-table .score-display {
                 font-size: 0.95rem;
             }
             
-            .match-pts {
-                min-width: 38px;
+            .fixtures-table .score-pts {
+                min-width: 40px;
                 padding: 0.2rem 0.4rem;
             }
             
@@ -324,7 +337,67 @@
         {% for gw in gameweeks|reverse %}
         <div id="gw-{{ gw }}" class="gw-content {% if loop.first %}active{% endif %}">
             <div class="history-grid">
-                <!-- Standings (Right side in RTL) -->
+                <!-- Matches (Right side in RTL - like dashboard) -->
+                <div class="card">
+                    <h2 class="section-title">
+                        <span class="section-icon">⚔️</span>
+                        مباريات الجولة {{ gw }}
+                    </h2>
+                    {% if history[gw].matches %}
+                    <table class="fixtures-table">
+                        <thead>
+                            <tr>
+                                <th>الفريق الأول</th>
+                                <th>النتيجة</th>
+                                <th>الفريق الثاني</th>
+                                <th>الفارق</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for match in history[gw].matches %}
+                            <tr>
+                                <td class="team-cell">
+                                    <div class="team-info">
+                                        <span class="team-name {% if match.points1 > match.points2 %}winner{% endif %}">
+                                            {{ match.team1 }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="score-cell">
+                                    <div class="score-display">
+                                        <span class="score-pts {% if match.points1 > match.points2 %}winning{% elif match.points1 < match.points2 %}losing{% else %}draw{% endif %}">
+                                            {{ match.points1 }}
+                                        </span>
+                                        <span>-</span>
+                                        <span class="score-pts {% if match.points2 > match.points1 %}winning{% elif match.points2 < match.points1 %}losing{% else %}draw{% endif %}">
+                                            {{ match.points2 }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="team-cell">
+                                    <div class="team-info">
+                                        <span class="team-name {% if match.points2 > match.points1 %}winner{% endif %}">
+                                            {{ match.team2 }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="diff-cell">
+                                    <span class="diff-badge">
+                                        {% set diff = (match.points1 - match.points2)|abs %}
+                                        {% if match.points1 > match.points2 %}◀{% elif match.points2 > match.points1 %}▶{% endif %}
+                                        {{ diff if diff > 0 else 'تعادل' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p style="color: #888; text-align: center; padding: 2rem;">لا توجد بيانات المباريات</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Standings (Left side in RTL - like dashboard) -->
                 <div class="card">
                     <h2 class="section-title">
                         <span class="section-icon">🏆</span>
@@ -335,8 +408,8 @@
                             <tr>
                                 <th>م</th>
                                 <th>الفريق</th>
-                                <th>ن.ج</th>
-                                <th>ن.د</th>
+                                <th>نقاط الجولة</th>
+                                <th>نقاط الدوري</th>
                                 <th>المجموع</th>
                             </tr>
                         </thead>
@@ -362,47 +435,6 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                </div>
-                
-                <!-- Matches (Left side in RTL) -->
-                <div class="card">
-                    <h2 class="section-title">
-                        <span class="section-icon">⚔️</span>
-                        نتائج المباريات - الجولة {{ gw }}
-                    </h2>
-                    {% if history[gw].matches %}
-                    <div class="matches-container">
-                        {% for match in history[gw].matches %}
-                        <div class="match-row">
-                            <div class="match-team team-right {% if match.points1 > match.points2 %}winner{% endif %}">
-                                <span class="match-team-name">{{ match.team1 }}</span>
-                            </div>
-                            
-                            <div class="match-score-block">
-                                <div class="match-scores">
-                                    <span class="match-pts {% if match.points1 > match.points2 %}winning{% elif match.points1 < match.points2 %}losing{% else %}draw{% endif %}">
-                                        {{ match.points1 }}
-                                    </span>
-                                    <span class="match-separator">-</span>
-                                    <span class="match-pts {% if match.points2 > match.points1 %}winning{% elif match.points2 < match.points1 %}losing{% else %}draw{% endif %}">
-                                        {{ match.points2 }}
-                                    </span>
-                                </div>
-                                <div class="match-diff">
-                                    {% set diff = (match.points1 - match.points2)|abs %}
-                                    {% if diff > 0 %}{{ diff }}{% else %}تعادل{% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="match-team team-left {% if match.points2 > match.points1 %}winner{% endif %}">
-                                <span class="match-team-name">{{ match.team2 }}</span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p style="color: #888; text-align: center; padding: 2rem;">لا توجد بيانات المباريات</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
