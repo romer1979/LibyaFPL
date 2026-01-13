@@ -768,7 +768,7 @@ def get_arab_league_data():
                 'prev_rank': prev_rank,
             })
         
-        team_standings.sort(key=lambda x: (-x['league_points'], -x['live_gw_points']))
+        team_standings.sort(key=lambda x: (-x['league_points'], -x['total_fpl_points']))
         
         for i, team in enumerate(team_standings, 1):
             team['rank'] = i
