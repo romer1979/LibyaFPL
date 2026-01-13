@@ -115,6 +115,36 @@ def arab_dashboard():
     return render_template('arab_dashboard.html', data=data)
 
 
+@app.route('/league/cities/history')
+def cities_history():
+    """Cities League history page"""
+    from core.team_league_history import get_league_history_data
+    data = get_league_history_data('cities')
+    if not data:
+        return "Error loading history", 500
+    return render_template('team_league_history.html', **data)
+
+
+@app.route('/league/libyan/history')
+def libyan_history():
+    """Libyan League history page"""
+    from core.team_league_history import get_league_history_data
+    data = get_league_history_data('libyan')
+    if not data:
+        return "Error loading history", 500
+    return render_template('team_league_history.html', **data)
+
+
+@app.route('/league/arab/history')
+def arab_history():
+    """Arab League history page"""
+    from core.team_league_history import get_league_history_data
+    data = get_league_history_data('arab')
+    if not data:
+        return "Error loading history", 500
+    return render_template('team_league_history.html', **data)
+
+
 @app.route('/api/comparison')
 def comparison_data():
     """API endpoint for manager comparison data"""
