@@ -246,6 +246,9 @@ def save_team_league_matches(league_type, gameweek, matches_list):
         db.session.rollback()
         print(f"Error saving team league matches: {e}")
         return False
+
+
+def get_team_league_standings(league_type, gameweek):
     """Get standings for a specific gameweek"""
     standings = TeamLeagueStandings.query.filter_by(
         league_type=league_type,
