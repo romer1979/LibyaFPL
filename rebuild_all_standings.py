@@ -17,7 +17,7 @@ Run from Render Shell:
 import requests
 import time
 from app import app, db
-from models import TeamLeagueStandings
+from models import TeamLeagueStandings, TeamLeagueMatches
 
 TIMEOUT = 15
 MAX_RETRIES = 3
@@ -297,7 +297,7 @@ def process_gameweek(league_type, league_config, gameweek, player_info, prev_lea
         print(f"    ❌ Failed to get H2H matches for GW{gameweek}")
         return None, None
     
-    # Determine unique team matchups
+    # Determine unique team matchups with points
     matches = []
     for match in matches_data['results']:
         entry_1 = match.get('entry_1_entry')
@@ -308,18 +308,23 @@ def process_gameweek(league_type, league_config, gameweek, player_info, prev_lea
         
         if team_1 and team_2:
             existing = next((m for m in matches if 
-                (m['team_1'] == team_1 and m['team_2'] == team_2) or
-                (m['team_1'] == team_2 and m['team_2'] == team_1)), None)
+                (m['team1'] == team_1 and m['team2'] == team_2) or
+                (m['team1'] == team_2 and m['team2'] == team_1)), None)
             
             if not existing:
-                matches.append({'team_1': team_1, 'team_2': team_2})
+                matches.append({
+                    'team1': team_1,
+                    'team2': team_2,
+                    'points1': gw_team_points.get(team_1, 0),
+                    'points2': gw_team_points.get(team_2, 0),
+                })
     
     # Calculate W/D/L and league points
     gw_league_points = {team: 0 for team in teams.keys()}
     
     for match in matches:
-        t1, t2 = match['team_1'], match['team_2']
-        p1, p2 = gw_team_points.get(t1, 0), gw_team_points.get(t2, 0)
+        t1, t2 = match['team1'], match['team2']
+        p1, p2 = match['points1'], match['points2']
         
         if p1 > p2:
             gw_league_points[t1] = 3
@@ -339,7 +344,7 @@ def process_gameweek(league_type, league_config, gameweek, player_info, prev_lea
         new_league_standings[team] = prev_league_standings.get(team, 0) + gw_league_points.get(team, 0)
         new_fpl_totals[team] = prev_fpl_totals.get(team, 0) + gw_team_points.get(team, 0)
     
-    return new_league_standings, new_fpl_totals
+    return new_league_standings, new_fpl_totals, matches
 
 
 def rebuild_league(league_type, league_config, player_info, start_gw=1, end_gw=21):
@@ -357,22 +362,24 @@ def rebuild_league(league_type, league_config, player_info, start_gw=1, end_gw=2
     for gw in range(start_gw, end_gw + 1):
         print(f"\n  Processing GW{gw}...")
         
-        new_standings, new_fpl = process_gameweek(
+        result = process_gameweek(
             league_type, league_config, gw, player_info,
             league_standings, fpl_totals
         )
         
-        if new_standings is None:
+        if result[0] is None:
             print(f"    ⚠️ Skipping GW{gw} due to errors")
             continue
         
+        new_standings, new_fpl, matches = result
         league_standings = new_standings
         fpl_totals = new_fpl
         
         all_gw_data.append({
             'gameweek': gw,
             'standings': league_standings.copy(),
-            'fpl_totals': fpl_totals.copy()
+            'fpl_totals': fpl_totals.copy(),
+            'matches': matches,
         })
         
         # Show top 3
@@ -387,11 +394,18 @@ def save_league_data(league_type, all_gw_data):
     print(f"\n  Saving {league_type} to database...")
     
     with app.app_context():
-        # Delete existing data for this league
-        deleted = TeamLeagueStandings.query.filter_by(league_type=league_type).delete()
-        print(f"    Deleted {deleted} existing records")
+        # Delete existing standings for this league
+        deleted_standings = TeamLeagueStandings.query.filter_by(league_type=league_type).delete()
+        print(f"    Deleted {deleted_standings} existing standings records")
         
-        # Insert new data
+        # Delete existing matches for this league
+        try:
+            deleted_matches = TeamLeagueMatches.query.filter_by(league_type=league_type).delete()
+            print(f"    Deleted {deleted_matches} existing match records")
+        except:
+            print(f"    No existing match records to delete")
+        
+        # Insert standings
         for gw_data in all_gw_data:
             gw = gw_data['gameweek']
             standings = gw_data['standings']
@@ -407,8 +421,27 @@ def save_league_data(league_type, all_gw_data):
                 )
                 db.session.add(new_record)
         
+        # Insert matches
+        match_count = 0
+        for gw_data in all_gw_data:
+            gw = gw_data['gameweek']
+            matches = gw_data.get('matches', [])
+            
+            for match in matches:
+                new_match = TeamLeagueMatches(
+                    league_type=league_type,
+                    gameweek=gw,
+                    team1_name=match['team1'],
+                    team2_name=match['team2'],
+                    team1_points=match['points1'],
+                    team2_points=match['points2']
+                )
+                db.session.add(new_match)
+                match_count += 1
+        
         db.session.commit()
-        print(f"    Saved {len(all_gw_data) * 20} records")
+        print(f"    Saved {len(all_gw_data) * 20} standings records")
+        print(f"    Saved {match_count} match records")
 
 
 def main():
