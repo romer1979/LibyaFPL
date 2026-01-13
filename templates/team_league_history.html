@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>{{ league_name }} - سجل الجولات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .history-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .history-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+        }
+        
+        .gw-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .gw-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .gw-btn:hover {
+            border-color: var(--primary-purple);
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .gw-btn.active {
+            background: var(--primary-purple);
+            color: white;
+            border-color: var(--primary-purple);
+        }
+        
+        .gw-content {
+            display: none;
+        }
+        
+        .gw-content.active {
+            display: block;
+        }
+        
+        .section-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Match Results Table */
+        .matches-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .matches-table th,
+        .matches-table td {
+            padding: 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .matches-table th {
+            background: rgba(102, 126, 234, 0.1);
+            font-weight: 600;
+            color: var(--primary-purple);
+        }
+        
+        .match-team {
+            font-weight: 600;
+        }
+        
+        .match-points {
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .match-winner {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .match-loser {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .match-draw {
+            background: rgba(251, 191, 36, 0.2);
+            color: #f59e0b;
+        }
+        
+        .match-result {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        
+        .result-win {
+            color: #22c55e;
+        }
+        
+        .result-draw {
+            color: #f59e0b;
+        }
+        
+        /* Standings Table */
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .standings-table th,
+        .standings-table td {
+            padding: 0.6rem 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .standings-table th {
+            background: rgba(102, 126, 234, 0.1);
+            font-weight: 600;
+            color: var(--primary-purple);
+            font-size: 0.85rem;
+        }
+        
+        .standings-table td:first-child,
+        .standings-table th:first-child {
+            text-align: center;
+            width: 40px;
+        }
+        
+        .standings-table td:nth-child(2),
+        .standings-table th:nth-child(2) {
+            text-align: right;
+        }
+        
+        .rank-cell {
+            font-weight: 700;
+            color: var(--primary-purple);
+        }
+        
+        .team-name-cell {
+            font-weight: 600;
+        }
+        
+        .points-cell {
+            font-weight: 700;
+            color: #22c55e;
+        }
+        
+        .fpl-points-cell {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .gw-result-cell {
+            font-weight: 600;
+        }
+        
+        .gw-result-W {
+            color: #22c55e;
+        }
+        
+        .gw-result-D {
+            color: #f59e0b;
+        }
+        
+        .gw-result-L {
+            color: #ef4444;
+        }
+        
+        /* Back button */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .back-btn:hover {
+            border-color: var(--primary-purple);
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .history-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .gw-selector {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+            
+            .gw-btn {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+            
+            .matches-table th,
+            .matches-table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.8rem;
+            }
+            
+            .standings-table th,
+            .standings-table td {
+                padding: 0.4rem 0.25rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="{{ back_url }}" class="logo">
+                <img src="{{ url_for('static', filename=logo_file) }}" alt="{{ league_name }}" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-title">{{ league_name }}</span>
+                    <span class="logo-subtitle">سجل الجولات</span>
+                </div>
+            </a>
+            <div class="gameweek-info">
+                <a href="{{ back_url }}" class="back-btn">🔙 العودة</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <div class="history-container">
+            <div class="history-header">
+                <h1 class="history-title">📜 سجل الجولات السابقة</h1>
+                <div class="gw-selector">
+                    {% for gw in gameweeks|reverse %}
+                    <button class="gw-btn {% if loop.first %}active{% endif %}" onclick="showGameweek({{ gw }})">
+                        GW{{ gw }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            {% for gw in gameweeks|reverse %}
+            <div id="gw-{{ gw }}" class="gw-content {% if loop.first %}active{% endif %}">
+                <!-- Match Results -->
+                <div class="section-card">
+                    <h2 class="section-title">⚔️ نتائج المباريات - الجولة {{ gw }}</h2>
+                    <table class="matches-table">
+                        <thead>
+                            <tr>
+                                <th>الفريق الأول</th>
+                                <th>النقاط</th>
+                                <th>النتيجة</th>
+                                <th>النقاط</th>
+                                <th>الفريق الثاني</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for match in history[gw].matches %}
+                            <tr>
+                                <td class="match-team">{{ match.team1 }}</td>
+                                <td>
+                                    <span class="match-points {% if match.points1 > match.points2 %}match-winner{% elif match.points1 < match.points2 %}match-loser{% else %}match-draw{% endif %}">
+                                        {{ match.points1 }}
+                                    </span>
+                                </td>
+                                <td class="match-result {% if match.points1 > match.points2 %}result-win{% elif match.points1 == match.points2 %}result-draw{% else %}result-win{% endif %}">
+                                    {% if match.points1 > match.points2 %}
+                                        ← فوز
+                                    {% elif match.points1 < match.points2 %}
+                                        فوز →
+                                    {% else %}
+                                        تعادل
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="match-points {% if match.points2 > match.points1 %}match-winner{% elif match.points2 < match.points1 %}match-loser{% else %}match-draw{% endif %}">
+                                        {{ match.points2 }}
+                                    </span>
+                                </td>
+                                <td class="match-team">{{ match.team2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Standings after this GW -->
+                <div class="section-card">
+                    <h2 class="section-title">📊 الترتيب بعد الجولة {{ gw }}</h2>
+                    <table class="standings-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الفريق</th>
+                                <th>نقاط</th>
+                                <th>مجموع النقاط</th>
+                                <th>النتيجة</th>
+                                <th>+/-</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for team in history[gw].standings %}
+                            <tr>
+                                <td class="rank-cell">{{ loop.index }}</td>
+                                <td class="team-name-cell">{{ team.name }}</td>
+                                <td class="points-cell">{{ team.league_points }}</td>
+                                <td class="fpl-points-cell">{{ team.total_fpl_points }}</td>
+                                <td class="gw-result-cell gw-result-{{ team.gw_result }}">
+                                    {% if team.gw_result == 'W' %}فوز{% elif team.gw_result == 'D' %}تعادل{% else %}خسارة{% endif %}
+                                </td>
+                                <td class="gw-result-cell">
+                                    {% if team.gw_result == 'W' %}+3{% elif team.gw_result == 'D' %}+1{% else %}0{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <script>
+        function showGameweek(gw) {
+            // Hide all content
+            document.querySelectorAll('.gw-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.gw-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected content
+            document.getElementById('gw-' + gw).classList.add('active');
+            
+            // Mark button as active
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
