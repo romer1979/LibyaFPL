@@ -177,7 +177,75 @@ class TeamLeagueStandings(db.Model):
         return f'<TeamLeagueStandings {self.league_type} GW{self.gameweek} {self.team_name}: {self.league_points}>'
 
 
-def get_team_league_standings(league_type, gameweek):
+class TeamLeagueMatches(db.Model):
+    """Stores match results for team-based leagues"""
+    __tablename__ = 'team_league_matches'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    league_type = db.Column(db.String(20), nullable=False)  # 'cities', 'libyan', 'arab'
+    gameweek = db.Column(db.Integer, nullable=False)
+    team1_name = db.Column(db.String(100), nullable=False)
+    team2_name = db.Column(db.String(100), nullable=False)
+    team1_points = db.Column(db.Integer, default=0)  # FPL points for this GW
+    team2_points = db.Column(db.Integer, default=0)  # FPL points for this GW
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('league_type', 'gameweek', 'team1_name', 'team2_name', name='unique_match'),
+    )
+    
+    def __repr__(self):
+        return f'<TeamLeagueMatches {self.league_type} GW{self.gameweek} {self.team1_name} vs {self.team2_name}>'
+
+
+def get_team_league_matches(league_type, gameweek):
+    """Get matches for a specific gameweek"""
+    matches = TeamLeagueMatches.query.filter_by(
+        league_type=league_type,
+        gameweek=gameweek
+    ).all()
+    return [{
+        'team1': m.team1_name,
+        'team2': m.team2_name,
+        'points1': m.team1_points,
+        'points2': m.team2_points,
+    } for m in matches]
+
+
+def save_team_league_matches(league_type, gameweek, matches_list):
+    """Save matches for a gameweek
+    matches_list: [{team1, team2, points1, points2}, ...]
+    """
+    for match in matches_list:
+        existing = TeamLeagueMatches.query.filter_by(
+            league_type=league_type,
+            gameweek=gameweek,
+            team1_name=match['team1'],
+            team2_name=match['team2']
+        ).first()
+        
+        if existing:
+            existing.team1_points = match['points1']
+            existing.team2_points = match['points2']
+        else:
+            new_match = TeamLeagueMatches(
+                league_type=league_type,
+                gameweek=gameweek,
+                team1_name=match['team1'],
+                team2_name=match['team2'],
+                team1_points=match['points1'],
+                team2_points=match['points2']
+            )
+            db.session.add(new_match)
+    
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving team league matches: {e}")
+        return False
     """Get standings for a specific gameweek"""
     standings = TeamLeagueStandings.query.filter_by(
         league_type=league_type,
