@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .history-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 1rem;
         }
@@ -64,19 +64,26 @@
             display: block;
         }
         
+        /* Two column layout */
+        .gw-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
         .section-card {
             background: var(--bg-card);
             border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
+            padding: 1rem;
             border: 1px solid var(--border-color);
+            height: fit-content;
         }
         
         .section-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             color: var(--primary-purple);
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -86,11 +93,12 @@
         .matches-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 0.85rem;
         }
         
         .matches-table th,
         .matches-table td {
-            padding: 0.75rem;
+            padding: 0.5rem 0.4rem;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
         }
@@ -99,16 +107,19 @@
             background: rgba(102, 126, 234, 0.1);
             font-weight: 600;
             color: var(--primary-purple);
+            font-size: 0.75rem;
         }
         
         .match-team {
             font-weight: 600;
+            font-size: 0.8rem;
         }
         
         .match-points {
             font-weight: 700;
-            padding: 0.25rem 0.5rem;
+            padding: 0.2rem 0.4rem;
             border-radius: 4px;
+            font-size: 0.85rem;
         }
         
         .match-winner {
@@ -128,7 +139,7 @@
         
         .match-result {
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
         
         .result-win {
@@ -143,11 +154,12 @@
         .standings-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 0.85rem;
         }
         
         .standings-table th,
         .standings-table td {
-            padding: 0.6rem 0.75rem;
+            padding: 0.4rem 0.3rem;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
         }
@@ -156,13 +168,13 @@
             background: rgba(102, 126, 234, 0.1);
             font-weight: 600;
             color: var(--primary-purple);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
         
         .standings-table td:first-child,
         .standings-table th:first-child {
             text-align: center;
-            width: 40px;
+            width: 30px;
         }
         
         .standings-table td:nth-child(2),
@@ -177,6 +189,7 @@
         
         .team-name-cell {
             font-weight: 600;
+            font-size: 0.8rem;
         }
         
         .points-cell {
@@ -186,11 +199,12 @@
         
         .fpl-points-cell {
             color: #888;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         
         .gw-result-cell {
             font-weight: 600;
+            font-size: 0.75rem;
         }
         
         .gw-result-W {
@@ -226,7 +240,11 @@
         }
         
         /* Mobile */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+            .gw-layout {
+                grid-template-columns: 1fr;
+            }
+            
             .history-header {
                 flex-direction: column;
                 align-items: flex-start;
@@ -246,14 +264,18 @@
             
             .matches-table th,
             .matches-table td {
-                padding: 0.5rem 0.25rem;
-                font-size: 0.8rem;
+                padding: 0.4rem 0.2rem;
+                font-size: 0.75rem;
             }
             
             .standings-table th,
             .standings-table td {
-                padding: 0.4rem 0.25rem;
-                font-size: 0.8rem;
+                padding: 0.35rem 0.2rem;
+                font-size: 0.75rem;
+            }
+            
+            .match-team, .team-name-cell {
+                font-size: 0.7rem;
             }
         }
     </style>
@@ -297,81 +319,83 @@
             </div>
             
             {% for gw in gameweeks|reverse %}
-            <div id="gw-{{ gw }}" class="gw-content {% if loop.first %}active{% endif %}">>
-                <!-- Match Results -->
-                <div class="section-card">
-                    <h2 class="section-title">⚔️ نتائج المباريات - الجولة {{ gw }}</h2>
-                    <table class="matches-table">
-                        <thead>
-                            <tr>
-                                <th>الفريق الأول</th>
-                                <th>النقاط</th>
-                                <th>النتيجة</th>
-                                <th>النقاط</th>
-                                <th>الفريق الثاني</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for match in history[gw].matches %}
-                            <tr>
-                                <td class="match-team">{{ match.team1 }}</td>
-                                <td>
-                                    <span class="match-points {% if match.points1 > match.points2 %}match-winner{% elif match.points1 < match.points2 %}match-loser{% else %}match-draw{% endif %}">
-                                        {{ match.points1 }}
-                                    </span>
-                                </td>
-                                <td class="match-result {% if match.points1 > match.points2 %}result-win{% elif match.points1 == match.points2 %}result-draw{% else %}result-win{% endif %}">
-                                    {% if match.points1 > match.points2 %}
-                                        ← فوز
-                                    {% elif match.points1 < match.points2 %}
-                                        فوز →
-                                    {% else %}
-                                        تعادل
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="match-points {% if match.points2 > match.points1 %}match-winner{% elif match.points2 < match.points1 %}match-loser{% else %}match-draw{% endif %}">
-                                        {{ match.points2 }}
-                                    </span>
-                                </td>
-                                <td class="match-team">{{ match.team2 }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Standings after this GW -->
-                <div class="section-card">
-                    <h2 class="section-title">📊 الترتيب بعد الجولة {{ gw }}</h2>
-                    <table class="standings-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>الفريق</th>
-                                <th>نقاط</th>
-                                <th>مجموع النقاط</th>
-                                <th>النتيجة</th>
-                                <th>+/-</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for team in history[gw].standings %}
-                            <tr>
-                                <td class="rank-cell">{{ loop.index }}</td>
-                                <td class="team-name-cell">{{ team.name }}</td>
-                                <td class="points-cell">{{ team.league_points }}</td>
-                                <td class="fpl-points-cell">{{ team.total_fpl_points }}</td>
-                                <td class="gw-result-cell gw-result-{{ team.gw_result }}">
-                                    {% if team.gw_result == 'W' %}فوز{% elif team.gw_result == 'D' %}تعادل{% else %}خسارة{% endif %}
-                                </td>
-                                <td class="gw-result-cell">
-                                    {% if team.gw_result == 'W' %}+3{% elif team.gw_result == 'D' %}+1{% else %}0{% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div id="gw-{{ gw }}" class="gw-content {% if loop.first %}active{% endif %}">
+                <div class="gw-layout">
+                    <!-- Standings on the right (RTL so appears on right) -->
+                    <div class="section-card">
+                        <h2 class="section-title">📊 الترتيب بعد الجولة {{ gw }}</h2>
+                        <table class="standings-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>الفريق</th>
+                                    <th>ن</th>
+                                    <th>مجموع</th>
+                                    <th>النتيجة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for team in history[gw].standings %}
+                                <tr>
+                                    <td class="rank-cell">{{ loop.index }}</td>
+                                    <td class="team-name-cell">{{ team.name }}</td>
+                                    <td class="points-cell">{{ team.league_points }}</td>
+                                    <td class="fpl-points-cell">{{ team.total_fpl_points }}</td>
+                                    <td class="gw-result-cell gw-result-{{ team.gw_result }}">
+                                        {% if team.gw_result == 'W' %}+3{% elif team.gw_result == 'D' %}+1{% else %}0{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Match Results on the left (RTL so appears on left) -->
+                    <div class="section-card">
+                        <h2 class="section-title">⚔️ نتائج المباريات - الجولة {{ gw }}</h2>
+                        {% if history[gw].matches %}
+                        <table class="matches-table">
+                            <thead>
+                                <tr>
+                                    <th>الفريق</th>
+                                    <th>النقاط</th>
+                                    <th>vs</th>
+                                    <th>النقاط</th>
+                                    <th>الفريق</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for match in history[gw].matches %}
+                                <tr>
+                                    <td class="match-team">{{ match.team1 }}</td>
+                                    <td>
+                                        <span class="match-points {% if match.points1 > match.points2 %}match-winner{% elif match.points1 < match.points2 %}match-loser{% else %}match-draw{% endif %}">
+                                            {{ match.points1 }}
+                                        </span>
+                                    </td>
+                                    <td class="match-result">
+                                        {% if match.points1 > match.points2 %}
+                                            <span class="result-win">✓</span>
+                                        {% elif match.points1 < match.points2 %}
+                                            <span class="result-win">✓</span>
+                                        {% else %}
+                                            <span class="result-draw">=</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="match-points {% if match.points2 > match.points1 %}match-winner{% elif match.points2 < match.points1 %}match-loser{% else %}match-draw{% endif %}">
+                                            {{ match.points2 }}
+                                        </span>
+                                    </td>
+                                    <td class="match-team">{{ match.team2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p style="color: #888; text-align: center; padding: 1rem;">لا توجد بيانات المباريات</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             {% endfor %}
