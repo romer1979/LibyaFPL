@@ -88,14 +88,15 @@ def get_league_history_from_db(league_type):
                 'points2': m.team2_points,
             })
     
-    # Sort standings within each gameweek and calculate GW results
+    # Sort standings within each gameweek and calculate GW results and GW points
     for gw in history:
         # Sort by league points, then FPL points
         history[gw]['standings'].sort(key=lambda x: (-x['league_points'], -x['total_fpl_points']))
         
-        # Calculate GW result by comparing to previous GW
+        # Calculate GW result and GW points by comparing to previous GW
         if gw > 1 and (gw - 1) in history:
             prev_standings = {s['name']: s['league_points'] for s in history[gw - 1]['standings']}
+            prev_fpl = {s['name']: s['total_fpl_points'] for s in history[gw - 1]['standings']}
             
             for team in history[gw]['standings']:
                 prev_pts = prev_standings.get(team['name'], 0)
@@ -108,6 +109,10 @@ def get_league_history_from_db(league_type):
                     team['gw_result'] = 'D'
                 else:
                     team['gw_result'] = 'L'
+                
+                # Calculate GW FPL points
+                prev_fpl_pts = prev_fpl.get(team['name'], 0)
+                team['gw_points'] = team['total_fpl_points'] - prev_fpl_pts
         else:
             # For GW1, calculate from points directly
             for team in history[gw]['standings']:
@@ -118,6 +123,9 @@ def get_league_history_from_db(league_type):
                     team['gw_result'] = 'D'
                 else:
                     team['gw_result'] = 'L'
+                
+                # For GW1, gw_points = total_fpl_points
+                team['gw_points'] = team['total_fpl_points']
     
     return history
 
