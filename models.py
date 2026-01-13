@@ -164,6 +164,7 @@ class TeamLeagueStandings(db.Model):
     gameweek = db.Column(db.Integer, nullable=False)
     team_name = db.Column(db.String(100), nullable=False)
     league_points = db.Column(db.Integer, default=0)
+    total_fpl_points = db.Column(db.Integer, default=0)  # Cumulative FPL points (custom calculation)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -185,6 +186,15 @@ def get_team_league_standings(league_type, gameweek):
     return {s.team_name: s.league_points for s in standings}
 
 
+def get_team_league_standings_full(league_type, gameweek):
+    """Get standings with total_fpl_points for a specific gameweek"""
+    standings = TeamLeagueStandings.query.filter_by(
+        league_type=league_type,
+        gameweek=gameweek
+    ).all()
+    return {s.team_name: {'league_points': s.league_points, 'total_fpl_points': s.total_fpl_points or 0} for s in standings}
+
+
 def get_latest_team_league_standings(league_type):
     """Get the most recent saved standings for a league"""
     # Find the latest gameweek that has standings
@@ -197,9 +207,10 @@ def get_latest_team_league_standings(league_type):
     return {}, 0
 
 
-def save_team_league_standings(league_type, gameweek, standings_dict):
+def save_team_league_standings(league_type, gameweek, standings_dict, fpl_points_dict=None):
     """Save standings for a gameweek
     standings_dict: {team_name: league_points}
+    fpl_points_dict: {team_name: total_fpl_points} (optional)
     """
     for team_name, points in standings_dict.items():
         existing = TeamLeagueStandings.query.filter_by(
@@ -208,15 +219,19 @@ def save_team_league_standings(league_type, gameweek, standings_dict):
             team_name=team_name
         ).first()
         
+        fpl_points = fpl_points_dict.get(team_name, 0) if fpl_points_dict else 0
+        
         if existing:
             existing.league_points = points
+            existing.total_fpl_points = fpl_points
             existing.updated_at = datetime.utcnow()
         else:
             new_standing = TeamLeagueStandings(
                 league_type=league_type,
                 gameweek=gameweek,
                 team_name=team_name,
-                league_points=points
+                league_points=points,
+                total_fpl_points=fpl_points
             )
             db.session.add(new_standing)
     
