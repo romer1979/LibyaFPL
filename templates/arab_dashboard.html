@@ -168,6 +168,19 @@
             text-align: center;
         }
         
+        /* Total FPL points column */
+        .total-fpl-cell {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .msh-total, .ms-total {
+            width: 50px;
+            text-align: center;
+            color: #888;
+            font-size: 0.8rem;
+        }
+        
         /* Mobile standing details */
         .mobile-standing-details {
             padding: 0.5rem 1rem;
@@ -480,6 +493,7 @@
                                     <th>الفريق</th>
                                     <th>نقاط الجولة</th>
                                     <th>نقاط الدوري</th>
+                                    <th>المجموع</th>
                                     <th>+/-</th>
                                     <th class="captains-col-header">الكباتن</th>
                                 </tr>
@@ -501,6 +515,7 @@
                                     <td class="name-cell">{{ team.team_name }}</td>
                                     <td class="gw-points-cell">{{ team.live_gw_points }}</td>
                                     <td class="league-points-cell">{{ team.league_points }}</td>
+                                    <td class="total-fpl-cell">{{ team.total_fpl_points or 0 }}</td>
                                     <td class="rank-change-cell">
                                         {% if team.rank_change and team.rank_change > 0 %}
                                             <span class="rank-up">▲{{ team.rank_change }}</span>
@@ -528,7 +543,7 @@
                             <span class="msh-name">الفريق</span>
                             <span class="msh-gw">ن.ج</span>
                             <span class="msh-lp">ن.د</span>
-                            <span class="msh-change">+/-</span>
+                            <span class="msh-total">مجموع</span>
                         </div>
                         {% for team in data.standings %}
                         <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}" onclick="toggleStandingDetails({{ loop.index }})">
@@ -539,15 +554,7 @@
                                 <span class="ms-name">{{ team.team_name }}</span>
                                 <span class="ms-gw">{{ team.live_gw_points }}</span>
                                 <span class="ms-lp">{{ team.league_points }}</span>
-                                <span class="ms-change">
-                                    {% if team.rank_change and team.rank_change > 0 %}
-                                        <span class="rank-up">▲{{ team.rank_change }}</span>
-                                    {% elif team.rank_change and team.rank_change < 0 %}
-                                        <span class="rank-down">▼{{ team.rank_change|abs }}</span>
-                                    {% else %}
-                                        <span class="rank-same">-</span>
-                                    {% endif %}
-                                </span>
+                                <span class="ms-total">{{ team.total_fpl_points or 0 }}</span>
                             </div>
                             <div class="mobile-standing-details" id="standing-details-{{ loop.index }}" style="display: none;">
                                 <div class="ms-detail">
