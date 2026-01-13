@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 import time
 from collections import Counter
-from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings
+from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings, get_team_league_standings_full
 from core.fpl_api import is_gameweek_finished
 
 # Configuration
@@ -143,21 +143,24 @@ def get_previous_rank(team_name, standings_dict):
 def get_base_standings(current_gw):
     """Get the base standings to build upon.
     Priority: 1) Hardcoded standings, 2) Database, 3) Earliest available
-    Returns (standings_dict, source_gw)
+    Returns (standings_dict, fpl_totals_dict, source_gw)
     """
     prev_gw = current_gw - 1
     
     # First try hardcoded standings (most reliable)
     if prev_gw in STANDINGS_BY_GW:
-        return STANDINGS_BY_GW[prev_gw].copy(), prev_gw
+        return STANDINGS_BY_GW[prev_gw].copy(), {}, prev_gw
     
-    # Then try database
-    db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
+    # Then try database (with FPL totals)
+    db_standings = get_team_league_standings_full(LEAGUE_TYPE, prev_gw)
     if db_standings:
-        return db_standings, prev_gw
+        league_points = {k: v['league_points'] for k, v in db_standings.items()}
+        fpl_totals = {k: v['total_fpl_points'] for k, v in db_standings.items()}
+        return league_points, fpl_totals, prev_gw
     
     # Fall back to hardcoded function
-    return get_base_standings_hardcoded(current_gw)
+    standings, gw = get_base_standings_hardcoded(current_gw)
+    return standings, {}, gw
 
 def get_cities_league_data():
     """Fetch all data for Cities League"""
@@ -763,13 +766,14 @@ def get_cities_league_data():
                 })
         
         # 8) Get base standings from database or initial standings
-        base_standings, base_gw = get_base_standings(current_gw)
+        base_standings, base_fpl_totals, base_gw = get_base_standings(current_gw)
         
         # 9) Build standings with projected points
         team_standings = []
         for team_name in TEAMS_FPL_IDS.keys():
             # Previous league points from base standings
             prev_points = base_standings.get(team_name, 0)
+            prev_fpl_total = base_fpl_totals.get(team_name, 0)
             prev_rank = get_previous_rank(team_name, base_standings)
             
             # Add points from current GW match
@@ -783,11 +787,16 @@ def get_cities_league_data():
             
             projected_points = prev_points + added_points
             
+            # Calculate total FPL points (previous + current GW)
+            current_gw_fpl = team_live_points.get(team_name, 0)
+            total_fpl_points = prev_fpl_total + current_gw_fpl
+            
             team_standings.append({
                 'team_name': team_name,
                 'league_points': projected_points,
                 'prev_points': prev_points,
-                'live_gw_points': team_live_points.get(team_name, 0),
+                'live_gw_points': current_gw_fpl,
+                'total_fpl_points': total_fpl_points,
                 'captains': format_captains(team_captains.get(team_name, [])),
                 'result': result,
                 'prev_rank': prev_rank,
@@ -817,7 +826,8 @@ def get_cities_league_data():
         if gw_finished_for_save:
             # Build standings dict to save
             final_standings = {team['team_name']: team['league_points'] for team in team_standings}
-            save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings)
+            final_fpl_totals = {team['team_name']: team['total_fpl_points'] for team in team_standings}
+            save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings, final_fpl_totals)
         
         result = {
             'standings': team_standings,
