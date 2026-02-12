@@ -229,6 +229,9 @@ def get_libyan_league_data():
             
             return group
         
+        # 3) Get fixtures (moved up for DGW BPS lookup)
+        fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
+
         # Build per-fixture BPS lookup from fixtures data for DGW support
         fixture_bps = {}
         for fix in fixtures:
@@ -276,9 +279,6 @@ def get_libyan_league_data():
                 new_bonus = bonus_points_dict.get(player_id, 0)
                 stats['total_points'] += new_bonus - stats.get('bonus', 0)
                 stats['bonus'] = new_bonus
-        
-        # 3) Get fixtures
-        fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
         
         # Build team fixture started status
         team_fixture_started = {}
