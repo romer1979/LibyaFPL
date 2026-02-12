@@ -72,8 +72,8 @@ class DashboardData:
         
         for fixture in self.fixtures:
             started = fixture.get('started', False)
-            self.team_fixture_started[fixture['team_h']] = started
-            self.team_fixture_started[fixture['team_a']] = started
+            self.team_fixture_started[fixture['team_h']] = self.team_fixture_started.get(fixture['team_h'], False) or started
+            self.team_fixture_started[fixture['team_a']] = self.team_fixture_started.get(fixture['team_a'], False) or started
         
         self.live_elements_dict = {
             elem['id']: {
@@ -86,27 +86,45 @@ class DashboardData:
             for elem in live_data['elements']
         }
         
+        # Build per-fixture BPS lookup from fixtures data for DGW support
+        self.fixture_bps = {}
+        for fix in self.fixtures:
+            fix_id = fix.get('id')
+            if fix_id is None:
+                continue
+            self.fixture_bps[fix_id] = {}
+            for stat_group in fix.get('stats', []):
+                if stat_group.get('identifier') == 'bps':
+                    for entry in stat_group.get('h', []):
+                        self.fixture_bps[fix_id][entry['element']] = entry['value']
+                    for entry in stat_group.get('a', []):
+                        self.fixture_bps[fix_id][entry['element']] = entry['value']
+
         self._calculate_and_apply_bonus(live_data)
-    
+
     def _calculate_and_apply_bonus(self, live_data):
-        """Calculate projected bonus points"""
+        """Calculate projected bonus points (DGW-safe: uses per-fixture BPS)"""
         players = []
         for player_data in live_data['elements']:
             player_id = player_data['id']
-            bps = player_data['stats']['bps']
             minutes = player_data['stats']['minutes']
-            
+
             for fixture_info in player_data.get('explain', []):
                 fixture_id = fixture_info['fixture']
-                if bps > 0 or minutes > 0:
+                player_fix_bps = self.fixture_bps.get(fixture_id, {}).get(player_id, 0)
+                player_fix_mins = any(
+                    s.get('value', 0) > 0
+                    for s in fixture_info.get('stats', [])
+                    if s.get('identifier') == 'minutes'
+                )
+                if player_fix_bps > 0 or player_fix_mins:
                     players.append({
                         'player_id': player_id,
                         'fixture_id': fixture_id,
-                        'bps': bps,
+                        'bps': player_fix_bps,
                         'total_points': player_data['stats']['total_points'],
                         'bonus': 0
                     })
-                    break
         
         if not players:
             return
@@ -266,7 +284,7 @@ class DashboardData:
         captain_data = self.live_elements_dict.get(captain_id, {})
         captain_played = captain_data.get('minutes', 0) > 0
         captain_team = self.player_info[captain_id]['team'] if captain_id else None
-        captain_team_game_complete_or_postponed = captain_team and self._is_game_complete_or_postponed(captain_team)
+        captain_team_game_complete_or_postponed = captain_team and self._are_all_team_fixtures_complete_or_postponed(captain_team)
         
         players = picks[:15] if chip == 'bboost' else picks[:11]
         points = 0

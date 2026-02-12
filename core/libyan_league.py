@@ -229,24 +229,42 @@ def get_libyan_league_data():
             
             return group
         
-        # Build player list for bonus calculation
+        # Build per-fixture BPS lookup from fixtures data for DGW support
+        fixture_bps = {}
+        for fix in fixtures:
+            fix_id = fix.get('id')
+            if fix_id is None:
+                continue
+            fixture_bps[fix_id] = {}
+            for stat_group in fix.get('stats', []):
+                if stat_group.get('identifier') == 'bps':
+                    for entry in stat_group.get('h', []):
+                        fixture_bps[fix_id][entry['element']] = entry['value']
+                    for entry in stat_group.get('a', []):
+                        fixture_bps[fix_id][entry['element']] = entry['value']
+
+        # Build player list for bonus calculation (DGW-safe: uses per-fixture BPS)
         bonus_players = []
         for player_data in live_data['elements']:
             player_id = player_data['id']
-            bps = player_data['stats']['bps']
             minutes = player_data['stats']['minutes']
-            
+
             for fixture_info in player_data.get('explain', []):
                 fixture_id = fixture_info['fixture']
-                if bps > 0 or minutes > 0:
+                player_fix_bps = fixture_bps.get(fixture_id, {}).get(player_id, 0)
+                player_fix_mins = any(
+                    s.get('value', 0) > 0
+                    for s in fixture_info.get('stats', [])
+                    if s.get('identifier') == 'minutes'
+                )
+                if player_fix_bps > 0 or player_fix_mins:
                     bonus_players.append({
                         'player_id': player_id,
                         'fixture_id': fixture_id,
-                        'bps': bps,
+                        'bps': player_fix_bps,
                         'total_points': player_data['stats']['total_points'],
                         'bonus': 0
                     })
-                    break
         
         if bonus_players:
             import pandas as pd
@@ -266,8 +284,8 @@ def get_libyan_league_data():
         team_fixture_started = {}
         for fix in fixtures:
             started = fix.get('started', False)
-            team_fixture_started[fix['team_h']] = started
-            team_fixture_started[fix['team_a']] = started
+            team_fixture_started[fix['team_h']] = team_fixture_started.get(fix['team_h'], False) or started
+            team_fixture_started[fix['team_a']] = team_fixture_started.get(fix['team_a'], False) or started
         
         def is_game_complete_or_postponed(team_id):
             """Check if team's game is complete or postponed (started OR postponed)"""
@@ -408,29 +426,29 @@ def get_libyan_league_data():
             captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
             captain_team = player_info.get(captain_id, {}).get('team') if captain_id else None
             captain_played = captain_minutes > 0
-            captain_team_game_complete_or_postponed = is_game_complete_or_postponed(captain_team) if captain_team else False
-            
+            captain_team_game_complete_or_postponed = are_all_team_fixtures_complete_or_postponed(captain_team) if captain_team else False
+
             total_points = 0
             for pick in picks[:11]:
                 pid = pick['element']
                 pts = live_elements.get(pid, {}).get('total_points', 0)
-                
+
                 # Captain logic (always 2x for team leagues, no 3xc)
                 if pick.get('is_captain'):
                     if captain_played:
                         pts *= 2  # Captain played - gets 2x
                     elif captain_team_game_complete_or_postponed:
-                        pts *= 0  # Captain didn't play and team started/postponed - 0 points (VC takes over)
+                        pts *= 0  # Captain didn't play and all team fixtures done - 0 points (VC takes over)
                     else:
-                        pts *= 1  # Captain's team hasn't started - wait (1x for now)
-                
+                        pts *= 1  # Captain's team has unfinished fixtures - wait (1x for now)
+
                 # Vice-captain logic
                 elif pick.get('is_vice_captain'):
                     if captain_team_game_complete_or_postponed and not captain_played:
-                        # Captain didn't play and his team is done - VC gets captaincy
+                        # Captain didn't play and all his team fixtures done - VC gets captaincy
                         vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
                         vc_team = player_info.get(pid, {}).get('team')
-                        vc_team_game_complete_or_postponed = is_game_complete_or_postponed(vc_team) if vc_team else False
+                        vc_team_game_complete_or_postponed = are_all_team_fixtures_complete_or_postponed(vc_team) if vc_team else False
                         
                         if vc_minutes > 0:
                             pts *= 2  # VC played - gets 2x
@@ -546,8 +564,8 @@ def get_libyan_league_data():
                     captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
                     captain_team = player_info.get(captain_id, {}).get('team') if captain_id else None
                     captain_played = captain_minutes > 0
-                    captain_team_done = is_game_complete_or_postponed(captain_team) if captain_team else False
-                    
+                    captain_team_done = are_all_team_fixtures_complete_or_postponed(captain_team) if captain_team else False
+
                     # Determine effective captain (captain or vice-captain if captain DNP)
                     effective_captain_id = None
                     if captain_played:
