@@ -393,29 +393,31 @@ class DashboardData:
             
             def get_player_status(pid, is_sub=False):
                 """
-                Get player status (simplified):
-                - 'playing': minutes > 0 and game still in progress (blue)
-                - 'played': minutes > 0 and game finished (grey)
+                Get player status (DGW-safe):
+                - 'playing': minutes > 0 and has game in progress or unstarted (blue)
+                - 'played': minutes > 0 and ALL games finished (grey)
                 - 'pending': minutes == 0 - yet to play (purple)
                 """
                 minutes = live_minutes.get(pid, 0)
                 team_id = self.player_info.get(pid, {}).get('team', 0)
-                
-                # Check if player's team game is currently in progress
+
+                # Check if player's team has a game in progress or unstarted (DGW-safe)
                 game_in_progress = False
+                has_unstarted_fixture = False
                 for f in fixtures:
                     if f['team_h'] == team_id or f['team_a'] == team_id:
                         started = f.get('started', False)
                         finished = f.get('finished', False) or f.get('finished_provisional', False)
                         if started and not finished:
                             game_in_progress = True
-                            break
-                
+                        if not started and f.get('kickoff_time') is not None:
+                            has_unstarted_fixture = True
+
                 if minutes > 0:
-                    if game_in_progress:
-                        return 'playing'  # Blue - currently on the pitch
+                    if game_in_progress or has_unstarted_fixture:
+                        return 'playing'  # Blue - still has game(s) to play
                     else:
-                        return 'played'   # Grey - game finished
+                        return 'played'   # Grey - ALL games finished
                 else:
                     return 'pending'      # Purple - yet to play
             

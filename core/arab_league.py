@@ -671,23 +671,25 @@ def get_arab_league_data():
                     pts = live_elements.get(pid, {}).get('total_points', 0)
                     team_id = info.get('team')
                     
-                    # Check if game is in progress
+                    # Check if game is in progress or has unstarted fixture (DGW-safe)
                     game_in_progress = False
-                    
+                    has_unstarted_fixture = False
+
                     for fix in fixtures:
                         if fix['team_h'] == team_id or fix['team_a'] == team_id:
                             started = fix.get('started', False)
                             finished = fix.get('finished', False) or fix.get('finished_provisional', False)
                             if started and not finished:
                                 game_in_progress = True
-                                break
-                    
+                            if not started and fix.get('kickoff_time') is not None:
+                                has_unstarted_fixture = True
+
                     # Simple status: playing (blue), played (grey), pending (purple)
                     if minutes > 0:
-                        if game_in_progress:
-                            status = 'playing'  # Blue - currently on pitch
+                        if game_in_progress or has_unstarted_fixture:
+                            status = 'playing'  # Blue - still has game(s) to play
                         else:
-                            status = 'played'   # Grey - finished
+                            status = 'played'   # Grey - ALL games finished
                     else:
                         status = 'pending'      # Purple - yet to play
                     
