@@ -5,7 +5,7 @@ Combines standings and live points in a single view with smart switching
 """
 
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import Counter
 from core.fpl_api import (
     get_bootstrap_data,
@@ -63,7 +63,41 @@ class DashboardData:
             all_finished = all(f.get('finished', False) or f.get('finished_provisional', False) for f in fixtures) if fixtures else False
             if all_finished:
                 self.gw_finished = True
+
+        # Apply 12-hour buffer: don't consider GW finished until 12h after last game
+        self.buffer_mode = False
+        if self.gw_finished:
+            # Case A: Current GW finished but within 12h buffer
+            if self._is_within_post_finish_buffer(self.current_gameweek):
+                self.gw_finished = False
+                self.fixtures_started = True
+                self.buffer_mode = True
+        elif not self.fixtures_started and self.current_gameweek > 1:
+            # Case B: API advanced to next GW - check if prev GW within 12h buffer
+            prev_gw = self.current_gameweek - 1
+            if self._is_within_post_finish_buffer(prev_gw):
+                self.current_gameweek = prev_gw
+                self.gw_finished = False
+                self.fixtures_started = True
+                self.buffer_mode = True
     
+    def _is_within_post_finish_buffer(self, gw, buffer_hours=12):
+        """Check if less than buffer_hours have passed since the last game in a GW finished"""
+        try:
+            gw_fixtures = get_fixtures(gw)
+            if not gw_fixtures:
+                return False
+            kickoff_times = [f.get('kickoff_time') for f in gw_fixtures if f.get('kickoff_time')]
+            if not kickoff_times:
+                return False
+            latest = max(kickoff_times)
+            latest_dt = datetime.strptime(latest, '%Y-%m-%dT%H:%M:%SZ')
+            # Game lasts ~2 hours from kickoff, plus buffer
+            buffer_end = latest_dt + timedelta(hours=2 + buffer_hours)
+            return datetime.utcnow() < buffer_end
+        except Exception:
+            return False
+
     def _initialize_live_data(self):
         """Initialize live data for current gameweek"""
         self.is_live = True
@@ -693,7 +727,9 @@ class DashboardData:
             # ============================================
             
             gw_not_started_flag = self.gw_info.get('not_started', False)
-            
+            if self.buffer_mode:
+                gw_not_started_flag = False
+
             if self.gw_finished:
                 # STATE 1: Gameweek is FINISHED - show current GW final results
                 fixtures = self._get_gw_fixtures_final(self.current_gameweek, teams_league)
@@ -782,24 +818,23 @@ class DashboardData:
                                 'opponent': opponent
                             }
                             
-                            if result == 'W':
-                                standings_dict[name]['projected_league_points'] += 3
-                            elif result == 'D':
-                                standings_dict[name]['projected_league_points'] += 1
+                            # In buffer mode, API total already includes this GW's result
+                            if not self.buffer_mode:
+                                if result == 'W':
+                                    standings_dict[name]['projected_league_points'] += 3
+                                elif result == 'D':
+                                    standings_dict[name]['projected_league_points'] += 1
                 
                 self.display_gameweek = self.current_gameweek
                 self.fixtures_gameweek = self.current_gameweek
                 self.showing_previous_gw = False
                 
             else:
-                # STATE 3: Gameweek NOT STARTED - show previous GW final results for fixtures
-                # BUT show current GW captains/chips (what managers have selected)
-                if self.current_gameweek > 1:
-                    prev_gw = self.current_gameweek - 1
-                    fixtures = self._get_gw_fixtures_final(prev_gw, teams_league)
-                    self.display_gameweek = self.current_gameweek  # Show current GW number
-                    self.fixtures_gameweek = prev_gw  # Fixtures are from previous GW
-                    self.showing_previous_gw = True  # But note fixtures are from previous
+                # STATE 3: Gameweek NOT STARTED - show current GW matchups
+                fixtures = self._get_gw_fixtures_final(self.current_gameweek, teams_league)
+                self.display_gameweek = self.current_gameweek
+                self.fixtures_gameweek = self.current_gameweek
+                self.showing_previous_gw = False
                 self.is_live = False
             
             # Fetch standings data for all teams - PARALLEL FETCH
