@@ -17,7 +17,7 @@ Phase 3: Championship (GW34-37)
 
 import requests
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -148,6 +148,21 @@ def build_player_info(bootstrap):
         }
         for player in bootstrap.get('elements', [])
     }
+
+
+def is_within_post_finish_buffer(fixtures, buffer_hours=12):
+    """Check if less than buffer_hours have passed since the last game in the GW finished"""
+    try:
+        kickoff_times = [f.get('kickoff_time') for f in fixtures if f.get('kickoff_time')]
+        if not kickoff_times:
+            return False
+        latest = max(kickoff_times)
+        latest_dt = datetime.strptime(latest, '%Y-%m-%dT%H:%M:%SZ')
+        # Game lasts ~2 hours from kickoff, plus buffer
+        buffer_end = latest_dt + timedelta(hours=2 + buffer_hours)
+        return datetime.utcnow() < buffer_end
+    except Exception:
+        return False
 
 
 def get_qualification_standings(league_id=THE100_LEAGUE_ID):
@@ -424,8 +439,12 @@ def get_elimination_standings(current_gw, qualified_managers):
     from core.fpl_api import is_gameweek_finished as check_gw_finished
     gw_finished_for_save = check_gw_finished(current_gw, fixtures)
 
-    # For display: GW is finished when all matches are done
-    gw_finished_display = all_fixtures_finished
+    # 12-hour buffer: keep live calculation until 12h after last game
+    within_buffer = all_fixtures_finished and is_within_post_finish_buffer(fixtures)
+    past_buffer = all_fixtures_finished and not within_buffer
+
+    # For display: GW is finished only after 12h buffer
+    gw_finished_display = all_fixtures_finished and not within_buffer
 
     # Get live data
     live_data = fetch_json(f"https://fantasy.premierleague.com/api/event/{current_gw}/live/", cookies)
@@ -478,7 +497,7 @@ def get_elimination_standings(current_gw, qualified_managers):
         picks = gw_data.get('picks', [])
         chip = gw_data.get('active_chip')
 
-        if gw_started and gw_data.get('picks'):
+        if gw_started and gw_data.get('picks') and not past_buffer:
             live_gw_points = calculate_live_points(
                 gw_data, live_elements, player_info, fixtures
             )
@@ -626,7 +645,7 @@ def get_elimination_standings(current_gw, qualified_managers):
         'gw_started': gw_started,
         'gw_finished': gw_finished_display,  # For display
         'gw_finished_for_save': gw_finished_for_save,  # For auto-save logic
-        'is_live': gw_started and not all_fixtures_finished,
+        'is_live': gw_started and (not all_fixtures_finished or within_buffer),
     }
 
 
@@ -677,11 +696,12 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
             if not standings:
                 raise RuntimeError("No standings found")
 
-            # Check if GW is live
+            # Check if GW is live (with 12h buffer after last game)
             fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
             any_started = any(f.get('started', False) for f in fixtures)
             all_finished = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
-            is_live = any_started and not all_finished
+            within_buffer = all_finished and is_within_post_finish_buffer(fixtures)
+            is_live = any_started and (not all_finished or within_buffer)
 
             if is_live:
                 # Fetch live data
