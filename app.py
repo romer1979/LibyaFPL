@@ -923,28 +923,46 @@ def api_generate_post():
 
 
 def _gather_league_summary(league):
-    """Gather and format league data into a concise summary for the prompt"""
+    """Gather and format league data with focus on competitive stakes"""
 
     if league == 'elite':
         data = get_dashboard()
         if not data.get('success'):
             return None
         gw = data.get('gameweek', '?')
-        fixtures_text = ""
+        standings = data.get('standings', [])
+        total = len(standings)
+
+        # Zones: Top 8 = playoff, Top 18 = safe, Bottom = relegation
+        playoff_zone = standings[:8] if len(standings) >= 8 else standings
+        safe_zone_border = standings[6:10] if len(standings) >= 10 else []  # Around 8th place
+        relegation_border = standings[max(0, total-10):] if total > 10 else standings  # Around 18th+
+
+        playoff_text = ""
+        for t in playoff_zone:
+            playoff_text += f"  {t['rank']}. {t['player_name']} - {t['projected_league_points']} LP, GW: {t['current_gw_points']}, {t.get('result','-')}\n"
+
+        relegation_text = ""
+        for t in relegation_border:
+            tag = " << RELEGATION" if t['rank'] > 18 else ""
+            relegation_text += f"  {t['rank']}. {t['player_name']} - {t['projected_league_points']} LP, GW: {t['current_gw_points']}, {t.get('result','-')}{tag}\n"
+
+        # Key fixtures (involving top 8 or bottom relegation)
+        key_fixtures = ""
         for f in data.get('fixtures', []):
             w = f['team_1_name'] if f['winner'] == 1 else (f['team_2_name'] if f['winner'] == 2 else 'Draw')
-            fixtures_text += f"- {f['team_1_name']} {f['team_1_points']} vs {f['team_2_points']} {f['team_2_name']} (Winner: {w})\n"
-        standings_text = ""
-        for t in data.get('standings', [])[:10]:
-            standings_text += f"  {t['rank']}. {t['player_name']} - LP: {t['projected_league_points']}, GW: {t['current_gw_points']}, Captain: {t.get('captain','-')}, Result: {t.get('result','-')}\n"
-        chips = [f"{t['player_name']}: {t['chip']}" for t in data.get('standings', []) if t.get('chip_active')]
+            key_fixtures += f"- {f['team_1_name']} {f['team_1_points']} vs {f['team_2_points']} {f['team_2_name']} (Winner: {w})\n"
+
         return (
             f"League: Elite League (دوري النخبة) - H2H\n"
-            f"Gameweek: {gw}\n"
-            f"Is Live: {data.get('is_live')}\n\n"
-            f"Fixtures:\n{fixtures_text}\n"
-            f"Standings (top 10):\n{standings_text}\n"
-            f"Chips used: {', '.join(chips) if chips else 'None'}\n"
+            f"Gameweek: {gw}, Total managers: {total}\n\n"
+            f"STAKES:\n"
+            f"- Top 8 qualify for PLAYOFFS (starting GW36)\n"
+            f"- Top 18 remain in the league next season\n"
+            f"- Bottom {total - 18} RELEGATE\n\n"
+            f"PLAYOFF RACE (Top 8):\n{playoff_text}\n"
+            f"RELEGATION BATTLE (around 18th place and below):\n{relegation_text}\n"
+            f"This GW fixtures:\n{key_fixtures}"
         )
 
     elif league == 'the100':
@@ -954,81 +972,141 @@ def _gather_league_summary(league):
             return None
         gw = data.get('gameweek', '?')
         phase = data.get('phase', 'unknown')
-
-        top = data['standings'][:10]
-        standings_text = ""
-        for t in top:
-            name = t.get('manager_name', '')
-            pts = t.get('live_gw_points', t.get('live_total', 0))
-            rank = t.get('live_rank', '')
-            standings_text += f"  {rank}. {name} - GW pts: {pts}\n"
-
-        bottom_text = ""
-        if phase == 'elimination':
-            bottom = [t for t in data['standings'] if t.get('in_elimination_zone')]
-            for t in bottom:
-                bottom_text += f"  {t.get('live_rank')}. {t['manager_name']} - GW pts: {t['live_gw_points']} (ELIMINATION ZONE)\n"
-
-        stats_text = ""
-        if stats and stats.get('success'):
-            ps = stats.get('points_stats', {})
-            stats_text = (
-                f"Points stats: Min={ps.get('min')} ({', '.join(ps.get('min_managers',[]))}), "
-                f"Max={ps.get('max')} ({', '.join(ps.get('max_managers',[]))}), "
-                f"Avg={ps.get('avg')}\n"
-            )
-            caps = stats.get('captain_stats', [])[:5]
-            if caps:
-                caps_str = ', '.join(f"{c['name']} ({c['count']})" for c in caps)
-                stats_text += f"Top captains: {caps_str}\n"
-
         phase_info = data.get('phase_info', {})
-        elim_section = f"Elimination Zone:\n{bottom_text}\n" if bottom_text else ""
-        return (
-            f"League: The 100 (دوري المئة)\n"
-            f"Phase: {phase_info.get('name_en', phase)} ({phase_info.get('name', '')})\n"
-            f"Gameweek: {gw}\n"
-            f"Total managers: {data.get('total_managers', 0)}, Remaining: {data.get('remaining_managers', '')}\n\n"
-            f"Top 10:\n{standings_text}\n"
-            f"{elim_section}"
-            f"{stats_text}"
-        )
+        standings = data.get('standings', [])
+
+        if phase == 'qualification':
+            total = len(standings)
+            # Around the 100th place cutoff
+            around_cutoff = standings[max(0, min(95, total-5)):min(105, total)]
+            cutoff_text = ""
+            for t in around_cutoff:
+                rank = t.get('live_rank', '')
+                tag = " << OUTSIDE" if rank > 100 else ""
+                cutoff_text += f"  {rank}. {t['manager_name']} - Total: {t.get('live_total', 0)}, GW: {t.get('live_gw_points', 0)}{tag}\n"
+
+            top5 = ""
+            for t in standings[:5]:
+                top5 += f"  {t.get('live_rank')}. {t['manager_name']} - Total: {t.get('live_total', 0)}\n"
+
+            return (
+                f"League: The 100 (دوري المئة) - Qualification Phase\n"
+                f"Gameweek: {gw}, Total managers: {total}\n\n"
+                f"STAKES: Top 99 + defending champion qualify for elimination phase\n\n"
+                f"TOP 5:\n{top5}\n"
+                f"QUALIFICATION CUTOFF (around 100th place):\n{cutoff_text}"
+            )
+
+        elif phase == 'elimination':
+            remaining = data.get('remaining_managers', len(standings))
+            safe_count = data.get('safe_count', remaining - 6)
+
+            # Top performers
+            top5 = ""
+            for t in standings[:5]:
+                top5 += f"  {t.get('live_rank')}. {t['manager_name']} - GW pts: {t['live_gw_points']} (SAFE)\n"
+
+            # Danger zone and around it
+            danger = ""
+            for t in standings[max(0, safe_count - 3):]:
+                rank = t.get('live_rank', 0)
+                zone = "ELIMINATED" if rank > safe_count else "SAFE (barely)"
+                danger += f"  {rank}. {t['manager_name']} - GW pts: {t['live_gw_points']} ({zone})\n"
+
+            stats_text = ""
+            if stats and stats.get('success'):
+                ps = stats.get('points_stats', {})
+                min_mgrs = ', '.join(ps.get('min_managers', []))
+                max_mgrs = ', '.join(ps.get('max_managers', []))
+                stats_text = f"Highest: {ps.get('max')} ({max_mgrs}), Lowest: {ps.get('min')} ({min_mgrs}), Avg: {ps.get('avg')}\n"
+
+            return (
+                f"League: The 100 (دوري المئة) - Elimination Phase\n"
+                f"Gameweek: {gw}, Remaining: {remaining} managers\n\n"
+                f"STAKES: Bottom 6 are ELIMINATED each gameweek! 16 will survive for Championship.\n\n"
+                f"TOP PERFORMERS:\n{top5}\n"
+                f"ELIMINATION ZONE (bottom 6 go home):\n{danger}\n"
+                f"GW Stats: {stats_text}"
+            )
+
+        else:  # championship
+            bracket_text = ""
+            for t in standings:
+                bracket_text += f"  {t.get('live_rank', '?')}. {t['manager_name']} - GW pts: {t.get('live_gw_points', 0)}\n"
+            return (
+                f"League: The 100 (دوري المئة) - Championship Phase (Knockout)\n"
+                f"Gameweek: {gw}\n\n"
+                f"STAKES: Head-to-head knockout! Lose and you're out.\n\n"
+                f"Bracket:\n{bracket_text}"
+            )
 
     elif league in ('libyan', 'arab', 'cities'):
-        funcs = {
-            'libyan': (get_libyan_league_data, 'Libyan League (الدوري الليبي)', 'Team H2H with 3 managers per team'),
-            'arab': (get_arab_league_data, 'Arab League (الدوري العربي)', 'Team H2H with 3 managers per team'),
-            'cities': (get_cities_league_data, 'Cities League (دوري المدن)', 'Team H2H with 3 managers per team'),
+        league_info = {
+            'cities': {
+                'func': get_cities_league_data,
+                'name': 'Cities League (دوري المدن)',
+                'division': 'First Division (top tier)',
+                'relegation_to': 'Libyan League (second division)',
+            },
+            'libyan': {
+                'func': get_libyan_league_data,
+                'name': 'Libyan League (الدوري الليبي)',
+                'division': 'Second Division',
+                'relegation_to': 'Arab League (third division)',
+            },
+            'arab': {
+                'func': get_arab_league_data,
+                'name': 'Arab League (الدوري العربي)',
+                'division': 'Third Division (lowest tier)',
+                'relegation_to': 'OUT OF THE COMPETITION for next season',
+            },
         }
-        func, name, desc = funcs[league]
-        data = func()
+        info = league_info[league]
+        data = info['func']()
         if not data or not data.get('standings'):
             return None
         gw = data.get('gameweek', '?')
+        standings = data.get('standings', [])
+        total = len(standings)
+        relegation_line = total - 6  # Bottom 6 relegate
 
-        standings_text = ""
-        for t in data.get('standings', []):
-            standings_text += f"  {t.get('rank','?')}. {t['team_name']} - LP: {t['league_points']}, GW: {t['live_gw_points']}, Result: {t.get('result','')}\n"
+        # Title race (top 3)
+        top_text = ""
+        for t in standings[:3]:
+            top_text += f"  {t.get('rank')}. {t['team_name']} - {t['league_points']} LP, GW: {t['live_gw_points']}, {t.get('result','')}\n"
 
-        matches_text = ""
+        # Relegation zone (bottom 6 + 2 above)
+        relegation_text = ""
+        for t in standings[max(0, relegation_line - 2):]:
+            tag = " << RELEGATION" if t.get('rank', 0) > relegation_line else ""
+            relegation_text += f"  {t.get('rank')}. {t['team_name']} - {t['league_points']} LP, GW: {t['live_gw_points']}, {t.get('result','')}{tag}\n"
+
+        # Key matches (involving relegation-zone teams)
+        relegation_teams = set(t['team_name'] for t in standings[relegation_line:])
+        key_matches = ""
         for m in data.get('matches', []):
             w = m['team_1'] if m['winner'] == 1 else (m['team_2'] if m['winner'] == 2 else 'Draw')
-            matches_text += f"- {m['team_1']} {m['points_1']} vs {m['points_2']} {m['team_2']} (Winner: {w})\n"
+            is_key = m['team_1'] in relegation_teams or m['team_2'] in relegation_teams
+            tag = " ** RELEGATION BATTLE" if is_key else ""
+            key_matches += f"- {m['team_1']} {m['points_1']} vs {m['points_2']} {m['team_2']} (Winner: {w}){tag}\n"
 
         best = ""
         bt = data.get('best_team')
         bm = data.get('best_manager')
         if bt:
-            best += f"Best team: {bt['name']} ({bt['points']} pts)\n"
+            best += f"Best team this GW: {bt['name']} ({bt['points']} pts)\n"
         if bm:
-            best += f"Best manager: {bm['name']} ({bm['points']} pts, team: {bm.get('team','')})\n"
+            best += f"Star player: {bm['name']} ({bm['points']} pts, team: {bm.get('team', '')})\n"
 
         return (
-            f"League: {name}\n"
-            f"Format: {desc}\n"
-            f"Gameweek: {gw}\n\n"
-            f"Matches:\n{matches_text}\n"
-            f"Standings:\n{standings_text}\n"
+            f"League: {info['name']}\n"
+            f"Division: {info['division']}\n"
+            f"Gameweek: {gw}, Total teams: {total} (3 managers per team)\n\n"
+            f"STAKES:\n"
+            f"- Bottom 6 teams RELEGATE to {info['relegation_to']}\n\n"
+            f"TITLE RACE (Top 3):\n{top_text}\n"
+            f"RELEGATION BATTLE (bottom 6 + borderline):\n{relegation_text}\n"
+            f"MATCHES:\n{key_matches}\n"
             f"{best}"
         )
 
@@ -1039,15 +1117,15 @@ def _call_openai(api_key, summary, post_format):
     """Call OpenAI API to generate the social media post"""
     if post_format == 'twitter':
         format_instruction = (
-            "اكتب منشور تويتر باللغة العربية عن نتائج هذه الجولة. "
-            "يجب أن يكون المنشور مختصر وجذاب ولا يتجاوز 280 حرف. "
-            "ركز على أهم النتائج والأحداث."
+            "اكتب منشور تويتر باللغة العربية. "
+            "يجب أن لا يتجاوز 280 حرف. مختصر وجذاب ومثير. "
+            "ركز على أهم قصة واحدة أو اثنتين فقط."
         )
     else:
         format_instruction = (
-            "اكتب منشور انستقرام مفصل باللغة العربية عن نتائج هذه الجولة. "
-            "اكتب ملخص شامل مع ايموجي وهاشتاقات. "
-            "تحدث عن النتائج والترتيب واللاعبين المميزين والكباتن."
+            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي وهاشتاقات. "
+            "تحدث عن الصراع على الصدارة، معارك الهبوط، النتائج المفاجئة، "
+            "والمدربين الذين أنقذوا فرقهم أو خذلوها."
         )
 
     response = http_requests.post(
@@ -1064,9 +1142,13 @@ def _call_openai(api_key, summary, post_format):
                     'content': (
                         "أنت صحفي رياضي متخصص في فانتازي الدوري الإنجليزي. "
                         "تكتب منشورات سوشيال ميديا جذابة باللغة العربية. "
-                        "ركز على القصص المثيرة: النتائج المفاجئة، الفوارق الكبيرة، "
-                        "المنافسة على الصدارة، منطقة الخطر، الكباتن المميزين. "
-                        "استخدم أسلوب حماسي ومشوق."
+                        "لا تسرد النتائج فقط - اروي قصة! ركز على:\n"
+                        "- الصراع على الصدارة والتأهل\n"
+                        "- معارك الهبوط والبقاء (من أنقذ نفسه؟ من سقط؟)\n"
+                        "- المفاجآت والنتائج غير المتوقعة\n"
+                        "- اللحظات الدراماتيكية والفوارق الصغيرة\n"
+                        "- المدربين الذين صنعوا الفارق بقراراتهم\n"
+                        "استخدم أسلوب حماسي ومشوق كأنك معلق رياضي."
                     )
                 },
                 {
