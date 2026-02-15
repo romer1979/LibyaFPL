@@ -180,6 +180,13 @@ def get_arab_league_data():
             finished = [e for e in events if e.get("finished")]
             current_gw = max(finished, key=lambda e: e["id"])["id"] if finished else 1
         
+        # Auto-backfill any missing previous GWs before proceeding
+        from core.backfill import detect_missing_gameweeks, backfill_missing_gameweeks
+        missing_gws = detect_missing_gameweeks(LEAGUE_TYPE, current_gw, STANDINGS_BY_GW)
+        if missing_gws:
+            print(f"[{LEAGUE_TYPE}] Detected missing GWs: {missing_gws}. Backfilling...")
+            backfill_missing_gameweeks(LEAGUE_TYPE, missing_gws, TEAMS_FPL_IDS, ARAB_H2H_LEAGUE_ID, STANDINGS_BY_GW)
+
         player_info = {
             p["id"]: {
                 "name": p["web_name"],
@@ -187,7 +194,7 @@ def get_arab_league_data():
                 "position": p["element_type"],
             } for p in bootstrap["elements"]
         }
-        
+
         # 2) Get live data
         live_data = fetch_json(f"https://fantasy.premierleague.com/api/event/{current_gw}/live/", cookies)
         if not live_data:
