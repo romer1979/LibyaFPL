@@ -915,7 +915,7 @@ def api_generate_post():
         if not summary:
             return jsonify({'error': 'Failed to fetch league data'})
 
-        post = _call_openai(api_key, summary, post_format)
+        post = _call_openai(api_key, summary, post_format, league)
         return jsonify({'post': post, 'league': league, 'format': post_format})
     except Exception as e:
         print(f"[social-post] Error: {e}")
@@ -933,36 +933,106 @@ def _gather_league_summary(league):
         standings = data.get('standings', [])
         total = len(standings)
 
-        # Zones: Top 8 = playoff, Top 18 = safe, Bottom = relegation
-        playoff_zone = standings[:8] if len(standings) >= 8 else standings
-        safe_zone_border = standings[6:10] if len(standings) >= 10 else []  # Around 8th place
-        relegation_border = standings[max(0, total-10):] if total > 10 else standings  # Around 18th+
+        # Get additional stats
+        elite_stats = get_league_stats()
+        ps = elite_stats.get('points_stats', {}) if elite_stats and elite_stats.get('success') else {}
 
-        playoff_text = ""
-        for t in playoff_zone:
-            playoff_text += f"  {t['rank']}. {t['player_name']} - {t['projected_league_points']} LP, GW: {t['current_gw_points']}, {t.get('result','-')}\n"
+        # --- Points stats ---
+        stats_text = ""
+        if ps:
+            stats_text += f"GW STATS: Average {ps.get('avg')} pts, Highest {ps.get('max')} pts, Lowest {ps.get('min')} pts\n"
+            max_mgrs = ', '.join(ps.get('max_managers', []))
+            min_mgrs = ', '.join(ps.get('min_managers', []))
+            stats_text += f"  Star of GW: {max_mgrs} with {ps.get('max')} pts\n"
+            stats_text += f"  Worst performer: {min_mgrs} with {ps.get('min')} pts\n"
+            if ps.get('lucky_manager'):
+                stats_text += f"  Lucky manager (won with lowest score): {ps['lucky_manager']} with {ps['lucky_points']} pts\n"
+            if ps.get('unlucky_manager'):
+                stats_text += f"  Unlucky manager (lost/drew with highest score): {ps['unlucky_manager']} with {ps['unlucky_points']} pts\n"
 
-        relegation_text = ""
-        for t in relegation_border:
-            tag = " << RELEGATION" if t['rank'] > 18 else ""
-            relegation_text += f"  {t['rank']}. {t['player_name']} - {t['projected_league_points']} LP, GW: {t['current_gw_points']}, {t.get('result','-')}{tag}\n"
+        # --- Captain analysis ---
+        captain_text = ""
+        if elite_stats and elite_stats.get('success'):
+            caps = elite_stats.get('captain_stats', [])
+            if caps:
+                top_cap = caps[0]
+                captain_text = f"CAPTAINS: Most popular: {top_cap['name']} ({top_cap['count']}/{total} managers)\n"
+                other_caps = caps[1:4]
+                if other_caps:
+                    others = ', '.join(f"{c['name']} ({c['count']})" for c in other_caps)
+                    captain_text += f"  Others chose: {others}\n"
 
-        # Key fixtures (involving top 8 or bottom relegation)
-        key_fixtures = ""
+        # --- Chips used with match results ---
+        chips_text = ""
+        if elite_stats and elite_stats.get('success'):
+            chips = elite_stats.get('chips_used', [])
+            if chips:
+                chip_details = []
+                for c in chips:
+                    mgr_name = c['manager']
+                    chip_name = c.get('chip_ar', c.get('chip', ''))
+                    # Find their result
+                    mgr_result = '-'
+                    for s in standings:
+                        if s['player_name'] == mgr_name:
+                            mgr_result = s.get('result', '-')
+                            break
+                    result_ar = {'W': 'فاز', 'L': 'خسر', 'D': 'تعادل'}.get(mgr_result, '-')
+                    chip_details.append(f"{mgr_name} ({chip_name} - {result_ar})")
+                chips_text = f"CHIPS USED: {len(chips)} this GW: {', '.join(chip_details)}\n"
+
+        # --- Effective ownership ---
+        eo_text = ""
+        if elite_stats and elite_stats.get('success'):
+            eo = elite_stats.get('effective_ownership', [])[:6]
+            if eo:
+                eo_names = ', '.join(f"{p['name']} ({p['count']})" for p in eo)
+                eo_text = f"MOST OWNED PLAYERS: {eo_names}\n"
+
+        # --- H2H Fixtures with match stories ---
+        fixtures_text = "ALL H2H FIXTURES:\n"
+        draws_high = []
         for f in data.get('fixtures', []):
             w = f['team_1_name'] if f['winner'] == 1 else (f['team_2_name'] if f['winner'] == 2 else 'Draw')
-            key_fixtures += f"- {f['team_1_name']} {f['team_1_points']} vs {f['team_2_points']} {f['team_2_name']} (Winner: {w})\n"
+            fixtures_text += f"- {f['team_1_name']} {f['team_1_points']} vs {f['team_2_points']} {f['team_2_name']} (Winner: {w}, Diff: {f['points_diff']})\n"
+            # Track high-scoring draws
+            if f['winner'] == 0 and f['team_1_points'] >= 70:
+                draws_high.append(f"{f['team_1_name']} و {f['team_2_name']} ({f['team_1_points']} pts each)")
+
+        unlucky_draws = ""
+        if draws_high:
+            unlucky_draws = f"UNLUCKY DRAWS (high scorers drew each other): {'; '.join(draws_high)}\n"
+
+        # --- Standings zones ---
+        # Early season (GW < 20): focus more on top positions
+        # Late season (GW >= 20): focus on playoff/relegation zones
+        playoff_zone = standings[:8] if len(standings) >= 8 else standings
+        relegation_zone = standings[max(0, total-10):] if total > 10 else standings
+
+        top_text = "TOP OF TABLE (Playoff Zone - Top 8):\n"
+        for t in playoff_zone:
+            top_text += f"  {t['rank']}. {t['player_name']} - {t['projected_league_points']} LP, GW: {t['current_gw_points']}, {t.get('result','-')}\n"
+
+        bottom_text = "BOTTOM OF TABLE (Relegation Zone - below 18th):\n"
+        for t in relegation_zone:
+            tag = " << RELEGATION" if t['rank'] > 18 else ""
+            bottom_text += f"  {t['rank']}. {t['player_name']} - {t['projected_league_points']} LP, GW: {t['current_gw_points']}, {t.get('result','-')}{tag}\n"
+
+        gw_num = int(gw) if str(gw).isdigit() else 0
+        stage = "EARLY SEASON" if gw_num < 15 else ("MID SEASON" if gw_num < 28 else "FINAL STRETCH")
 
         return (
-            f"League: Elite League (دوري النخبة) - H2H\n"
-            f"Gameweek: {gw}, Total managers: {total}\n\n"
-            f"STAKES:\n"
-            f"- Top 8 qualify for PLAYOFFS (starting GW36)\n"
-            f"- Top 18 remain in the league next season\n"
-            f"- Bottom {total - 18} RELEGATE\n\n"
-            f"PLAYOFF RACE (Top 8):\n{playoff_text}\n"
-            f"RELEGATION BATTLE (around 18th place and below):\n{relegation_text}\n"
-            f"This GW fixtures:\n{key_fixtures}"
+            f"League: Elite League (دوري النخبة) - H2H, {total} managers\n"
+            f"Gameweek: {gw} ({stage})\n\n"
+            f"STAKES: Top 8 qualify for PLAYOFFS (GW36), Top 18 stay next season, Bottom {total - 18} RELEGATE\n\n"
+            f"{stats_text}\n"
+            f"{captain_text}\n"
+            f"{chips_text}\n"
+            f"{eo_text}\n"
+            f"{fixtures_text}\n"
+            f"{unlucky_draws}\n"
+            f"{top_text}\n"
+            f"{bottom_text}"
         )
 
     elif league == 'the100':
@@ -1184,7 +1254,7 @@ def _gather_league_summary(league):
     return None
 
 
-def _call_openai(api_key, summary, post_format):
+def _call_openai(api_key, summary, post_format, league=''):
     """Call OpenAI API to generate the social media post"""
     if post_format == 'twitter':
         format_instruction = (
@@ -1192,13 +1262,30 @@ def _call_openai(api_key, summary, post_format):
             "يجب أن لا يتجاوز 280 حرف. مختصر وجذاب ومثير. "
             "ركز على أهم قصة واحدة أو اثنتين فقط."
         )
+    elif league == 'elite':
+        format_instruction = (
+            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي كعلامات للفقرات. "
+            "التدرج: عنوان الجولة > متوسط النقاط > نجم الجولة > أسوأ مدرب > "
+            "محظوظ الجولة (فاز بنقاط قليلة) > منحوس الجولة (خسر أو تعادل بنقاط عالية أو تعادل لأنهم يلعبون ضد بعض) > "
+            "الكبتنة (من اختار من وكم واحد وهل نجحت أو فشلت) > "
+            "الشيبات المستخدمة ونتائج أصحابها > "
+            "أبرز مباريات الجولة خصوصاً المتصدرين والمنافسة على القمة > "
+            "اختم بتشويق للجولة القادمة."
+        )
+    elif league == 'the100':
+        format_instruction = (
+            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي كعلامات للفقرات. "
+            "التدرج: عنوان الجولة والمرحلة > عدد المدربين قبل وبعد > متوسط النقاط > "
+            "نجم الجولة مع ذكر اللاعبين اللي ساهمو > أسوأ أداء مع السبب > "
+            "اذكر ال 6 المغادرين بالاسم > اي حالة تعادل بالنقاط وكيف تم الفصل > "
+            "الناجين بأعجوبة. اختم بتشويق للجولة القادمة."
+        )
     else:
         format_instruction = (
-            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي وهاشتاقات في النهاية. "
-            "ابدأ بعنوان الجولة والمرحلة، ثم عدد المدربين قبل وبعد، ثم متوسط النقاط، "
-            "ثم نجم الجولة مع ذكر اللاعبين اللي ساهمو، ثم أسوأ أداء مع السبب، "
-            "ثم اذكر ال 6 المغادرين بالاسم، ثم اي حالة تعادل بالنقاط وكيف تم الفصل، "
-            "ثم الناجين بأعجوبة. اختم بتشويق للجولة القادمة."
+            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي كعلامات للفقرات. "
+            "التدرج: عنوان الجولة > متوسط النقاط > أفضل فريق > أسوأ فريق > "
+            "أهم المباريات خصوصاً معارك الهبوط > الترتيب والمنافسة على القمة > "
+            "اختم بتشويق للجولة القادمة."
         )
 
     response = http_requests.post(
@@ -1223,7 +1310,13 @@ def _call_openai(api_key, summary, post_format):
                         "- تكلم عن اللي جاب أقل نقاط وليش (دكة أصفار، كابتن فاشل، الخ)\n"
                         "- اذكر متوسط النقاط وقارنه\n"
                         "- اذا في تعادل بالنقاط وتم الفصل بينهم اشرح كيف (الترتيب في مرحلة التأهل)\n"
-                        "- خلي المنشور يتدرج: مقدمة عن الجولة > نجم الجولة > أسوأ أداء > المغادرين > الناجين بأعجوبة\n\n"
+                        "- خلي المنشور يتدرج حسب نوع الدوري (التدرج موضح في التعليمات)\n\n"
+                        "ملاحظات لدوري النخبة (H2H):\n"
+                        "- محظوظ الجولة = فاز بأقل نقاط (خصمه جاب أقل منه)\n"
+                        "- منحوس الجولة = خسر أو تعادل بنقاط عالية (خصمه جاب أكثر أو نفس النقاط)\n"
+                        "- اذا لاعبين جابو نقاط عالية وتعادلو لأنهم يلعبو ضد بعض اذكرهم كمنحوسين\n"
+                        "- تكلم عن الكبتنة: كم واحد اختار الكابتن الأول وهل نجح\n"
+                        "- اذا في شيبات (وايلد كارد، فري هيت، بنش بوست، تربل كابتن) اذكر من لعبها وهل فاز أو خسر\n\n"
                         "قواعد مهمة جداً:\n"
                         "- لا تستخدم ** أو أي تنسيق ماركداون. اكتب نص عادي فقط.\n"
                         "- في دوري المئة مرحلة الإقصاء: خروج 6 مدربين كل جولة هو القانون وليس مفاجأة! "
