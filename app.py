@@ -1000,33 +1000,104 @@ def _gather_league_summary(league):
         elif phase == 'elimination':
             remaining = data.get('remaining_managers', len(standings))
             safe_count = data.get('safe_count', remaining - 6)
+            total_eliminated = data.get('total_eliminated', 0)
+            gws_remaining = data.get('gws_remaining', 0)
 
-            # Top performers
-            top5 = ""
-            for t in standings[:5]:
-                top5 += f"  {t.get('live_rank')}. {t['manager_name']} - GW pts: {t['live_gw_points']} (SAFE)\n"
+            # --- Star of the GW (highest scorer) with player breakdown ---
+            star = standings[0] if standings else None
+            star_text = ""
+            if star:
+                star_text = f"STAR OF THE GW: {star['manager_name']} with {star['live_gw_points']} points\n"
+                star_text += f"  Captain: {star.get('captain', '-')}\n"
+                if star.get('chip'):
+                    star_text += f"  Chip used: {star['chip']}\n"
+                # Top contributing players from their team
+                top_players = sorted(
+                    [p for p in star.get('players', []) if p.get('points') and p['points'] > 0 and p.get('is_starter')],
+                    key=lambda x: -(x.get('points') or 0)
+                )[:5]
+                if top_players:
+                    contrib = ', '.join(f"{p['name']} ({p['points']}pts)" for p in top_players)
+                    star_text += f"  Key contributors: {contrib}\n"
 
-            # Danger zone and around it
-            danger = ""
-            for t in standings[max(0, safe_count - 3):]:
-                rank = t.get('live_rank', 0)
-                zone = "ELIMINATED" if rank > safe_count else "SAFE (barely)"
-                danger += f"  {rank}. {t['manager_name']} - GW pts: {t['live_gw_points']} ({zone})\n"
+            # --- Worst performer (lowest scorer) with player breakdown ---
+            worst = standings[-1] if standings else None
+            worst_text = ""
+            if worst:
+                worst_text = f"WORST PERFORMER (خازوق الجولة): {worst['manager_name']} with {worst['live_gw_points']} points\n"
+                worst_text += f"  Captain: {worst.get('captain', '-')}\n"
+                # Show bench/zero players
+                zeros = [p for p in worst.get('players', []) if p.get('is_starter') and (p.get('points') or 0) <= 0]
+                if zeros:
+                    zero_names = ', '.join(p['name'] for p in zeros)
+                    worst_text += f"  Players with 0 or less: {zero_names}\n"
+                scorers = sorted(
+                    [p for p in worst.get('players', []) if p.get('points') and p['points'] > 0 and p.get('is_starter')],
+                    key=lambda x: -(x.get('points') or 0)
+                )[:3]
+                if scorers:
+                    only_from = ', '.join(f"{p['name']} ({p['points']}pts)" for p in scorers)
+                    worst_text += f"  Only points came from: {only_from}\n"
 
+            # --- The 6 eliminated managers ---
+            eliminated = standings[safe_count:] if safe_count < len(standings) else []
+            elim_text = "THE 6 ELIMINATED THIS GW:\n"
+            for t in eliminated:
+                elim_text += f"  {t.get('live_rank')}. {t['manager_name']} - {t['live_gw_points']} pts (was qualification rank {t.get('qualification_rank', '?')})\n"
+
+            # --- Tiebreaker situation (if any eliminated had same points as a safe manager) ---
+            tiebreak_text = ""
+            if safe_count > 0 and safe_count < len(standings):
+                last_safe = standings[safe_count - 1]
+                first_elim = standings[safe_count]
+                if last_safe['live_gw_points'] == first_elim['live_gw_points']:
+                    tiebreak_text = (
+                        f"TIEBREAKER DRAMA: {last_safe['manager_name']} and {first_elim['manager_name']} "
+                        f"both scored {last_safe['live_gw_points']} pts! "
+                        f"{last_safe['manager_name']} survived because their qualification rank "
+                        f"({last_safe.get('qualification_rank', '?')}) was better than "
+                        f"{first_elim['manager_name']} ({first_elim.get('qualification_rank', '?')})\n"
+                    )
+
+            # --- The barely-safe managers ---
+            barely_safe = standings[max(0, safe_count - 3):safe_count]
+            barely_text = "BARELY SAFE (survived by slim margin):\n"
+            for t in barely_safe:
+                pts_above = t['live_gw_points'] - (eliminated[0]['live_gw_points'] if eliminated else 0)
+                barely_text += f"  {t.get('live_rank')}. {t['manager_name']} - {t['live_gw_points']} pts (only +{pts_above} above elimination)\n"
+
+            # --- Points stats ---
             stats_text = ""
             if stats and stats.get('success'):
                 ps = stats.get('points_stats', {})
-                min_mgrs = ', '.join(ps.get('min_managers', []))
-                max_mgrs = ', '.join(ps.get('max_managers', []))
-                stats_text = f"Highest: {ps.get('max')} ({max_mgrs}), Lowest: {ps.get('min')} ({min_mgrs}), Avg: {ps.get('avg')}\n"
+                stats_text = f"GW STATS: Average {ps.get('avg')} pts, Highest {ps.get('max')} pts, Lowest {ps.get('min')} pts\n"
+
+                # Captain stats
+                caps = stats.get('captain_stats', [])[:5]
+                if caps:
+                    caps_str = ', '.join(f"{c['name']} ({c['count']})" for c in caps)
+                    stats_text += f"Most popular captains: {caps_str}\n"
+
+                # Chips used
+                chips = stats.get('chips_used', [])
+                if chips:
+                    chips_str = ', '.join(f"{c['manager']} used {c['chip_ar']}" for c in chips)
+                    stats_text += f"Chips used this GW: {chips_str}\n"
+
+            entered_gw = remaining + 6  # before this GW's elimination
 
             return (
                 f"League: The 100 (دوري المئة) - Elimination Phase\n"
-                f"Gameweek: {gw}, Remaining: {remaining} managers\n\n"
-                f"STAKES: Bottom 6 are ELIMINATED each gameweek! 16 will survive for Championship.\n\n"
-                f"TOP PERFORMERS:\n{top5}\n"
-                f"ELIMINATION ZONE (bottom 6 go home):\n{danger}\n"
-                f"GW Stats: {stats_text}"
+                f"Gameweek: {gw}\n"
+                f"Entered this GW: {entered_gw} managers, After elimination: {remaining} managers remain\n"
+                f"Total eliminated so far: {total_eliminated}, GWs remaining in elimination: {gws_remaining}\n"
+                f"Bottom 6 each GW are eliminated. 16 survive for Championship knockout.\n\n"
+                f"{star_text}\n"
+                f"{worst_text}\n"
+                f"{elim_text}\n"
+                f"{tiebreak_text}\n"
+                f"{barely_text}\n"
+                f"{stats_text}"
             )
 
         else:  # championship
@@ -1123,9 +1194,11 @@ def _call_openai(api_key, summary, post_format):
         )
     else:
         format_instruction = (
-            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي وهاشتاقات. "
-            "تحدث عن الصراع على الصدارة، معارك الهبوط، النتائج المفاجئة، "
-            "والمدربين الذين أنقذوا فرقهم أو خذلوها."
+            "اكتب منشور انستقرام مفصل باللغة العربية مع ايموجي وهاشتاقات في النهاية. "
+            "ابدأ بعنوان الجولة والمرحلة، ثم عدد المدربين قبل وبعد، ثم متوسط النقاط، "
+            "ثم نجم الجولة مع ذكر اللاعبين اللي ساهمو، ثم أسوأ أداء مع السبب، "
+            "ثم اذكر ال 6 المغادرين بالاسم، ثم اي حالة تعادل بالنقاط وكيف تم الفصل، "
+            "ثم الناجين بأعجوبة. اختم بتشويق للجولة القادمة."
         )
 
     response = http_requests.post(
@@ -1141,19 +1214,22 @@ def _call_openai(api_key, summary, post_format):
                     'role': 'system',
                     'content': (
                         "أنت صحفي رياضي متخصص في فانتازي الدوري الإنجليزي. "
-                        "تكتب منشورات سوشيال ميديا جذابة باللغة العربية. "
-                        "لا تسرد النتائج فقط - اروي قصة! ركز على:\n"
-                        "- الصراع على الصدارة والتأهل\n"
-                        "- معارك الهبوط والبقاء (من أنقذ نفسه؟ من سقط؟)\n"
-                        "- المفاجآت والنتائج غير المتوقعة\n"
-                        "- اللحظات الدراماتيكية والفوارق الصغيرة\n"
-                        "- المدربين الذين صنعوا الفارق بقراراتهم\n"
-                        "استخدم أسلوب حماسي ومشوق كأنك معلق رياضي.\n\n"
+                        "تكتب منشورات سوشيال ميديا باللغة العربية بأسلوب عامي وحماسي.\n\n"
+                        "أسلوب الكتابة:\n"
+                        "- اكتب بأسلوب عامي ليبي/عربي طبيعي وليس فصحى رسمية\n"
+                        "- كأنك تحكي لأصدقائك عن اللي صار بالجولة\n"
+                        "- اذكر اسماء المدربين كما هي بالبيانات\n"
+                        "- تكلم عن اللاعبين اللي جابو النقاط (مثلاً 'الفضل يعود للرباعي X و Y و Z')\n"
+                        "- تكلم عن اللي جاب أقل نقاط وليش (دكة أصفار، كابتن فاشل، الخ)\n"
+                        "- اذكر متوسط النقاط وقارنه\n"
+                        "- اذا في تعادل بالنقاط وتم الفصل بينهم اشرح كيف (الترتيب في مرحلة التأهل)\n"
+                        "- خلي المنشور يتدرج: مقدمة عن الجولة > نجم الجولة > أسوأ أداء > المغادرين > الناجين بأعجوبة\n\n"
                         "قواعد مهمة جداً:\n"
                         "- لا تستخدم ** أو أي تنسيق ماركداون. اكتب نص عادي فقط.\n"
                         "- في دوري المئة مرحلة الإقصاء: خروج 6 مدربين كل جولة هو القانون وليس مفاجأة! "
-                        "لا تقل 'من كان يتوقع خروج 6 مدربين'. الدراما هي في من هم هؤلاء الستة "
-                        "وكيف خسروا وما الفارق بينهم وبين الناجين."
+                        "لا تقل 'من كان يتوقع خروج 6' أو 'دفعة واحدة'. الدراما هي في من هم هؤلاء الستة بالتحديد.\n"
+                        "- لا تخترع معلومات. استخدم فقط البيانات المقدمة لك.\n"
+                        "- لا تكرر نفس الجملة بصياغات مختلفة. كل جملة يجب أن تضيف معلومة جديدة."
                     )
                 },
                 {
