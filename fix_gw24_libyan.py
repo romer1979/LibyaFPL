@@ -332,8 +332,8 @@ def main():
     print("=" * 60)
     print("\nThis script will:")
     print("1. Check which GWs are saved in the database")
-    print("2. Rebuild any missing GWs through GW24")
-    print("3. Save them so GW25 calculates correctly")
+    print("2. Rebuild GW24 from GW23 base")
+    print("3. Delete wrong GW25 and recalculate from correct GW24")
     print("\nCustom rules: Captain 2x, no bench boost, hits subtracted")
     print("=" * 60)
 
@@ -351,44 +351,49 @@ def main():
         saved_gw_list = [gw[0] for gw in saved_gws]
         print(f"Saved GWs in database: {saved_gw_list}")
 
-        if saved_gw_list:
-            latest_saved = max(saved_gw_list)
-            print(f"Latest saved GW: {latest_saved}")
+        # Find ALL missing GWs (gaps) up to TARGET_GW
+        max_gw = max(max(saved_gw_list) if saved_gw_list else 0, TARGET_GW)
+        missing_gws = [gw for gw in range(1, max_gw + 1) if gw not in saved_gw_list]
+
+        if TARGET_GW not in saved_gw_list:
+            print(f"\nGW{TARGET_GW} is MISSING from the database!")
         else:
-            latest_saved = 12  # Fall back to hardcoded GW12
-            print(f"No GWs saved! Will start from GW12 (hardcoded)")
+            print(f"\nGW{TARGET_GW} exists in the database.")
 
-        # Check which GWs are missing between latest saved and target
-        missing_gws = []
-        for gw in range(latest_saved + 1, TARGET_GW + 1):
-            if gw not in saved_gw_list:
-                missing_gws.append(gw)
+        if missing_gws:
+            print(f"All missing GWs: {missing_gws}")
 
-        if not missing_gws:
-            print(f"\nGW{TARGET_GW} is already saved in the database!")
-            print("If standings are still wrong, the issue may be elsewhere.")
+        # Check if GWs after TARGET_GW exist and are wrong (built from wrong base)
+        wrong_gws = [gw for gw in saved_gw_list if gw > TARGET_GW]
+        if wrong_gws:
+            print(f"\nGWs after {TARGET_GW} that need recalculation: {wrong_gws}")
+            print("(These were calculated from wrong base and will be deleted + rebuilt)")
 
-            # Show current GW24 standings
-            standings = get_team_league_standings_full(LEAGUE_TYPE, TARGET_GW)
-            if standings:
-                print(f"\nCurrent GW{TARGET_GW} standings in DB:")
-                sorted_teams = sorted(standings.items(), key=lambda x: (-x[1]['league_points'], -x[1]['total_fpl_points']))
-                for i, (team, data) in enumerate(sorted_teams, 1):
-                    print(f"  {i:2}. {team}: {data['league_points']} league pts, {data['total_fpl_points']} FPL pts")
+        # Determine which GWs we need to process: missing GW24 + wrong GWs after it
+        gws_to_process = sorted(set(
+            [gw for gw in missing_gws if gw >= TARGET_GW] + wrong_gws
+        ))
+
+        if not gws_to_process:
+            print(f"\nNothing to fix! GW{TARGET_GW} and all subsequent GWs look correct.")
             return
 
-        print(f"\nMissing GWs that need to be rebuilt: {missing_gws}")
+        print(f"\nGWs to process: {gws_to_process}")
 
-        # Get the base standings to start from
-        if latest_saved >= 13 and latest_saved in saved_gw_list:
-            base_data = get_team_league_standings_full(LEAGUE_TYPE, latest_saved)
+        # Find the base GW (last correctly saved GW before the ones we need to fix)
+        base_gw = TARGET_GW - 1
+        while base_gw > 0 and base_gw not in saved_gw_list:
+            base_gw -= 1
+
+        if base_gw > 0 and base_gw in saved_gw_list:
+            base_data = get_team_league_standings_full(LEAGUE_TYPE, base_gw)
             base_standings = {k: v['league_points'] for k, v in base_data.items()}
             base_fpl_totals = {k: v['total_fpl_points'] for k, v in base_data.items()}
-            print(f"\nUsing GW{latest_saved} from database as base:")
+            print(f"\nUsing GW{base_gw} from database as base:")
         else:
             base_standings = GW12_STANDINGS.copy()
             base_fpl_totals = GW12_FPL_TOTALS.copy()
-            latest_saved = 12
+            base_gw = 12
             print(f"\nUsing GW12 hardcoded standings as base:")
 
         sorted_base = sorted(base_standings.items(), key=lambda x: -x[1])
@@ -408,14 +413,14 @@ def main():
     player_info = build_player_info(bootstrap)
     print(f"Loaded {len(player_info)} players")
 
-    # Step 3: Process each missing GW
-    print("\n--- Step 3: Processing missing GWs ---")
+    # Step 3: Process each GW that needs fixing
+    print("\n--- Step 3: Processing GWs ---")
 
     current_standings = base_standings.copy()
     current_fpl_totals = base_fpl_totals.copy()
     all_gw_results = {}
 
-    for gw in missing_gws:
+    for gw in gws_to_process:
         result = process_gameweek(gw, player_info, current_standings, current_fpl_totals)
 
         if result is None:
@@ -437,11 +442,15 @@ def main():
     print("\n" + "=" * 60)
     print("  SUMMARY")
     print("=" * 60)
-    print(f"\nWill save standings for GWs: {missing_gws}")
-    print(f"\nFinal GW{TARGET_GW} standings:")
 
-    final_standings = all_gw_results[TARGET_GW]['standings']
-    final_fpl = all_gw_results[TARGET_GW]['fpl_totals']
+    for gw in gws_to_process:
+        action = "CREATE" if gw not in saved_gw_list else "REPLACE (delete wrong + save correct)"
+        print(f"\n  GW{gw}: {action}")
+
+    print(f"\nFinal standings after GW{gws_to_process[-1]}:")
+    last_gw = gws_to_process[-1]
+    final_standings = all_gw_results[last_gw]['standings']
+    final_fpl = all_gw_results[last_gw]['fpl_totals']
     sorted_final = sorted(final_standings.items(), key=lambda x: (-x[1], -final_fpl.get(x[0], 0)))
 
     for i, (team, pts) in enumerate(sorted_final, 1):
@@ -459,7 +468,20 @@ def main():
     print("\n--- Saving to database ---\n")
 
     with app.app_context():
-        for gw in missing_gws:
+        # First delete wrong GWs that will be replaced
+        for gw in gws_to_process:
+            if gw in saved_gw_list:
+                deleted = TeamLeagueStandings.query.filter_by(
+                    league_type=LEAGUE_TYPE, gameweek=gw
+                ).delete()
+                deleted_matches = TeamLeagueMatches.query.filter_by(
+                    league_type=LEAGUE_TYPE, gameweek=gw
+                ).delete()
+                db.session.commit()
+                print(f"  GW{gw}: Deleted {deleted} wrong standings + {deleted_matches} matches")
+
+        # Now save correct data
+        for gw in gws_to_process:
             gw_data = all_gw_results[gw]
 
             # Save standings
@@ -474,7 +496,7 @@ def main():
             save_team_league_matches(LEAGUE_TYPE, gw, gw_data['matches'])
             print(f"  GW{gw}: Saved {len(gw_data['matches'])} matches")
 
-        print(f"\nAll done! Saved GWs: {missing_gws}")
+        print(f"\nAll done! Processed GWs: {gws_to_process}")
 
     # Step 6: Verify
     print("\n--- Verification ---\n")
@@ -489,17 +511,17 @@ def main():
         saved_gw_list_after = [gw[0] for gw in saved_gws_after]
         print(f"Saved GWs now: {saved_gw_list_after}")
 
-        # Verify GW24
-        gw24_data = get_team_league_standings_full(LEAGUE_TYPE, TARGET_GW)
-        if gw24_data:
-            print(f"\nGW{TARGET_GW} standings in DB (verified):")
-            sorted_teams = sorted(gw24_data.items(), key=lambda x: (-x[1]['league_points'], -x[1]['total_fpl_points']))
-            for i, (team, data) in enumerate(sorted_teams, 1):
-                print(f"  {i:2}. {team}: {data['league_points']} league pts, {data['total_fpl_points']} FPL pts")
+        # Verify each processed GW
+        for gw in gws_to_process:
+            gw_data = get_team_league_standings_full(LEAGUE_TYPE, gw)
+            if gw_data:
+                sorted_teams = sorted(gw_data.items(), key=lambda x: (-x[1]['league_points'], -x[1]['total_fpl_points']))
+                top = sorted_teams[0]
+                print(f"  GW{gw}: OK - Leader: {top[0]} ({top[1]['league_points']} pts)")
+            else:
+                print(f"  GW{gw}: WARNING - not found in database!")
 
-            print(f"\nGW25 will now correctly use GW{TARGET_GW} as its base.")
-        else:
-            print(f"WARNING: GW{TARGET_GW} not found in database after save!")
+        print(f"\nNext GW will correctly use GW{gws_to_process[-1]} as its base.")
 
 
 if __name__ == '__main__':
