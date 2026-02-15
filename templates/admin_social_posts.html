@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منشورات السوشيال ميديا</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f0f23;
+            --bg-card: #1a1a2e;
+            --primary-purple: #667eea;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(102, 126, 234, 0.2);
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            color: var(--primary-purple);
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--primary-purple);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        select, button {
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.95rem;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            width: 100%;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+        }
+
+        .btn-generate {
+            background: var(--primary-purple);
+            color: white;
+            border: none;
+            font-weight: 700;
+            transition: all 0.2s;
+            min-width: 160px;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            background: #5a6fd6;
+            transform: translateY(-1px);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .format-toggle {
+            display: flex;
+            gap: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .format-btn {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border: none;
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .format-btn.active {
+            background: var(--primary-purple);
+            color: white;
+        }
+
+        .output-section {
+            display: none;
+        }
+
+        .output-section.visible {
+            display: block;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .output-header h3 {
+            color: var(--primary-purple);
+            font-size: 1.1rem;
+        }
+
+        .output-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+        }
+
+        .btn-small:hover {
+            border-color: var(--primary-purple);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-copy.copied {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .post-textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 1rem;
+            line-height: 1.8;
+            resize: vertical;
+            direction: rtl;
+        }
+
+        .post-textarea:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+        }
+
+        .char-count {
+            text-align: left;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .char-count.over-limit {
+            color: var(--error);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+        }
+
+        .error-msg {
+            color: var(--error);
+            text-align: center;
+            padding: 1rem;
+            display: none;
+        }
+
+        .error-msg.visible {
+            display: block;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary-purple);
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            .controls { flex-direction: column; }
+            .control-group { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">&#8592; الرئيسية</a>
+
+        <div class="page-header">
+            <h1>منشورات السوشيال ميديا</h1>
+            <p>توليد منشورات تلقائية عن نتائج الجولة لكل دوري</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="card">
+            <div class="controls">
+                <div class="control-group">
+                    <label>اختر الدوري</label>
+                    <select id="leagueSelect">
+                        <option value="elite">دوري النخبة</option>
+                        <option value="the100">دوري المئة</option>
+                        <option value="libyan">الدوري الليبي</option>
+                        <option value="arab">الدوري العربي</option>
+                        <option value="cities">دوري المدن</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>نوع المنشور</label>
+                    <div class="format-toggle">
+                        <button class="format-btn active" data-format="twitter" onclick="setFormat('twitter')">تويتر</button>
+                        <button class="format-btn" data-format="instagram" onclick="setFormat('instagram')">انستقرام</button>
+                    </div>
+                </div>
+
+                <div class="control-group" style="flex: 0 0 auto;">
+                    <label>&nbsp;</label>
+                    <button class="btn-generate" id="generateBtn" onclick="generatePost()">
+                        توليد المنشور
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p class="loading-text">جاري توليد المنشور...</p>
+        </div>
+
+        <!-- Error -->
+        <div class="error-msg" id="errorMsg"></div>
+
+        <!-- Output -->
+        <div class="output-section" id="outputSection">
+            <div class="card">
+                <div class="output-header">
+                    <h3>المنشور</h3>
+                    <div class="output-actions">
+                        <button class="btn-small btn-copy" id="copyBtn" onclick="copyPost()">نسخ</button>
+                        <button class="btn-small" onclick="generatePost()">إعادة التوليد</button>
+                    </div>
+                </div>
+                <textarea class="post-textarea" id="postText" oninput="updateCharCount()"></textarea>
+                <div class="char-count" id="charCount"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFormat = 'twitter';
+
+        function setFormat(format) {
+            currentFormat = format;
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.format === format);
+            });
+        }
+
+        async function generatePost() {
+            const league = document.getElementById('leagueSelect').value;
+            const btn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const output = document.getElementById('outputSection');
+            const errorMsg = document.getElementById('errorMsg');
+
+            btn.disabled = true;
+            btn.textContent = 'جاري التوليد...';
+            loading.classList.add('visible');
+            output.classList.remove('visible');
+            errorMsg.classList.remove('visible');
+
+            try {
+                const response = await fetch('/api/generate-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ league: league, format: currentFormat })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    errorMsg.textContent = data.error;
+                    errorMsg.classList.add('visible');
+                } else {
+                    document.getElementById('postText').value = data.post;
+                    output.classList.add('visible');
+                    updateCharCount();
+                }
+            } catch (err) {
+                errorMsg.textContent = 'حدث خطأ في الاتصال';
+                errorMsg.classList.add('visible');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'توليد المنشور';
+            loading.classList.remove('visible');
+        }
+
+        function copyPost() {
+            const textarea = document.getElementById('postText');
+            textarea.select();
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'تم النسخ';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'نسخ';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function updateCharCount() {
+            const text = document.getElementById('postText').value;
+            const count = text.length;
+            const el = document.getElementById('charCount');
+            el.textContent = count + ' حرف';
+            if (currentFormat === 'twitter') {
+                el.classList.toggle('over-limit', count > 280);
+                el.textContent += count > 280 ? ' (تجاوز الحد)' : ' / 280';
+            }
+        }
+    </script>
+</body>
+</html>

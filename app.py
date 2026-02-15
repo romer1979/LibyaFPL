@@ -3,9 +3,10 @@
 Fantasy Premier League Multi-League App
 """
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import os
 import sys
+import requests as http_requests
 from datetime import datetime
 
 # Load environment variables from .env file (for local development)
@@ -890,6 +891,198 @@ def api_the100():
     data = get_the100_standings()
     data['timestamp'] = datetime.now().strftime('%H:%M:%S')
     return jsonify(data)
+
+
+@app.route('/admin/social-posts')
+def admin_social_posts():
+    """Admin page for generating social media posts"""
+    return render_template('admin_social_posts.html')
+
+
+@app.route('/api/generate-post', methods=['POST'])
+def api_generate_post():
+    """Generate a social media post for a league using OpenAI"""
+    api_key = os.environ.get('OPEN_AI_KEY')
+    if not api_key:
+        return jsonify({'error': 'OpenAI API key not configured'})
+
+    data = request.get_json()
+    league = data.get('league', 'elite')
+    post_format = data.get('format', 'twitter')
+
+    try:
+        summary = _gather_league_summary(league)
+        if not summary:
+            return jsonify({'error': 'Failed to fetch league data'})
+
+        post = _call_openai(api_key, summary, post_format)
+        return jsonify({'post': post, 'league': league, 'format': post_format})
+    except Exception as e:
+        print(f"[social-post] Error: {e}")
+        return jsonify({'error': f'Error generating post: {str(e)}'})
+
+
+def _gather_league_summary(league):
+    """Gather and format league data into a concise summary for the prompt"""
+
+    if league == 'elite':
+        data = get_dashboard()
+        if not data.get('success'):
+            return None
+        gw = data.get('gameweek', '?')
+        fixtures_text = ""
+        for f in data.get('fixtures', []):
+            w = f['team_1_name'] if f['winner'] == 1 else (f['team_2_name'] if f['winner'] == 2 else 'Draw')
+            fixtures_text += f"- {f['team_1_name']} {f['team_1_points']} vs {f['team_2_points']} {f['team_2_name']} (Winner: {w})\n"
+        standings_text = ""
+        for t in data.get('standings', [])[:10]:
+            standings_text += f"  {t['rank']}. {t['player_name']} - LP: {t['projected_league_points']}, GW: {t['current_gw_points']}, Captain: {t.get('captain','-')}, Result: {t.get('result','-')}\n"
+        chips = [f"{t['player_name']}: {t['chip']}" for t in data.get('standings', []) if t.get('chip_active')]
+        return (
+            f"League: Elite League (دوري النخبة) - H2H\n"
+            f"Gameweek: {gw}\n"
+            f"Is Live: {data.get('is_live')}\n\n"
+            f"Fixtures:\n{fixtures_text}\n"
+            f"Standings (top 10):\n{standings_text}\n"
+            f"Chips used: {', '.join(chips) if chips else 'None'}\n"
+        )
+
+    elif league == 'the100':
+        data = get_the100_standings()
+        stats = get_the100_stats()
+        if not data or not data.get('standings'):
+            return None
+        gw = data.get('gameweek', '?')
+        phase = data.get('phase', 'unknown')
+
+        top = data['standings'][:10]
+        standings_text = ""
+        for t in top:
+            name = t.get('manager_name', '')
+            pts = t.get('live_gw_points', t.get('live_total', 0))
+            rank = t.get('live_rank', '')
+            standings_text += f"  {rank}. {name} - GW pts: {pts}\n"
+
+        bottom_text = ""
+        if phase == 'elimination':
+            bottom = [t for t in data['standings'] if t.get('in_elimination_zone')]
+            for t in bottom:
+                bottom_text += f"  {t.get('live_rank')}. {t['manager_name']} - GW pts: {t['live_gw_points']} (ELIMINATION ZONE)\n"
+
+        stats_text = ""
+        if stats and stats.get('success'):
+            ps = stats.get('points_stats', {})
+            stats_text = (
+                f"Points stats: Min={ps.get('min')} ({', '.join(ps.get('min_managers',[]))}), "
+                f"Max={ps.get('max')} ({', '.join(ps.get('max_managers',[]))}), "
+                f"Avg={ps.get('avg')}\n"
+            )
+            caps = stats.get('captain_stats', [])[:5]
+            if caps:
+                stats_text += f"Top captains: {', '.join(f'{c[\"name\"]} ({c[\"count\"]})' for c in caps)}\n"
+
+        phase_info = data.get('phase_info', {})
+        return (
+            f"League: The 100 (دوري المئة)\n"
+            f"Phase: {phase_info.get('name_en', phase)} ({phase_info.get('name', '')})\n"
+            f"Gameweek: {gw}\n"
+            f"Total managers: {data.get('total_managers', 0)}, Remaining: {data.get('remaining_managers', '')}\n\n"
+            f"Top 10:\n{standings_text}\n"
+            f"{f'Elimination Zone:\\n{bottom_text}\\n' if bottom_text else ''}"
+            f"{stats_text}"
+        )
+
+    elif league in ('libyan', 'arab', 'cities'):
+        funcs = {
+            'libyan': (get_libyan_league_data, 'Libyan League (الدوري الليبي)', 'Team H2H with 3 managers per team'),
+            'arab': (get_arab_league_data, 'Arab League (الدوري العربي)', 'Team H2H with 3 managers per team'),
+            'cities': (get_cities_league_data, 'Cities League (دوري المدن)', 'Team H2H with 3 managers per team'),
+        }
+        func, name, desc = funcs[league]
+        data = func()
+        if not data or not data.get('standings'):
+            return None
+        gw = data.get('gameweek', '?')
+
+        standings_text = ""
+        for t in data.get('standings', []):
+            standings_text += f"  {t.get('rank','?')}. {t['team_name']} - LP: {t['league_points']}, GW: {t['live_gw_points']}, Result: {t.get('result','')}\n"
+
+        matches_text = ""
+        for m in data.get('matches', []):
+            w = m['team_1'] if m['winner'] == 1 else (m['team_2'] if m['winner'] == 2 else 'Draw')
+            matches_text += f"- {m['team_1']} {m['points_1']} vs {m['points_2']} {m['team_2']} (Winner: {w})\n"
+
+        best = ""
+        bt = data.get('best_team')
+        bm = data.get('best_manager')
+        if bt:
+            best += f"Best team: {bt['name']} ({bt['points']} pts)\n"
+        if bm:
+            best += f"Best manager: {bm['name']} ({bm['points']} pts, team: {bm.get('team','')})\n"
+
+        return (
+            f"League: {name}\n"
+            f"Format: {desc}\n"
+            f"Gameweek: {gw}\n\n"
+            f"Matches:\n{matches_text}\n"
+            f"Standings:\n{standings_text}\n"
+            f"{best}"
+        )
+
+    return None
+
+
+def _call_openai(api_key, summary, post_format):
+    """Call OpenAI API to generate the social media post"""
+    if post_format == 'twitter':
+        format_instruction = (
+            "اكتب منشور تويتر باللغة العربية عن نتائج هذه الجولة. "
+            "يجب أن يكون المنشور مختصر وجذاب ولا يتجاوز 280 حرف. "
+            "ركز على أهم النتائج والأحداث."
+        )
+    else:
+        format_instruction = (
+            "اكتب منشور انستقرام مفصل باللغة العربية عن نتائج هذه الجولة. "
+            "اكتب ملخص شامل مع ايموجي وهاشتاقات. "
+            "تحدث عن النتائج والترتيب واللاعبين المميزين والكباتن."
+        )
+
+    response = http_requests.post(
+        'https://api.openai.com/v1/chat/completions',
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'model': 'gpt-4o-mini',
+            'messages': [
+                {
+                    'role': 'system',
+                    'content': (
+                        "أنت صحفي رياضي متخصص في فانتازي الدوري الإنجليزي. "
+                        "تكتب منشورات سوشيال ميديا جذابة باللغة العربية. "
+                        "ركز على القصص المثيرة: النتائج المفاجئة، الفوارق الكبيرة، "
+                        "المنافسة على الصدارة، منطقة الخطر، الكباتن المميزين. "
+                        "استخدم أسلوب حماسي ومشوق."
+                    )
+                },
+                {
+                    'role': 'user',
+                    'content': f"{summary}\n\n{format_instruction}"
+                }
+            ],
+            'temperature': 0.8,
+            'max_tokens': 1000,
+        },
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        raise RuntimeError(f"OpenAI API error: {response.status_code} - {response.text[:200]}")
+
+    result = response.json()
+    return result['choices'][0]['message']['content'].strip()
 
 
 if __name__ == '__main__':
