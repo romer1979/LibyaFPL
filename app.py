@@ -102,10 +102,20 @@ def backfill_elite_standings(current_gw):
                 if has_blank:
                     standings_missing_results.append(gw)
 
+        # Detect GWs where all league_points are 0 (backfilled with no LP)
+        zero_lp_gws = []
+        for gw in finished_gws:
+            if gw in saved_standings_set and gw not in missing_standings and gw < current_gw:
+                has_nonzero = StandingsHistory.query.filter_by(gameweek=gw).filter(
+                    StandingsHistory.league_points > 0
+                ).first()
+                if not has_nonzero:
+                    zero_lp_gws.append(gw)
+
         missing_gws = missing_standings
         all_gws_to_process = sorted(set(missing_standings + missing_fixtures_only + standings_missing_results))
 
-        if not all_gws_to_process:
+        if not all_gws_to_process and not zero_lp_gws:
             return
 
         if missing_standings:
@@ -114,6 +124,8 @@ def backfill_elite_standings(current_gw):
             print(f"[elite] Backfilling missing fixtures only for GWs: {missing_fixtures_only}")
         if standings_missing_results:
             print(f"[elite] Fixing missing result/opponent in standings for GWs: {standings_missing_results}")
+        if zero_lp_gws:
+            print(f"[elite] Fixing zero league_points for GWs: {zero_lp_gws}")
 
         print(f"[elite] Backfilling missing GWs: {missing_gws}")
 
@@ -297,6 +309,44 @@ def backfill_elite_standings(current_gw):
                 print(f"[elite] Error backfilling GW{gw}: {e}")
                 db.session.rollback()
                 continue
+
+        # Fix league points for GWs that have 0 (backfilled or newly created)
+        gws_needing_lp = sorted(set(missing_standings + zero_lp_gws))
+        if gws_needing_lp:
+            print(f"[elite] Calculating cumulative league points for GWs: {gws_needing_lp}")
+            cumulative_lp = {eid: 0 for eid in entry_ids}
+            max_gw_needed = max(gws_needing_lp)
+
+            for gw in sorted(finished_gws):
+                if gw > max_gw_needed:
+                    break
+                try:
+                    gw_matches = get_league_matches(LEAGUE_ID, gw)
+                    for match in gw_matches.get('results', []):
+                        e1 = match.get('entry_1_entry')
+                        e2 = match.get('entry_2_entry')
+                        p1 = match.get('entry_1_points', 0)
+                        p2 = match.get('entry_2_points', 0)
+                        if e1 in cumulative_lp:
+                            cumulative_lp[e1] += 3 if p1 > p2 else (1 if p1 == p2 else 0)
+                        if e2 in cumulative_lp:
+                            cumulative_lp[e2] += 3 if p2 > p1 else (1 if p1 == p2 else 0)
+                except Exception as e:
+                    print(f"[elite] Error fetching GW{gw} matches for LP calc: {e}")
+                    continue
+
+                # Update DB records for this GW if it needs LP fix
+                if gw in gws_needing_lp:
+                    try:
+                        for eid in entry_ids:
+                            s = StandingsHistory.query.filter_by(gameweek=gw, entry_id=eid).first()
+                            if s:
+                                s.league_points = cumulative_lp.get(eid, 0)
+                        db.session.commit()
+                        print(f"[elite] Updated league points for GW{gw}: {dict(list(cumulative_lp.items())[:3])}...")
+                    except Exception as e:
+                        print(f"[elite] Error updating LP for GW{gw}: {e}")
+                        db.session.rollback()
 
     except Exception as e:
         print(f"[elite] Backfill error: {e}")
