@@ -983,13 +983,14 @@ def _gather_league_summary(league):
                 stats_text += f"Top captains: {caps_str}\n"
 
         phase_info = data.get('phase_info', {})
+        elim_section = f"Elimination Zone:\n{bottom_text}\n" if bottom_text else ""
         return (
             f"League: The 100 (دوري المئة)\n"
             f"Phase: {phase_info.get('name_en', phase)} ({phase_info.get('name', '')})\n"
             f"Gameweek: {gw}\n"
             f"Total managers: {data.get('total_managers', 0)}, Remaining: {data.get('remaining_managers', '')}\n\n"
             f"Top 10:\n{standings_text}\n"
-            f"{f'Elimination Zone:\\n{bottom_text}\\n' if bottom_text else ''}"
+            f"{elim_section}"
             f"{stats_text}"
         )
 
