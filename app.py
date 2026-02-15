@@ -318,6 +318,16 @@ def elite_dashboard():
     return render_template('dashboard.html', data=data, ar=ARABIC)
 
 
+@app.route('/league/elite/history')
+def elite_history():
+    """Elite League history page"""
+    from core.elite_history import get_elite_history_data
+    data = get_elite_history_data()
+    if not data:
+        return "Error loading history", 500
+    return render_template('elite_history.html', **data)
+
+
 @app.route('/league/elite/stats')
 def elite_stats():
     """Elite League statistics page"""
