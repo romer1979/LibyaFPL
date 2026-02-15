@@ -92,8 +92,18 @@ def backfill_elite_standings(current_gw):
         # GWs that have standings but missing fixtures
         missing_fixtures_only = sorted([gw for gw in finished_gws if gw in saved_standings_set and gw not in saved_fixtures_set and gw < current_gw])
 
+        # GWs that have standings but result/opponent are missing (saved by old code)
+        standings_missing_results = []
+        for gw in finished_gws:
+            if gw in saved_standings_set and gw not in missing_fixtures_only and gw < current_gw:
+                has_blank = StandingsHistory.query.filter_by(gameweek=gw).filter(
+                    db.or_(StandingsHistory.result.is_(None), StandingsHistory.result == '-', StandingsHistory.result == '')
+                ).first()
+                if has_blank:
+                    standings_missing_results.append(gw)
+
         missing_gws = missing_standings
-        all_gws_to_process = sorted(set(missing_standings + missing_fixtures_only))
+        all_gws_to_process = sorted(set(missing_standings + missing_fixtures_only + standings_missing_results))
 
         if not all_gws_to_process:
             return
@@ -102,6 +112,8 @@ def backfill_elite_standings(current_gw):
             print(f"[elite] Backfilling missing standings+fixtures for GWs: {missing_standings}")
         if missing_fixtures_only:
             print(f"[elite] Backfilling missing fixtures only for GWs: {missing_fixtures_only}")
+        if standings_missing_results:
+            print(f"[elite] Fixing missing result/opponent in standings for GWs: {standings_missing_results}")
 
         print(f"[elite] Backfilling missing GWs: {missing_gws}")
 
@@ -132,8 +144,9 @@ def backfill_elite_standings(current_gw):
 
         for gw in all_gws_to_process:
             needs_standings = gw in missing_standings
-            needs_fixtures = gw in missing_fixtures_only or needs_standings
-            label = "standings+fixtures" if needs_standings else "fixtures only"
+            needs_fixtures = gw in missing_fixtures_only or gw in standings_missing_results or needs_standings
+            needs_result_fix = gw in standings_missing_results or gw in missing_fixtures_only
+            label = "standings+fixtures" if needs_standings else ("fixtures+results" if needs_result_fix else "fixtures only")
             print(f"[elite] Backfilling GW{gw} ({label})...")
 
             try:
@@ -244,6 +257,41 @@ def backfill_elite_standings(current_gw):
 
                     db.session.commit()
                     print(f"[elite] Backfilled GW{gw}: {fixture_count} fixtures saved")
+
+                # Update existing standings with result/opponent from H2H matches
+                if needs_result_fix and not needs_standings:
+                    updated_count = 0
+                    for match in matches:
+                        entry_1 = match.get('entry_1_entry')
+                        entry_2 = match.get('entry_2_entry')
+                        name_1 = entry_info.get(entry_1, {}).get('player_name', '-')
+                        name_2 = entry_info.get(entry_2, {}).get('player_name', '-')
+                        p1 = match.get('entry_1_points', 0)
+                        p2 = match.get('entry_2_points', 0)
+
+                        if p1 > p2:
+                            r1, r2 = 'W', 'L'
+                        elif p2 > p1:
+                            r1, r2 = 'L', 'W'
+                        else:
+                            r1, r2 = 'D', 'D'
+
+                        # Update entry 1
+                        s1 = StandingsHistory.query.filter_by(gameweek=gw, entry_id=entry_1).first()
+                        if s1:
+                            s1.result = r1
+                            s1.opponent = name_2
+                            updated_count += 1
+
+                        # Update entry 2
+                        s2 = StandingsHistory.query.filter_by(gameweek=gw, entry_id=entry_2).first()
+                        if s2:
+                            s2.result = r2
+                            s2.opponent = name_1
+                            updated_count += 1
+
+                    db.session.commit()
+                    print(f"[elite] Fixed result/opponent for GW{gw}: {updated_count} standings updated")
 
             except Exception as e:
                 print(f"[elite] Error backfilling GW{gw}: {e}")
