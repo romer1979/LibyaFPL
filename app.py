@@ -70,21 +70,38 @@ def backfill_elite_standings(current_gw):
         )
         from config import LEAGUE_ID, EXCLUDED_PLAYERS, get_chip_arabic
 
-        # Find which GWs are already saved
-        saved_gws = db.session.query(
+        # Find which GWs have standings saved
+        saved_standings_gws = db.session.query(
             StandingsHistory.gameweek
         ).distinct().all()
-        saved_gw_set = {gw[0] for gw in saved_gws}
+        saved_standings_set = {gw[0] for gw in saved_standings_gws}
 
-        # Determine which finished GWs are missing
+        # Find which GWs have fixture results saved
+        saved_fixtures_gws = db.session.query(
+            FixtureResult.gameweek
+        ).distinct().all()
+        saved_fixtures_set = {gw[0] for gw in saved_fixtures_gws}
+
+        # Determine which finished GWs need work
         bootstrap = get_bootstrap_data()
         events = bootstrap.get('events', [])
         finished_gws = [e['id'] for e in events if e.get('finished') and e.get('data_checked')]
 
-        missing_gws = sorted([gw for gw in finished_gws if gw not in saved_gw_set and gw < current_gw])
+        # GWs missing standings entirely
+        missing_standings = sorted([gw for gw in finished_gws if gw not in saved_standings_set and gw < current_gw])
+        # GWs that have standings but missing fixtures
+        missing_fixtures_only = sorted([gw for gw in finished_gws if gw in saved_standings_set and gw not in saved_fixtures_set and gw < current_gw])
 
-        if not missing_gws:
+        missing_gws = missing_standings
+        all_gws_to_process = sorted(set(missing_standings + missing_fixtures_only))
+
+        if not all_gws_to_process:
             return
+
+        if missing_standings:
+            print(f"[elite] Backfilling missing standings+fixtures for GWs: {missing_standings}")
+        if missing_fixtures_only:
+            print(f"[elite] Backfilling missing fixtures only for GWs: {missing_fixtures_only}")
 
         print(f"[elite] Backfilling missing GWs: {missing_gws}")
 
@@ -113,131 +130,120 @@ def backfill_elite_standings(current_gw):
         player_info_map = build_player_info(bootstrap)
         elements = bootstrap.get('elements', [])
 
-        for gw in missing_gws:
-            print(f"[elite] Backfilling GW{gw}...")
+        for gw in all_gws_to_process:
+            needs_standings = gw in missing_standings
+            needs_fixtures = gw in missing_fixtures_only or needs_standings
+            label = "standings+fixtures" if needs_standings else "fixtures only"
+            print(f"[elite] Backfilling GW{gw} ({label})...")
 
             try:
-                # Fetch H2H matches for this GW
+                # Fetch H2H matches for this GW (needed for both cases)
                 matches_data = get_league_matches(LEAGUE_ID, gw)
                 matches = matches_data.get('results', [])
 
-                # Fetch picks for all managers for this GW
-                all_picks = get_multiple_entry_picks(entry_ids, gw)
+                # Save standings if needed
+                if needs_standings:
+                    all_picks = get_multiple_entry_picks(entry_ids, gw)
 
-                # Build standings data for this GW
-                standings_data = []
-                for eid in entry_ids:
-                    info = entry_info.get(eid, {})
-                    picks_data = all_picks.get(eid, {})
-                    e_data = all_entry_data.get(eid, {})
+                    standings_data = []
+                    for eid in entry_ids:
+                        info = entry_info.get(eid, {})
+                        picks_data = all_picks.get(eid, {})
+                        e_data = all_entry_data.get(eid, {})
 
-                    gw_points = picks_data.get('entry_history', {}).get('points', 0) if picks_data else 0
-                    overall_rank = e_data.get('summary_overall_rank')
+                        gw_points = picks_data.get('entry_history', {}).get('points', 0) if picks_data else 0
+                        overall_rank = e_data.get('summary_overall_rank')
 
-                    # Find captain
-                    captain = None
-                    if picks_data:
-                        captain_id = next((p['element'] for p in picks_data.get('picks', []) if p.get('is_captain')), None)
-                        if captain_id:
-                            capt = next((pl for pl in elements if pl.get('id') == captain_id), None)
-                            captain = capt.get('web_name') if capt else None
+                        captain = None
+                        if picks_data:
+                            captain_id = next((p['element'] for p in picks_data.get('picks', []) if p.get('is_captain')), None)
+                            if captain_id:
+                                capt = next((pl for pl in elements if pl.get('id') == captain_id), None)
+                                captain = capt.get('web_name') if capt else None
 
-                    chip_raw = picks_data.get('active_chip') if picks_data else None
-                    chip = get_chip_arabic(chip_raw)
+                        chip_raw = picks_data.get('active_chip') if picks_data else None
+                        chip = get_chip_arabic(chip_raw)
 
-                    # Find match result and opponent for this entry in this GW
-                    result = '-'
-                    opponent = '-'
+                        result = '-'
+                        opponent = '-'
+                        for match in matches:
+                            if match.get('entry_1_entry') == eid:
+                                opp_id = match.get('entry_2_entry')
+                                opp_info = entry_info.get(opp_id, {})
+                                opponent = opp_info.get('player_name', '-')
+                                p1 = match.get('entry_1_points', 0)
+                                p2 = match.get('entry_2_points', 0)
+                                result = 'W' if p1 > p2 else ('L' if p2 > p1 else 'D')
+                                break
+                            elif match.get('entry_2_entry') == eid:
+                                opp_id = match.get('entry_1_entry')
+                                opp_info = entry_info.get(opp_id, {})
+                                opponent = opp_info.get('player_name', '-')
+                                p1 = match.get('entry_1_points', 0)
+                                p2 = match.get('entry_2_points', 0)
+                                result = 'W' if p2 > p1 else ('L' if p1 > p2 else 'D')
+                                break
+
+                        standings_data.append({
+                            'entry_id': eid,
+                            'player_name': info.get('player_name', ''),
+                            'team_name': info.get('entry_name', ''),
+                            'projected_league_points': 0,
+                            'current_gw_points': gw_points,
+                            'total_points': info.get('points_for', 0),
+                            'overall_rank': overall_rank,
+                            'result': result,
+                            'opponent': opponent,
+                            'captain': captain or '-',
+                            'chip': chip,
+                        })
+
+                    standings_data.sort(key=lambda x: (
+                        -(3 if x['result'] == 'W' else (1 if x['result'] == 'D' else 0)),
+                        -x['current_gw_points']
+                    ))
+                    for i, team in enumerate(standings_data, 1):
+                        team['rank'] = i
+                        team['projected_league_points'] = 0
+
+                    save_standings(gw, standings_data)
+
+                # Save fixture results if needed
+                if needs_fixtures:
+                    fixture_count = 0
                     for match in matches:
-                        if match.get('entry_1_entry') == eid:
-                            opp_id = match.get('entry_2_entry')
-                            opp_info = entry_info.get(opp_id, {})
-                            opponent = opp_info.get('player_name', '-')
-                            p1 = match.get('entry_1_points', 0)
-                            p2 = match.get('entry_2_points', 0)
-                            result = 'W' if p1 > p2 else ('L' if p2 > p1 else 'D')
-                            break
-                        elif match.get('entry_2_entry') == eid:
-                            opp_id = match.get('entry_1_entry')
-                            opp_info = entry_info.get(opp_id, {})
-                            opponent = opp_info.get('player_name', '-')
-                            p1 = match.get('entry_1_points', 0)
-                            p2 = match.get('entry_2_points', 0)
-                            result = 'W' if p2 > p1 else ('L' if p1 > p2 else 'D')
-                            break
+                        entry_1 = match.get('entry_1_entry')
+                        entry_2 = match.get('entry_2_entry')
+                        name_1 = entry_info.get(entry_1, {}).get('player_name', '')
+                        name_2 = entry_info.get(entry_2, {}).get('player_name', '')
 
-                    standings_data.append({
-                        'entry_id': eid,
-                        'player_name': info.get('player_name', ''),
-                        'team_name': info.get('entry_name', ''),
-                        'projected_league_points': 0,  # Will be set after sorting
-                        'current_gw_points': gw_points,
-                        'total_points': info.get('points_for', 0),
-                        'overall_rank': overall_rank,
-                        'result': result,
-                        'opponent': opponent,
-                        'captain': captain or '-',
-                        'chip': chip,
-                    })
+                        if not name_1 or not name_2:
+                            continue
 
-                # Calculate league points up to this GW from H2H results
-                # Use the FPL API's cumulative league points
-                for entry in teams_league:
-                    eid = entry.get('entry')
-                    matching = next((s for s in standings_data if s['entry_id'] == eid), None)
-                    if matching:
-                        # We need per-GW league points; the API gives cumulative.
-                        # For historical GW, use the matches_won/drawn/lost from API
-                        pass
+                        p1 = match.get('entry_1_points', 0)
+                        p2 = match.get('entry_2_points', 0)
+                        winner = 1 if p1 > p2 else (2 if p2 > p1 else 0)
 
-                # Sort and rank
-                # For a finished historical GW, we use match results to compute ranking
-                # We can sort by result (W > D > L) then by gw_points as tiebreaker
-                standings_data.sort(key=lambda x: (
-                    -(3 if x['result'] == 'W' else (1 if x['result'] == 'D' else 0)),
-                    -x['current_gw_points']
-                ))
-                for i, team in enumerate(standings_data, 1):
-                    team['rank'] = i
-                    # Set league_points from API cumulative (not available per-GW, so store 0)
-                    team['projected_league_points'] = 0
+                        existing = FixtureResult.query.filter_by(
+                            gameweek=gw, entry_1_id=entry_1, entry_2_id=entry_2
+                        ).first()
 
-                # Save standings
-                save_standings(gw, standings_data)
+                        if not existing:
+                            fixture = FixtureResult(
+                                gameweek=gw,
+                                entry_1_id=entry_1,
+                                entry_1_name=name_1,
+                                entry_1_points=p1,
+                                entry_2_id=entry_2,
+                                entry_2_name=name_2,
+                                entry_2_points=p2,
+                                winner=winner
+                            )
+                            db.session.add(fixture)
+                            fixture_count += 1
 
-                # Save fixture results
-                for match in matches:
-                    entry_1 = match.get('entry_1_entry')
-                    entry_2 = match.get('entry_2_entry')
-                    name_1 = entry_info.get(entry_1, {}).get('player_name', '')
-                    name_2 = entry_info.get(entry_2, {}).get('player_name', '')
-
-                    if not name_1 or not name_2:
-                        continue
-
-                    p1 = match.get('entry_1_points', 0)
-                    p2 = match.get('entry_2_points', 0)
-                    winner = 1 if p1 > p2 else (2 if p2 > p1 else 0)
-
-                    existing = FixtureResult.query.filter_by(
-                        gameweek=gw, entry_1_id=entry_1, entry_2_id=entry_2
-                    ).first()
-
-                    if not existing:
-                        fixture = FixtureResult(
-                            gameweek=gw,
-                            entry_1_id=entry_1,
-                            entry_1_name=name_1,
-                            entry_1_points=p1,
-                            entry_2_id=entry_2,
-                            entry_2_name=name_2,
-                            entry_2_points=p2,
-                            winner=winner
-                        )
-                        db.session.add(fixture)
-
-                db.session.commit()
-                print(f"[elite] Backfilled GW{gw}: {len(standings_data)} standings + {len(matches)} fixtures")
+                    db.session.commit()
+                    print(f"[elite] Backfilled GW{gw}: {fixture_count} fixtures saved")
 
             except Exception as e:
                 print(f"[elite] Error backfilling GW{gw}: {e}")
