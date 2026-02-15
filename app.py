@@ -979,7 +979,8 @@ def _gather_league_summary(league):
             )
             caps = stats.get('captain_stats', [])[:5]
             if caps:
-                stats_text += f"Top captains: {', '.join(f'{c[\"name\"]} ({c[\"count\"]})' for c in caps)}\n"
+                caps_str = ', '.join(f"{c['name']} ({c['count']})" for c in caps)
+                stats_text += f"Top captains: {caps_str}\n"
 
         phase_info = data.get('phase_info', {})
         return (
