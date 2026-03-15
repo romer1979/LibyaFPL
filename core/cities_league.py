@@ -106,16 +106,22 @@ def get_cookies():
         'csrftoken': os.environ.get('FPL_CSRF_TOKEN', '')
     }
 
-def fetch_json(url, cookies=None):
-    """Simple fetch with timeout"""
-    try:
-        r = requests.get(url, cookies=cookies, timeout=TIMEOUT)
-        if r.status_code == 200:
-            return r.json()
-        return None
-    except Exception as e:
-        print(f"Fetch error: {e}")
-        return None
+def fetch_json(url, cookies=None, retries=3):
+    """Fetch with timeout and retries"""
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, cookies=cookies, timeout=TIMEOUT)
+            if r.status_code == 200:
+                return r.json()
+            elif r.status_code == 429:
+                time.sleep(2)
+            else:
+                print(f"Fetch HTTP {r.status_code}: {url}")
+        except Exception as e:
+            print(f"Fetch error (attempt {attempt+1}/{retries}): {e}")
+        if attempt < retries - 1:
+            time.sleep(1)
+    return None
 
 def format_captains(captains_list):
     """Format captains list with x2, x3 for duplicates"""
@@ -574,11 +580,13 @@ def get_cities_league_data():
             
             return xi_ids
         
+        fetch_failures = 0  # Track failed picks fetches
+
         for team_name, entry_ids in TEAMS_FPL_IDS.items():
             total_pts = 0
             captains = []
             picks_counter = Counter()  # Count how many managers have each player in XI (after subs)
-            
+
             for entry_id in entry_ids:
                 # Get picks for this manager (single API call per manager)
                 picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{current_gw}/picks/", cookies)
@@ -632,7 +640,9 @@ def get_cities_league_data():
                     })
                 else:
                     captains.append('-')
-            
+                    fetch_failures += 1
+                    print(f"[{LEAGUE_TYPE}] WARNING: Failed to fetch picks for entry {entry_id} (team: {team_name}) in GW{current_gw}")
+
             team_live_points[team_name] = total_pts
             team_captains[team_name] = captains
             team_picks_counter[team_name] = picks_counter
@@ -851,21 +861,27 @@ def get_cities_league_data():
         
         # 10) Save standings and matches to database if GW is finished (24 hours after last match)
         if gw_finished_for_save:
-            # Build standings dict to save
-            final_standings = {team['team_name']: team['league_points'] for team in team_standings}
-            final_fpl_totals = {team['team_name']: team['total_fpl_points'] for team in team_standings}
-            save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings, final_fpl_totals)
-            
-            # Build matches list to save
-            matches_to_save = []
-            for match in h2h_matches:
-                matches_to_save.append({
-                    'team1': match['team_1'],
-                    'team2': match['team_2'],
-                    'points1': match['points_1'],
-                    'points2': match['points_2'],
-                })
-            save_team_league_matches(LEAGUE_TYPE, current_gw, matches_to_save)
+            # Guard: only save if all data was fetched successfully
+            if fetch_failures > 0:
+                print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: {fetch_failures} manager picks failed to fetch")
+            elif not match_results:
+                print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: no match results (H2H data may have failed)")
+            else:
+                # Build standings dict to save
+                final_standings = {team['team_name']: team['league_points'] for team in team_standings}
+                final_fpl_totals = {team['team_name']: team['total_fpl_points'] for team in team_standings}
+                save_team_league_standings(LEAGUE_TYPE, current_gw, final_standings, final_fpl_totals)
+
+                # Build matches list to save
+                matches_to_save = []
+                for match in h2h_matches:
+                    matches_to_save.append({
+                        'team1': match['team_1'],
+                        'team2': match['team_2'],
+                        'points1': match['points_1'],
+                        'points2': match['points_2'],
+                    })
+                save_team_league_matches(LEAGUE_TYPE, current_gw, matches_to_save)
         
         result = {
             'standings': team_standings,

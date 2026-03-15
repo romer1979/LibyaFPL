@@ -124,6 +124,7 @@ def _do_backfill(league_type, missing_gws, teams_fpl_ids, h2h_league_id, standin
 
         # 2. Calculate team FPL points
         gw_team_points = {}
+        fetch_failures = 0
         for team_name, entry_ids in teams_fpl_ids.items():
             total = 0
             for entry_id in entry_ids:
@@ -132,8 +133,15 @@ def _do_backfill(league_type, missing_gws, teams_fpl_ids, h2h_league_id, standin
                 )
                 if picks_data:
                     total += _calculate_manager_points(picks_data, live_elements, player_info)
+                else:
+                    fetch_failures += 1
+                    print(f"[{league_type}] WARNING: Backfill failed to fetch picks for entry {entry_id} (team: {team_name}) in GW{gw}")
                 time.sleep(0.1)
             gw_team_points[team_name] = total
+
+        if fetch_failures > 0:
+            print(f"[{league_type}] Backfill GW{gw} ABORTED: {fetch_failures} manager picks failed to fetch")
+            return
 
         # 3. Get H2H matches and determine W/D/L
         matches_data = _fetch_json(
