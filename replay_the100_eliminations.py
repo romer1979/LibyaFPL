@@ -34,7 +34,12 @@ from models import (
     save_the100_elimination,
 )
 from audit_the100_eliminations import recompute_gw
-from core.the100 import get_cookies, ELIMINATIONS_PER_GW
+from core.the100 import (
+    get_cookies,
+    fetch_json,
+    ELIMINATIONS_PER_GW,
+    ELIMINATION_END_GW,
+)
 
 REPLAY_START_GW = 23  # first GW where audit found a set mismatch
 
@@ -45,14 +50,31 @@ def main():
     with app.app_context():
         cookies = get_cookies()
 
-        # Determine replay range: from GW23 through highest currently-saved elim GW
+        # Replay end = max of (highest saved elim GW, highest FPL-finished elim GW).
+        # Including a finished GW that isn't saved yet (e.g. auto-save still within
+        # its 24h post-finish buffer) lets us close it out in one pass.
         max_saved_gw = db.session.query(
             db.func.max(The100EliminationResult.gameweek)
-        ).scalar()
-        if not max_saved_gw or max_saved_gw < REPLAY_START_GW:
-            print("Nothing to replay (no saved elim GWs >= 23).")
+        ).scalar() or 0
+
+        bootstrap = fetch_json("https://fantasy.premierleague.com/api/bootstrap-static/", cookies)
+        if not bootstrap:
+            print("Failed to fetch bootstrap; aborting.")
             return
-        replay_end_gw = max_saved_gw
+        finished_gws_in_range = [
+            e['id'] for e in bootstrap['events']
+            if REPLAY_START_GW <= e['id'] <= ELIMINATION_END_GW
+            and e.get('finished') and e.get('data_checked')
+        ]
+        max_finished_gw = max(finished_gws_in_range) if finished_gws_in_range else 0
+
+        replay_end_gw = max(max_saved_gw, max_finished_gw)
+        if replay_end_gw < REPLAY_START_GW:
+            print("Nothing to replay (no finished or saved elim GWs >= 23).")
+            return
+
+        print(f"Max saved elim GW:    {max_saved_gw}")
+        print(f"Max finished elim GW: {max_finished_gw} (finished AND data_checked)")
         print(f"Replaying GW{REPLAY_START_GW}..GW{replay_end_gw}\n")
 
         # Load all qualified managers and current DB state
