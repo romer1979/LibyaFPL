@@ -697,22 +697,19 @@ def get_championship_data(current_gw, league_id=THE100_LEAGUE_ID):
             if len(alive) != 16:
                 print(f"Cannot generate bracket: {len(alive)} alive managers (need exactly 16)")
             else:
-                # Fetch total season points from classic league standings (FPL `total`)
+                # We only need the totals for the 16 survivors, not the whole
+                # league. Fetch each survivor's /entry/{id}/ in parallel -- far
+                # faster than paginating the whole ~1000-manager classic league.
                 totals_by_entry = {}
-                page = 1
-                while True:
-                    data = fetch_json(
-                        f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_standings={page}",
-                        cookies,
-                    )
-                    if not data:
-                        break
-                    block = data.get('standings', {})
-                    for row in block.get('results', []):
-                        totals_by_entry[row['entry']] = row.get('total', 0)
-                    if not block.get('has_next'):
-                        break
-                    page += 1
+                entry_urls = [
+                    f"https://fantasy.premierleague.com/api/entry/{m.entry_id}/"
+                    for m in alive
+                ]
+                entry_data = fetch_multiple_parallel(entry_urls, cookies)
+                for m in alive:
+                    url = f"https://fantasy.premierleague.com/api/entry/{m.entry_id}/"
+                    d = entry_data.get(url) or {}
+                    totals_by_entry[m.entry_id] = d.get('summary_overall_points', 0)
 
                 survivors = [{
                     'entry_id': m.entry_id,
