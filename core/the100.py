@@ -502,7 +502,8 @@ def get_elimination_standings(current_gw, qualified_managers):
                 gw_data, live_elements, player_info, fixtures
             )
         else:
-            live_gw_points = gw_data.get('entry_history', {}).get('points', 0)
+            entry_hist = gw_data.get('entry_history', {})
+            live_gw_points = entry_hist.get('points', 0) - entry_hist.get('event_transfers_cost', 0)
 
         # Get captain name
         captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
