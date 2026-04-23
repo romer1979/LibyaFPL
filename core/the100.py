@@ -1223,6 +1223,19 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                 }
             }
 
+            # Championship bracket preview: if GW33 is done and exactly 16
+            # survivors remain, generate (or fetch) the bracket so users can
+            # preview the path even before FPL flips current_gw to 34.
+            if DB_AVAILABLE:
+                try:
+                    champ_preview = get_championship_data(current_gw, league_id)
+                    if champ_preview and champ_preview.get('bracket', {}).get('round_16'):
+                        result['bracket'] = champ_preview['bracket']
+                        result['current_round'] = champ_preview.get('current_round')
+                        result['champion'] = champ_preview.get('champion')
+                except Exception as e:
+                    print(f"Championship bracket preview skipped: {e}")
+
         # ============================================
         # CHAMPIONSHIP PHASE (GW34-37)
         # ============================================

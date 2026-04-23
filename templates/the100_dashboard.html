@@ -1176,7 +1176,7 @@
                     <h2 class="section-title">🏅 شجرة البطولة</h2>
                 </div>
                 <div class="section-content">
-                    {% if data.phase == 'championship' and data.bracket and data.bracket.get('round_16') %}
+                    {% if data.bracket and data.bracket.get('round_16') %}
                     {% if data.champion %}
                     <div class="champion-banner">
                         🏆 البطل: <strong>{{ data.champion.name }}</strong>
