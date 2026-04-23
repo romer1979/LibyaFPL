@@ -673,9 +673,23 @@ def get_championship_data(current_gw, league_id=THE100_LEAGUE_ID):
     gw_to_round = {v: k for k, v in CHAMPIONSHIP_ROUND_GW.items()}
     current_round = gw_to_round.get(current_gw)
 
-    # Ensure bracket exists (auto-generate if empty)
+    # Ensure bracket exists (auto-generate if empty). If an older schema of
+    # the table exists in Postgres, the first query fails with UndefinedColumn
+    # -- detect that and drop/recreate with the current schema before retrying.
     if DB_AVAILABLE:
-        if The100ChampionshipMatch.query.count() == 0:
+        try:
+            bracket_count = The100ChampionshipMatch.query.count()
+        except Exception as e:
+            msg = str(e).lower()
+            if 'undefinedcolumn' in msg or 'does not exist' in msg:
+                print("the100_championship has stale schema; dropping and recreating")
+                db.session.rollback()
+                The100ChampionshipMatch.__table__.drop(db.engine, checkfirst=True)
+                The100ChampionshipMatch.__table__.create(db.engine)
+                bracket_count = 0
+            else:
+                raise
+        if bracket_count == 0:
             # Gather the 16 alive managers + their total season points
             alive = The100QualifiedManager.query.filter(
                 The100QualifiedManager.eliminated_gw.is_(None)
