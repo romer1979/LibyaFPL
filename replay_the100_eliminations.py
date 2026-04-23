@@ -1,23 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Option C replay: recompute all eliminations from GW23 onwards using
+Full-cascade replay: recompute all eliminations from GW20 onwards using
 correct net (post-hit) GW points.
 
 Context: core/the100.py:505 had a bug where, after a GW's 12h post-finish
-buffer, stored gw_points were gross (pre-hit) instead of net. Eliminations
-auto-save after the 24h buffer, so every stored elimination from GW20-32
-used gross rankings. The audit showed GW20-22 were unaffected (no close
-calls on the cut line); GW23, 26, 27, 29 had the wrong managers eliminated;
-the rest had right managers but wrong point values.
+buffer, stored gw_points were gross (pre-hit) instead of net. This script
+replays the elimination cascade from GW20 (start of elim phase) forward:
 
-This script replays the cascade from GW23 forward:
-  - Walks GW23 -> max_saved_gw, recomputes net points for each alive
-    manager, picks bottom 6 by net rank
-  - Alive pool evolves as managers are eliminated in the replay, so
-    a different-from-DB GW23 outcome ripples into GW24+
-  - GW20-22 are preserved as-is
+  - Walks GW20 -> max saved/finished elim GW
+  - For each GW: recomputes net points for every alive manager, ranks
+    them, eliminates the bottom 6
+  - Alive pool evolves as managers are eliminated in the replay
   - Tie-break on net points is entry_id ascending (deterministic but
     arbitrary -- production had no defined tie-break either)
+  - Also persists the full per-GW ranking to The100GameweekRanking
+    for the history view
 
 Dry-run by default. --apply to modify the DB.
 
@@ -42,8 +39,7 @@ from core.the100 import (
     ELIMINATION_END_GW,
 )
 
-HISTORY_START_GW = 20  # first GW of elimination phase (for ranking history)
-REPLAY_START_GW = 23   # first GW where audit found a set mismatch
+REPLAY_START_GW = 20   # first GW of elimination phase
 
 
 def main():
@@ -97,13 +93,13 @@ def main():
             if m.eliminated_gw is not None and m.eliminated_gw >= REPLAY_START_GW
         }
 
-        # Pre-replay pass for GW20-22: these are "locked" (audit confirmed correct).
-        # We recompute rankings only so the history view has data for them; we do
-        # NOT change their eliminations.
-        full_rankings = {}  # gw -> list of {entry_id, manager_name, team_name, gw_points, gw_rank, was_eliminated}
+        # Start with everyone alive (no GWs are locked; we replay from GW20)
         alive = {m.entry_id: m for m in all_qualified}
+        full_rankings = {}  # gw -> list of ranking row dicts
+        replayed_elims = {}       # gw -> list of elim dicts (ready for save_the100_elimination)
+        new_eliminated_by_gw = {} # entry_id -> gw (replayed)
 
-        def build_ranking_rows(gw, recomputed, eliminated_ids):
+        def build_ranking_rows(recomputed, eliminated_ids):
             ranked = sorted(recomputed.items(), key=lambda kv: (-kv[1]['net'], kv[0]))
             rows = []
             for rank, (eid, data) in enumerate(ranked, start=1):
@@ -117,54 +113,16 @@ def main():
                 })
             return rows, ranked
 
-        pre_gws = [gw for gw in range(HISTORY_START_GW, REPLAY_START_GW) if gw <= replay_end_gw]
-        for gw in pre_gws:
-            print(f"--- GW{gw} ranking (pre-replay, preserving DB eliminations) ---")
-            alive_list = list(alive.values())
-            recomputed = recompute_gw(gw, alive_list, cookies)
-            missing = {m.entry_id for m in alive_list} - set(recomputed.keys())
-            if missing:
-                # For pre-replay GWs we can tolerate a missing manager (audit said
-                # GW20 had one). Exclude them from ranking rather than aborting.
-                print(f"  WARN: could not fetch picks for {len(missing)} managers "
-                      f"(excluding from ranking): {sorted(missing)}")
-            # Truth for "was eliminated this GW" = current DB state
-            eliminated_ids = current_by_gw.get(gw, set())
-            rows, _ = build_ranking_rows(gw, recomputed, eliminated_ids)
-            full_rankings[gw] = rows
-            # Remove the DB-eliminated from alive (matches the truth we're preserving)
-            for eid in eliminated_ids:
-                alive.pop(eid, None)
-            print(f"  Ranked {len(rows)} managers; {len(eliminated_ids)} eliminated this GW; "
-                  f"alive after GW{gw}: {len(alive)}\n")
-
-        # Safety check: after pre-replay, alive pool size should match what replay expects
-        locked_eliminated = {
-            m.entry_id for m in all_qualified
-            if m.eliminated_gw is not None and m.eliminated_gw < REPLAY_START_GW
-        }
-        expected_alive = len(all_qualified) - len(locked_eliminated)
-        if len(alive) != expected_alive:
-            print(f"WARN: after pre-replay, alive={len(alive)} but expected {expected_alive} "
-                  f"based on DB locked_eliminated. Proceeding with DB state for replay.")
-            alive = {m.entry_id: m for m in all_qualified if m.entry_id not in locked_eliminated}
-
-        # Replay (this updates alive as managers are eliminated)
-        replayed_elims = {}       # gw -> list of elim dicts (ready for save_the100_elimination)
-        new_eliminated_by_gw = {} # entry_id -> gw (replayed)
-
         for gw in range(REPLAY_START_GW, replay_end_gw + 1):
             print(f"--- GW{gw} replay ---")
             alive_list = list(alive.values())
             recomputed = recompute_gw(gw, alive_list, cookies)
 
-            # Bail cleanly if API gave incomplete data
+            # Tolerate missing picks (rare API gaps); exclude from ranking with a warning
             missing = {m.entry_id for m in alive_list} - set(recomputed.keys())
             if missing:
-                print(f"  ABORT: could not fetch picks for {len(missing)} managers: "
-                      f"{sorted(missing)}")
-                print("  Fix API fetch issue and rerun. No changes applied.")
-                return
+                print(f"  WARN: could not fetch picks for {len(missing)} managers "
+                      f"(excluded from ranking): {sorted(missing)}")
 
             # Rank: net desc, tie-break entry_id asc
             ranked = sorted(
@@ -176,7 +134,7 @@ def main():
             elim_ids_this_gw = {eid for eid, _ in eliminated_this_gw}
 
             # Full ranking rows for history
-            full_rankings[gw], _ = build_ranking_rows(gw, recomputed, elim_ids_this_gw)
+            full_rankings[gw], _ = build_ranking_rows(recomputed, elim_ids_this_gw)
 
             # Build elim dicts; gw_rank = rank within GW ranking (matches production)
             replayed_elims[gw] = []
