@@ -440,6 +440,76 @@ def save_the100_qualified_managers(managers_list):
         return False
 
 
+class The100GameweekRanking(db.Model):
+    """Full ranking for each manager per elimination-phase GW (for history view)."""
+    __tablename__ = 'the100_gw_rankings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    gameweek = db.Column(db.Integer, nullable=False, index=True)
+    entry_id = db.Column(db.Integer, nullable=False)
+    manager_name = db.Column(db.String(100))
+    team_name = db.Column(db.String(100))
+    gw_points = db.Column(db.Integer, default=0)  # net of hits
+    gw_rank = db.Column(db.Integer)               # rank within alive pool for this GW
+    was_eliminated = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('gameweek', 'entry_id', name='unique_the100_rank_gw_entry'),
+    )
+
+    def __repr__(self):
+        return f'<The100GameweekRanking GW{self.gameweek} {self.manager_name} #{self.gw_rank}>'
+
+
+def save_the100_gameweek_ranking(gameweek, ranking_list):
+    """
+    Replace the full ranking for a GW.
+    ranking_list: list of dicts with entry_id, manager_name, team_name,
+                  gw_points, gw_rank, was_eliminated (bool)
+    """
+    The100GameweekRanking.query.filter_by(gameweek=gameweek).delete(synchronize_session=False)
+    for r in ranking_list:
+        db.session.add(The100GameweekRanking(
+            gameweek=gameweek,
+            entry_id=r['entry_id'],
+            manager_name=r.get('manager_name', ''),
+            team_name=r.get('team_name', ''),
+            gw_points=r.get('gw_points', 0),
+            gw_rank=r.get('gw_rank', 0),
+            was_eliminated=bool(r.get('was_eliminated', False)),
+        ))
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving The 100 GW{gameweek} ranking: {e}")
+        return False
+
+
+def get_the100_history():
+    """
+    Return {gameweek: [row_dicts sorted by gw_rank asc]} for every GW that has rankings saved.
+    """
+    rows = The100GameweekRanking.query.order_by(
+        The100GameweekRanking.gameweek.asc(),
+        The100GameweekRanking.gw_rank.asc(),
+    ).all()
+    history = {}
+    for r in rows:
+        history.setdefault(r.gameweek, []).append({
+            'entry_id': r.entry_id,
+            'manager_name': r.manager_name,
+            'team_name': r.team_name,
+            'gw_points': r.gw_points,
+            'gw_rank': r.gw_rank,
+            'was_eliminated': r.was_eliminated,
+        })
+    return history
+
+
 def save_the100_elimination(gameweek, eliminated_managers):
     """
     Save elimination results for a gameweek

@@ -454,6 +454,15 @@ def the100_stats():
     return render_template('the100_stats.html', data=data)
 
 
+@app.route('/league/the100/history')
+def the100_history():
+    """The 100 League elimination-phase history: per-GW ranking + who was cut."""
+    from models import get_the100_history
+    history = get_the100_history()
+    gameweeks = sorted(history.keys())
+    return render_template('the100_history.html', history=history, gameweeks=gameweeks)
+
+
 @app.route('/league/cities')
 def cities_dashboard():
     """Cities League dashboard - Team H2H"""

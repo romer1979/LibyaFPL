@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>سجل مرحلة الإقصاء - The 100</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
+    <style>
+        .history-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 1rem 0 1.5rem;
+        }
+
+        .page-title h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+        .page-title p  { color: #888; font-size: 0.85rem; }
+
+        .gw-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+        }
+
+        .gw-tab {
+            background: #1a1a1a;
+            color: #bbb;
+            border: 1px solid #2a2a2a;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+
+        .gw-tab:hover {
+            background: #222;
+            color: #fff;
+        }
+
+        .gw-tab.active {
+            background: #4ade80;
+            color: #0a0a0a;
+            border-color: #4ade80;
+        }
+
+        .gw-panel { display: none; }
+        .gw-panel.active { display: block; }
+
+        .gw-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .gw-header h2 { font-size: 1.05rem; margin: 0; }
+        .gw-header .meta { color: #888; font-size: 0.8rem; }
+
+        .legend {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: #bbb;
+        }
+
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        .legend-dot.elim { background: #f87171; }
+        .legend-dot.safe { background: #2a2a2a; border: 1px solid #444; }
+
+        .rank-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .rank-table th,
+        .rank-table td {
+            padding: 0.55rem 0.75rem;
+            text-align: right;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .rank-table th {
+            background: #1a1a1a;
+            color: #aaa;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .rank-table tr:last-child td { border-bottom: none; }
+
+        .rank-table tr.eliminated {
+            background: rgba(248, 113, 113, 0.08);
+        }
+
+        .rank-table tr.eliminated td {
+            color: #fca5a5;
+        }
+
+        .rank-table tr.eliminated .rank-cell {
+            color: #f87171;
+            font-weight: 700;
+        }
+
+        .rank-cell { font-weight: 600; color: #ddd; width: 3rem; }
+        .points-cell { font-weight: 700; color: #4ade80; width: 4rem; text-align: center; }
+        .rank-table tr.eliminated .points-cell { color: #f87171; }
+
+        .status-cell { width: 6rem; text-align: center; }
+        .status-badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .status-badge.out { background: #f87171; color: #1a0000; }
+        .status-badge.safe { background: #1f2937; color: #9ca3af; }
+
+        .search-box {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .search-box:focus { outline: none; border-color: #4ade80; }
+
+        .empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #888;
+        }
+
+        @media (max-width: 640px) {
+            .rank-table th, .rank-table td { padding: 0.45rem 0.5rem; font-size: 0.8rem; }
+            .rank-cell { width: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/league/the100" class="logo">
+                <img src="{{ url_for('static', filename='the100_logo.png') }}" alt="The 100" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-title">The 100</span>
+                    <span class="logo-subtitle">FANTASY PREMIER LEAGUE</span>
+                </div>
+            </a>
+            <div class="header-nav">
+                <a href="/league/the100" class="nav-link" title="العودة">🏅</a>
+                <a href="/league/the100/stats" class="nav-link" title="إحصائيات">📊</a>
+                <a href="/" class="nav-link home-btn">🏠</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="history-container">
+        <div class="page-title">
+            <h1>⚔️ سجل مرحلة الإقصاء</h1>
+            <p>ترتيب كل جولة وتفاصيل الإقصاء</p>
+        </div>
+
+        {% if gameweeks %}
+        <div class="gw-tabs" id="gwTabs">
+            {% for gw in gameweeks %}
+            <button class="gw-tab {% if loop.last %}active{% endif %}" data-gw="{{ gw }}" onclick="showGw({{ gw }})">
+                GW{{ gw }}
+            </button>
+            {% endfor %}
+        </div>
+
+        {% for gw in gameweeks %}
+        {% set rows = history[gw] %}
+        {% set elim_count = rows | selectattr('was_eliminated') | list | length %}
+        <section class="gw-panel {% if loop.last %}active{% endif %}" id="gw-{{ gw }}">
+            <div class="gw-header">
+                <h2>الجولة {{ gw }}</h2>
+                <div class="legend">
+                    <span><span class="legend-dot elim"></span>مقصى</span>
+                    <span><span class="legend-dot safe"></span>آمن</span>
+                </div>
+                <div class="meta">{{ rows | length }} مدير · {{ elim_count }} أقصي</div>
+            </div>
+            <input type="text" class="search-box" placeholder="🔍 ابحث عن مدير..." oninput="filterGw({{ gw }}, this.value)">
+            <table class="rank-table" id="table-gw-{{ gw }}">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المدير</th>
+                        <th>الفريق</th>
+                        <th>النقاط</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr class="{% if row.was_eliminated %}eliminated{% endif %}"
+                        data-manager="{{ row.manager_name|lower }}"
+                        data-team="{{ (row.team_name or '')|lower }}">
+                        <td class="rank-cell">{{ row.gw_rank }}</td>
+                        <td>{{ row.manager_name }}</td>
+                        <td>{{ row.team_name or '-' }}</td>
+                        <td class="points-cell">{{ row.gw_points }}</td>
+                        <td class="status-cell">
+                            {% if row.was_eliminated %}
+                                <span class="status-badge out">أقصي</span>
+                            {% else %}
+                                <span class="status-badge safe">آمن</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endfor %}
+
+        {% else %}
+        <div class="empty">
+            <p>لا يوجد سجل محفوظ للجولات بعد.</p>
+            <p style="font-size: 0.8rem; margin-top: 0.5rem;">شغّل replay_the100_eliminations.py --apply لبناء السجل.</p>
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        function showGw(gw) {
+            document.querySelectorAll('.gw-tab').forEach(t => {
+                t.classList.toggle('active', parseInt(t.dataset.gw) === gw);
+            });
+            document.querySelectorAll('.gw-panel').forEach(p => {
+                p.classList.toggle('active', p.id === 'gw-' + gw);
+            });
+            // Scroll tab into view on mobile
+            const tab = document.querySelector('.gw-tab[data-gw="' + gw + '"]');
+            if (tab) tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+
+        function filterGw(gw, q) {
+            q = (q || '').toLowerCase().trim();
+            const table = document.getElementById('table-gw-' + gw);
+            if (!table) return;
+            table.querySelectorAll('tbody tr').forEach(tr => {
+                const mgr = tr.dataset.manager || '';
+                const team = tr.dataset.team || '';
+                tr.style.display = (!q || mgr.includes(q) || team.includes(q)) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
