@@ -58,9 +58,14 @@ try:
         db,
         The100QualifiedManager,
         The100EliminationResult,
+        The100ChampionshipMatch,
         get_the100_qualified_managers,
         save_the100_qualified_managers,
-        save_the100_elimination
+        save_the100_elimination,
+        generate_the100_bracket,
+        advance_the100_round,
+        get_the100_bracket,
+        CHAMPIONSHIP_ROUND_GW,
     )
     DB_AVAILABLE = True
 except ImportError:
@@ -650,6 +655,206 @@ def get_elimination_standings(current_gw, qualified_managers):
     }
 
 
+def get_championship_data(current_gw, league_id=THE100_LEAGUE_ID):
+    """
+    Build the championship bracket view. Auto-generates the bracket on first
+    call (when 16 survivors are alive), computes live scores for the current
+    round, and auto-advances a round when its GW is data_checked.
+    """
+    cookies = get_cookies()
+
+    # Fetch bootstrap to determine phase/gw finished states
+    bootstrap = fetch_json("https://fantasy.premierleague.com/api/bootstrap-static/", cookies)
+    if not bootstrap:
+        return None
+    events_by_id = {e['id']: e for e in bootstrap['events']}
+
+    # Map GW -> round name
+    gw_to_round = {v: k for k, v in CHAMPIONSHIP_ROUND_GW.items()}
+    current_round = gw_to_round.get(current_gw)
+
+    # Ensure bracket exists (auto-generate if empty)
+    if DB_AVAILABLE:
+        if The100ChampionshipMatch.query.count() == 0:
+            # Gather the 16 alive managers + their total season points
+            alive = The100QualifiedManager.query.filter(
+                The100QualifiedManager.eliminated_gw.is_(None)
+            ).all()
+            if len(alive) != 16:
+                print(f"Cannot generate bracket: {len(alive)} alive managers (need exactly 16)")
+            else:
+                # Fetch total season points from classic league standings (FPL `total`)
+                totals_by_entry = {}
+                page = 1
+                while True:
+                    data = fetch_json(
+                        f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_standings={page}",
+                        cookies,
+                    )
+                    if not data:
+                        break
+                    block = data.get('standings', {})
+                    for row in block.get('results', []):
+                        totals_by_entry[row['entry']] = row.get('total', 0)
+                    if not block.get('has_next'):
+                        break
+                    page += 1
+
+                survivors = [{
+                    'entry_id': m.entry_id,
+                    'manager_name': m.manager_name,
+                    'team_name': m.team_name,
+                    'total_points': totals_by_entry.get(m.entry_id, 0),
+                } for m in alive]
+                try:
+                    generate_the100_bracket(survivors)
+                    print(f"Generated The 100 championship bracket from 16 survivors")
+                except Exception as e:
+                    print(f"Failed to generate bracket: {e}")
+
+    bracket = get_the100_bracket() if DB_AVAILABLE else {}
+
+    # Live-score the current round's matches (if the GW has any fixtures started)
+    fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
+    gw_started = any(f.get('started', False) for f in fixtures)
+    all_finished = all(f.get('finished', False) or f.get('finished_provisional', False) for f in fixtures) if fixtures else False
+    within_buffer = all_finished and is_within_post_finish_buffer(fixtures)
+    is_live = gw_started and (not all_finished or within_buffer)
+
+    live_net_by_entry = {}  # entry_id -> live net GW points
+
+    if current_round and bracket.get(current_round) and gw_started:
+        # Fetch live data and player info for the current GW
+        live_data = fetch_json(f"https://fantasy.premierleague.com/api/event/{current_gw}/live/", cookies)
+        if live_data:
+            player_info = build_player_info(bootstrap)
+            bonus_points = calculate_projected_bonus(live_data, fixtures)
+            live_elements = {}
+            for elem in live_data['elements']:
+                elem_id = elem['id']
+                official_bonus = elem['stats'].get('bonus', 0)
+                projected_bonus = bonus_points.get(elem_id, 0)
+                actual_bonus = official_bonus if official_bonus > 0 else projected_bonus
+                base = elem['stats']['total_points'] - official_bonus
+                live_elements[elem_id] = {
+                    'total_points': base + actual_bonus,
+                    'minutes': elem['stats']['minutes'],
+                    'bonus': actual_bonus,
+                }
+
+            # Collect entry IDs in the current round's matches
+            current_entries = set()
+            for m in bracket.get(current_round, []):
+                if m['entry_1_id']:
+                    current_entries.add(m['entry_1_id'])
+                if m['entry_2_id']:
+                    current_entries.add(m['entry_2_id'])
+
+            pick_urls = [
+                f"https://fantasy.premierleague.com/api/entry/{eid}/event/{current_gw}/picks/"
+                for eid in current_entries
+            ]
+            picks_data = fetch_multiple_parallel(pick_urls, cookies)
+
+            for eid in current_entries:
+                url = f"https://fantasy.premierleague.com/api/entry/{eid}/event/{current_gw}/picks/"
+                pd = picks_data.get(url)
+                if not pd:
+                    continue
+                live_net_by_entry[eid] = calculate_live_points(pd, live_elements, player_info, fixtures)
+
+            # Overlay live points onto the bracket dict
+            for m in bracket[current_round]:
+                if m['entry_1_id'] in live_net_by_entry:
+                    m['entry_1_points'] = live_net_by_entry[m['entry_1_id']]
+                if m['entry_2_id'] in live_net_by_entry:
+                    m['entry_2_points'] = live_net_by_entry[m['entry_2_id']]
+
+    # Auto-advance: if the current GW is data_checked and any round up to
+    # current_round is incomplete, resolve it. This handles late page loads
+    # without needing a separate cron.
+    if DB_AVAILABLE and current_round:
+        for round_key in ('round_16', 'quarter', 'semi', 'final'):
+            round_gw = CHAMPIONSHIP_ROUND_GW[round_key]
+            if round_gw > current_gw:
+                break
+            ev = events_by_id.get(round_gw)
+            if not (ev and ev.get('finished') and ev.get('data_checked')):
+                continue
+            # Check if round has any unresolved matches (with both entries set)
+            unresolved = [
+                m for m in bracket.get(round_key, [])
+                if m['entry_1_id'] and m['entry_2_id'] and not m['is_complete']
+            ]
+            if not unresolved:
+                continue
+            # Need net points for this round's participants at its GW
+            round_entries = set()
+            for m in bracket.get(round_key, []):
+                if m['entry_1_id']:
+                    round_entries.add(m['entry_1_id'])
+                if m['entry_2_id']:
+                    round_entries.add(m['entry_2_id'])
+
+            if round_gw == current_gw:
+                # Use the net points we already computed live
+                round_net = {eid: live_net_by_entry.get(eid, 0) for eid in round_entries}
+            else:
+                # Historical: fetch picks + live for that GW
+                r_fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={round_gw}", cookies) or []
+                r_live = fetch_json(f"https://fantasy.premierleague.com/api/event/{round_gw}/live/", cookies)
+                if not r_live:
+                    continue
+                r_player_info = build_player_info(bootstrap)
+                r_bonus = calculate_projected_bonus(r_live, r_fixtures)
+                r_live_elements = {}
+                for elem in r_live['elements']:
+                    elem_id = elem['id']
+                    official_bonus = elem['stats'].get('bonus', 0)
+                    projected_bonus = r_bonus.get(elem_id, 0)
+                    actual_bonus = official_bonus if official_bonus > 0 else projected_bonus
+                    base = elem['stats']['total_points'] - official_bonus
+                    r_live_elements[elem_id] = {
+                        'total_points': base + actual_bonus,
+                        'minutes': elem['stats']['minutes'],
+                        'bonus': actual_bonus,
+                    }
+                r_urls = [
+                    f"https://fantasy.premierleague.com/api/entry/{eid}/event/{round_gw}/picks/"
+                    for eid in round_entries
+                ]
+                r_picks = fetch_multiple_parallel(r_urls, cookies)
+                round_net = {}
+                for eid in round_entries:
+                    pd = r_picks.get(f"https://fantasy.premierleague.com/api/entry/{eid}/event/{round_gw}/picks/")
+                    if pd:
+                        round_net[eid] = calculate_live_points(pd, r_live_elements, r_player_info, r_fixtures)
+
+            advance_the100_round(round_key, round_net)
+            # Refresh bracket after advancing
+            bracket = get_the100_bracket()
+
+    # Determine overall champion if final is complete
+    champion = None
+    final_matches = bracket.get('final', [])
+    if final_matches and final_matches[0].get('is_complete'):
+        fm = final_matches[0]
+        if fm['winner_id'] == fm['entry_1_id']:
+            champion = {'entry_id': fm['entry_1_id'], 'name': fm['entry_1_name'], 'team_name': fm['entry_1_team_name']}
+        else:
+            champion = {'entry_id': fm['entry_2_id'], 'name': fm['entry_2_name'], 'team_name': fm['entry_2_team_name']}
+
+    return {
+        'bracket': bracket,
+        'current_round': current_round,
+        'gameweek': current_gw,
+        'is_live': is_live,
+        'gw_started': gw_started,
+        'gw_finished': all_finished and not within_buffer,
+        'champion': champion,
+    }
+
+
 def get_the100_standings(league_id=THE100_LEAGUE_ID):
     """
     Main function to get The 100 standings based on current phase.
@@ -1022,13 +1227,18 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
         # CHAMPIONSHIP PHASE (GW34-37)
         # ============================================
         else:
-            # Championship bracket - to be implemented
+            champ_data = get_championship_data(current_gw, league_id)
+            bracket = (champ_data or {}).get('bracket', {}) if champ_data else {}
             result = {
                 'phase': 'championship',
                 'standings': [],
                 'gameweek': current_gw,
                 'total_managers': 16,
-                'is_live': False,
+                'is_live': bool(champ_data and champ_data.get('is_live')),
+                'gw_started': bool(champ_data and champ_data.get('gw_started')),
+                'gw_finished': bool(champ_data and champ_data.get('gw_finished')),
+                'current_round': (champ_data or {}).get('current_round'),
+                'champion': (champ_data or {}).get('champion'),
                 'winner_entry_id': WINNER_ENTRY_ID,
                 'last_updated': datetime.now().strftime('%H:%M'),
                 'phase_info': {
@@ -1037,12 +1247,7 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                     'gw_range': f'GW{CHAMPIONSHIP_START_GW}-{CHAMPIONSHIP_END_GW}',
                     'description': '16 \u0645\u062a\u0646\u0627\u0641\u0633 \u0641\u064a \u0646\u0638\u0627\u0645 \u062e\u0631\u0648\u062c \u0627\u0644\u0645\u063a\u0644\u0648\u0628',
                 },
-                'bracket': {
-                    'round_of_16': [],
-                    'quarter_finals': [],
-                    'semi_finals': [],
-                    'final': []
-                }
+                'bracket': bracket,
             }
 
         # Cache the result

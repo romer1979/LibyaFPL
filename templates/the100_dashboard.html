@@ -682,6 +682,144 @@
                 padding: 0.5rem;
             }
         }
+
+        /* ============================================ */
+        /* Championship bracket                         */
+        /* ============================================ */
+        .champion-banner {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            color: #1a1a1a;
+            padding: 0.9rem 1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1.25rem;
+            font-size: 1.1rem;
+        }
+
+        .champion-banner .team-name-small {
+            font-weight: 500;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+
+        .bracket-scroll {
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .bracket {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(220px, 1fr));
+            gap: 1rem;
+            direction: rtl;
+            min-width: 980px;
+        }
+
+        .bracket-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            gap: 0.5rem;
+        }
+
+        .round-header {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .round-title { font-weight: 700; color: #fff; }
+        .round-gw { color: #888; font-size: 0.7rem; }
+
+        .match-card {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.15s;
+        }
+
+        .match-card.current {
+            border-color: #4ade80;
+            box-shadow: 0 0 0 1px #4ade80 inset;
+        }
+
+        .match-card.complete { border-color: #3a3a3a; }
+        .match-card.pending { opacity: 0.6; }
+
+        .match-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.55rem;
+            border-bottom: 1px solid #1f1f1f;
+            min-height: 2.6rem;
+        }
+
+        .match-row:last-child { border-bottom: none; }
+
+        .match-row .seed {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.55rem;
+            height: 1.55rem;
+            border-radius: 50%;
+            background: #1f2937;
+            color: #9ca3af;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .match-row .mgr { flex: 1; min-width: 0; }
+        .match-row .mgr-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ddd;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .match-row .team-name {
+            font-size: 0.7rem;
+            color: #888;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .match-row .pts {
+            font-weight: 700;
+            color: #4ade80;
+            min-width: 2rem;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .match-row.winner { background: rgba(74, 222, 128, 0.08); }
+        .match-row.winner .mgr-name,
+        .match-row.winner .seed { color: #4ade80; }
+        .match-row.winner .seed { background: rgba(74, 222, 128, 0.2); }
+        .match-row.loser { opacity: 0.5; }
+        .match-row.loser .pts { color: #888; }
+
+        .placeholder-text {
+            color: #666;
+            font-style: italic;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .bracket { min-width: 880px; }
+            .match-row .mgr-name { font-size: 0.8rem; }
+        }
     </style>
 </head>
 <body>
@@ -1038,10 +1176,64 @@
                     <h2 class="section-title">🏅 شجرة البطولة</h2>
                 </div>
                 <div class="section-content">
-                    {% if data.phase == 'championship' and data.bracket %}
-                    <!-- Championship bracket will be rendered here -->
-                    <div class="bracket-container">
-                        <p>شجرة البطولة قيد الإنشاء...</p>
+                    {% if data.phase == 'championship' and data.bracket and data.bracket.get('round_16') %}
+                    {% if data.champion %}
+                    <div class="champion-banner">
+                        🏆 البطل: <strong>{{ data.champion.name }}</strong>
+                        {% if data.champion.team_name %}<span class="team-name-small">({{ data.champion.team_name }})</span>{% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="bracket-scroll">
+                        <div class="bracket">
+                            {% for rkey, rlabel, rgw in [('round_16', 'دور الـ16', 34), ('quarter', 'ربع النهائي', 35), ('semi', 'نصف النهائي', 36), ('final', 'النهائي', 37)] %}
+                            <div class="bracket-col col-{{ rkey }}">
+                                <div class="round-header">
+                                    <span class="round-title">{{ rlabel }}</span>
+                                    <span class="round-gw">GW{{ rgw }}</span>
+                                </div>
+                                {% for match in data.bracket.get(rkey, []) %}
+                                {% set slot_open = not match.entry_1_id or not match.entry_2_id %}
+                                {% set is_current = (data.current_round == rkey) %}
+                                <div class="match-card {% if match.is_complete %}complete{% elif is_current and match.entry_1_id and match.entry_2_id %}current{% elif slot_open %}pending{% endif %}">
+                                    <div class="match-row {% if match.is_complete and match.winner_id == match.entry_1_id %}winner{% elif match.is_complete and match.winner_id == match.entry_2_id %}loser{% endif %}">
+                                        {% if match.entry_1_id %}
+                                        <span class="seed">{{ match.entry_1_seed or '' }}</span>
+                                        <div class="mgr">
+                                            <div class="mgr-name">{{ match.entry_1_name }}</div>
+                                            <div class="team-name">{{ match.entry_1_team_name or '' }}</div>
+                                        </div>
+                                        <span class="pts">{{ match.entry_1_points if (is_current or match.is_complete) else '' }}</span>
+                                        {% else %}
+                                        <div class="mgr placeholder-text">
+                                            {% if rkey == 'quarter' %}فائز م{{ match.match_number * 2 - 1 }} (R16)
+                                            {% elif rkey == 'semi' %}فائز م{{ match.match_number * 2 - 1 }} (QF)
+                                            {% elif rkey == 'final' %}فائز م1 (SF)
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="match-row {% if match.is_complete and match.winner_id == match.entry_2_id %}winner{% elif match.is_complete and match.winner_id == match.entry_1_id %}loser{% endif %}">
+                                        {% if match.entry_2_id %}
+                                        <span class="seed">{{ match.entry_2_seed or '' }}</span>
+                                        <div class="mgr">
+                                            <div class="mgr-name">{{ match.entry_2_name }}</div>
+                                            <div class="team-name">{{ match.entry_2_team_name or '' }}</div>
+                                        </div>
+                                        <span class="pts">{{ match.entry_2_points if (is_current or match.is_complete) else '' }}</span>
+                                        {% else %}
+                                        <div class="mgr placeholder-text">
+                                            {% if rkey == 'quarter' %}فائز م{{ match.match_number * 2 }} (R16)
+                                            {% elif rkey == 'semi' %}فائز م{{ match.match_number * 2 }} (QF)
+                                            {% elif rkey == 'final' %}فائز م2 (SF)
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% else %}
                     <div class="coming-soon-message">
