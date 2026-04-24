@@ -19,7 +19,7 @@ Usage:
 import sys
 from app import app, db
 from models import TeamLeagueMatches
-from core.fpl_api import FPL_BASE_URL, fetch_data, fetch_multiple_parallel
+from core.fpl_api import FPL_BASE_URL, fetch_data, fetch_multiple_parallel  # noqa: F401
 
 # Reuse the scoring logic that the Libyan fix script already uses.
 # It implements the custom rules: TC=2x, Bench Boost ignored, hits subtracted,
@@ -47,7 +47,9 @@ def get_teams(league):
 
 def compute_team_totals_for_gw(gw, teams, player_info, return_raw=False):
     """Return {team_name: int} of recomputed points for every team in `teams` for GW `gw`.
-    If return_raw=True, also return (live_elements, picks_by_entry) for debug."""
+    If any manager's picks can't be fetched after retries, returns None so the
+    caller skips that GW rather than producing a silently wrong total.
+    If return_raw=True, also returns (live_elements, picks_by_entry) for debug."""
     live = get_live_data(gw)
     if not live:
         return (None, None, None) if return_raw else None
@@ -61,8 +63,29 @@ def compute_team_totals_for_gw(gw, teams, player_info, return_raw=False):
         for eid in all_entries
     }
 
+    # Retry any entries whose picks came back empty. fetch_multiple_parallel
+    # treats any non-200 or timeout as None; a single missing manager silently
+    # zeros their contribution and corrupts the team total.
+    import time as _time
+    missing = [eid for eid, pd in picks_by_entry.items() if not pd]
+    if missing:
+        print(f"  retrying {len(missing)} missing pick(s) serially...")
+        for eid in missing:
+            for attempt in range(3):
+                retry = fetch_data(f"{FPL_BASE_URL}/entry/{eid}/event/{gw}/picks/")
+                if retry:
+                    picks_by_entry[eid] = retry
+                    break
+                _time.sleep(1.5)
+        still_missing = [eid for eid, pd in picks_by_entry.items() if not pd]
+        if still_missing:
+            print(f"  ABORT GW{gw}: picks still missing for entries {still_missing}. "
+                  f"FPL API is rate-limiting or the entries have no squad for that GW. "
+                  f"Skipping this GW from the audit.")
+            return (None, None, None) if return_raw else None
+
     mgr_points = {
-        eid: (calculate_manager_points(pd, live_elements, player_info) if pd else 0)
+        eid: calculate_manager_points(pd, live_elements, player_info)
         for eid, pd in picks_by_entry.items()
     }
     totals = {
