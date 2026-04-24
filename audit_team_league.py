@@ -87,28 +87,41 @@ def compute_team_totals_for_gw(gw, teams, player_info, histories, return_raw=Fal
                     pass
                 _time.sleep(1.5)
 
-        # For entries still missing, check their history to see if they actually
-        # played this GW. If history has positive points for this GW -> real API
-        # failure (abort). If history is 0 or absent -> manager didn't play
-        # (legit 0 contribution).
+        # For entries still missing, the only way to confidently treat them as
+        # 0-contribution is if their history is LOADED and explicitly shows 0
+        # points for this GW. If history is also missing we can't distinguish
+        # "didn't play" from "FPL API failure" -> abort the GW.
         still_missing = [eid for eid, pd in picks_by_entry.items() if not pd]
-        real_failures = []
+        real_failures = []   # picks missing but history says they played
+        ambiguous = []       # picks missing AND history missing -> can't tell
+        confirmed_absent = []  # picks missing and history confirms 0 -> ok
         for eid in still_missing:
-            h = histories.get(eid) or {}
+            h = histories.get(eid)
+            if h is None:
+                ambiguous.append(eid)
+                continue
             gw_entry = next(
                 (g for g in h.get('current', []) if g.get('event') == gw),
                 None,
             )
-            gross = (gw_entry or {}).get('points', 0) or 0
+            if gw_entry is None:
+                # Manager's history doesn't include this GW at all -> didn't play
+                confirmed_absent.append(eid)
+                continue
+            gross = gw_entry.get('points', 0) or 0
             if gross > 0:
                 real_failures.append((eid, gross))
-        if real_failures:
-            print(f"  ABORT GW{gw}: {len(real_failures)} manager(s) have scores in "
-                  f"history but picks unavailable: {real_failures}. Skipping this GW.")
+            else:
+                confirmed_absent.append(eid)
+
+        if real_failures or ambiguous:
+            print(f"  ABORT GW{gw}: cannot reliably audit. "
+                  f"real_failures={real_failures} ambiguous_entries={ambiguous}")
             return (None, None, None) if return_raw else None
-        if still_missing:
-            print(f"  {len(still_missing)} manager(s) have no picks and no history "
-                  f"for this GW (didn't play) -> treated as 0.")
+        if confirmed_absent:
+            print(f"  {len(confirmed_absent)} manager(s) confirmed did not play "
+                  f"this GW (history shows 0 / no entry) -> treated as 0: "
+                  f"{confirmed_absent}")
 
     mgr_points = {
         eid: (calculate_manager_points(pd, live_elements, player_info) if pd else 0)
