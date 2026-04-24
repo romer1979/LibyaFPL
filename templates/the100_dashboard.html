@@ -816,9 +816,120 @@
             font-size: 0.8rem;
         }
 
+        .match-row.leading { background: rgba(74, 222, 128, 0.12); }
+        .match-row.leading .mgr-name { color: #fff; font-weight: 700; }
+
+        /* H2H expandable detail */
+        .match-detail {
+            border-top: 1px solid #2a2a2a;
+            padding: 0.6rem;
+            background: #0f0f0f;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.78rem;
+        }
+        .detail-side {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex: 1;
+            min-width: 0;
+        }
+        .detail-side:last-child { justify-content: flex-end; }
+        .detail-name {
+            color: #ccc;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .detail-vs { color: #888; font-size: 0.75rem; padding: 0 0.25rem; }
+
+        .chip-badge {
+            background: #1d4ed8;
+            color: #fff;
+            padding: 0.08rem 0.4rem;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .hit-badge {
+            background: #dc2626;
+            color: #fff;
+            padding: 0.08rem 0.4rem;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .h2h-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .h2h-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .p-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem 0.4rem;
+            background: #161616;
+            border-radius: 5px;
+            border-right: 3px solid transparent;
+            font-size: 0.78rem;
+            min-height: 1.6rem;
+        }
+
+        .p-row .p-name {
+            color: #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+        .p-row .p-pts {
+            color: #eee;
+            font-weight: 700;
+            margin-right: 0.35rem;
+            min-width: 1.5rem;
+            text-align: center;
+        }
+
+        .p-row.diff { border-right-color: #f59e0b; background: rgba(245, 158, 11, 0.08); }
+        .p-row.cap { border-right-color: #fbbf24; }
+        .p-row.cap .p-name { color: #fbbf24; font-weight: 600; }
+        .p-row.bench { opacity: 0.55; font-size: 0.72rem; }
+        .p-row.bench .p-pts { color: #888; }
+
+        .bench-label {
+            margin-top: 0.35rem;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.65rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-top: 1px dashed #2a2a2a;
+            padding-top: 0.3rem;
+        }
+
         @media (max-width: 768px) {
             .bracket { min-width: 880px; }
             .match-row .mgr-name { font-size: 0.8rem; }
+            .h2h-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -1194,15 +1305,23 @@
                                 {% for match in data.bracket.get(rkey, []) %}
                                 {% set slot_open = not match.entry_1_id or not match.entry_2_id %}
                                 {% set is_current = (data.current_round == rkey) %}
-                                <div class="match-card {% if match.is_complete %}complete{% elif is_current and match.entry_1_id and match.entry_2_id %}current{% elif slot_open %}pending{% endif %}">
-                                    <div class="match-row {% if match.is_complete and match.winner_id == match.entry_1_id %}winner{% elif match.is_complete and match.winner_id == match.entry_2_id %}loser{% endif %}">
+                                {% set show_pts = is_current or match.is_complete %}
+                                {% set side_1_leading = show_pts and not match.is_complete and (match.entry_1_points or 0) > (match.entry_2_points or 0) %}
+                                {% set side_2_leading = show_pts and not match.is_complete and (match.entry_2_points or 0) > (match.entry_1_points or 0) %}
+                                {% set has_detail = match.detail and match.detail.side_1 and match.detail.side_2 %}
+                                <div class="match-card {% if match.is_complete %}complete{% elif is_current and match.entry_1_id and match.entry_2_id %}current{% elif slot_open %}pending{% endif %}"
+                                     {% if has_detail %}onclick="toggleMatchDetail('m-{{ rkey }}-{{ match.match_number }}')" style="cursor:pointer"{% endif %}>
+                                    <div class="match-row {% if match.is_complete and match.winner_id == match.entry_1_id %}winner{% elif match.is_complete and match.winner_id == match.entry_2_id %}loser{% endif %}{% if side_1_leading %} leading{% endif %}">
                                         {% if match.entry_1_id %}
                                         <span class="seed">{{ match.entry_1_seed or '' }}</span>
                                         <div class="mgr">
                                             <div class="mgr-name">{{ match.entry_1_name }}</div>
-                                            <div class="team-name">{{ match.entry_1_team_name or '' }}</div>
+                                            <div class="team-name">
+                                                {{ match.entry_1_team_name or '' }}
+                                                {% if match.entry_1_captain %} · 🅒 {{ match.entry_1_captain }}{% endif %}
+                                            </div>
                                         </div>
-                                        <span class="pts">{{ match.entry_1_points if (is_current or match.is_complete) else '' }}</span>
+                                        <span class="pts">{{ match.entry_1_points if show_pts else '' }}</span>
                                         {% else %}
                                         <div class="mgr placeholder-text">
                                             {% if rkey == 'quarter' %}فائز م{{ match.match_number * 2 - 1 }} (R16)
@@ -1212,14 +1331,17 @@
                                         </div>
                                         {% endif %}
                                     </div>
-                                    <div class="match-row {% if match.is_complete and match.winner_id == match.entry_2_id %}winner{% elif match.is_complete and match.winner_id == match.entry_1_id %}loser{% endif %}">
+                                    <div class="match-row {% if match.is_complete and match.winner_id == match.entry_2_id %}winner{% elif match.is_complete and match.winner_id == match.entry_1_id %}loser{% endif %}{% if side_2_leading %} leading{% endif %}">
                                         {% if match.entry_2_id %}
                                         <span class="seed">{{ match.entry_2_seed or '' }}</span>
                                         <div class="mgr">
                                             <div class="mgr-name">{{ match.entry_2_name }}</div>
-                                            <div class="team-name">{{ match.entry_2_team_name or '' }}</div>
+                                            <div class="team-name">
+                                                {{ match.entry_2_team_name or '' }}
+                                                {% if match.entry_2_captain %} · 🅒 {{ match.entry_2_captain }}{% endif %}
+                                            </div>
                                         </div>
-                                        <span class="pts">{{ match.entry_2_points if (is_current or match.is_complete) else '' }}</span>
+                                        <span class="pts">{{ match.entry_2_points if show_pts else '' }}</span>
                                         {% else %}
                                         <div class="mgr placeholder-text">
                                             {% if rkey == 'quarter' %}فائز م{{ match.match_number * 2 }} (R16)
@@ -1229,6 +1351,66 @@
                                         </div>
                                         {% endif %}
                                     </div>
+
+                                    {% if has_detail %}
+                                    <div class="match-detail" id="m-{{ rkey }}-{{ match.match_number }}" style="display:none" onclick="event.stopPropagation()">
+                                        <div class="detail-header">
+                                            <div class="detail-side">
+                                                <span class="detail-name">{{ match.entry_1_name }}</span>
+                                                {% if match.detail.side_1.chip %}<span class="chip-badge">{{ match.detail.side_1.chip }}</span>{% endif %}
+                                                {% if match.detail.side_1.hit %}<span class="hit-badge">-{{ match.detail.side_1.hit }}</span>{% endif %}
+                                            </div>
+                                            <div class="detail-vs">vs</div>
+                                            <div class="detail-side">
+                                                {% if match.detail.side_2.hit %}<span class="hit-badge">-{{ match.detail.side_2.hit }}</span>{% endif %}
+                                                {% if match.detail.side_2.chip %}<span class="chip-badge">{{ match.detail.side_2.chip }}</span>{% endif %}
+                                                <span class="detail-name">{{ match.entry_2_name }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="h2h-grid">
+                                            <div class="h2h-col">
+                                                {% for pos_label, pos_id in [('GKP', 1), ('DEF', 2), ('MID', 3), ('FWD', 4)] %}
+                                                    {% set pos_players = match.detail.side_1.players | selectattr('is_starter') | selectattr('position', 'equalto', pos_id) | list %}
+                                                    {% for p in pos_players %}
+                                                    <div class="p-row {% if p.is_differential %}diff{% endif %}{% if p.is_captain %} cap{% endif %}">
+                                                        <span class="p-name">
+                                                            {{ p.name }}{% if p.is_captain %} (C){% elif p.is_vc %} (V){% endif %}
+                                                        </span>
+                                                        <span class="p-pts">{{ p.effective_points }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                                <div class="bench-label">البدلاء</div>
+                                                {% for p in match.detail.side_1.players if not p.is_starter %}
+                                                <div class="p-row bench {% if p.is_differential %}diff{% endif %}">
+                                                    <span class="p-name">{{ p.name }}</span>
+                                                    <span class="p-pts">{{ p.raw_points }}</span>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="h2h-col">
+                                                {% for pos_label, pos_id in [('GKP', 1), ('DEF', 2), ('MID', 3), ('FWD', 4)] %}
+                                                    {% set pos_players = match.detail.side_2.players | selectattr('is_starter') | selectattr('position', 'equalto', pos_id) | list %}
+                                                    {% for p in pos_players %}
+                                                    <div class="p-row {% if p.is_differential %}diff{% endif %}{% if p.is_captain %} cap{% endif %}">
+                                                        <span class="p-name">
+                                                            {{ p.name }}{% if p.is_captain %} (C){% elif p.is_vc %} (V){% endif %}
+                                                        </span>
+                                                        <span class="p-pts">{{ p.effective_points }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                                <div class="bench-label">البدلاء</div>
+                                                {% for p in match.detail.side_2.players if not p.is_starter %}
+                                                <div class="p-row bench {% if p.is_differential %}diff{% endif %}">
+                                                    <span class="p-name">{{ p.name }}</span>
+                                                    <span class="p-pts">{{ p.raw_points }}</span>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 {% endfor %}
                             </div>
@@ -1317,6 +1499,12 @@
             }
         }
         
+        function toggleMatchDetail(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+        }
+
         function refreshPage() {
             const btn = document.getElementById('refresh-btn');
             btn.classList.add('loading');

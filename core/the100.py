@@ -747,6 +747,63 @@ def get_championship_data(current_gw, league_id=THE100_LEAGUE_ID):
                 if m['entry_2_id'] in live_net_by_entry:
                     m['entry_2_points'] = live_net_by_entry[m['entry_2_id']]
 
+            # Build per-player H2H detail for each match in the current round.
+            # Includes captain/VC flags, per-player live points, chip, and a
+            # differential flag (player not in opponent's 15).
+            full_player_info = {}
+            for p in bootstrap['elements']:
+                full_player_info[p['id']] = {
+                    'name': p.get('web_name'),
+                    'team': p.get('team'),
+                    'position': p.get('element_type'),
+                }
+
+            def _build_side(pd):
+                if not pd:
+                    return None
+                players = []
+                for pick in pd.get('picks', []):
+                    pid = pick['element']
+                    info = full_player_info.get(pid, {})
+                    live = live_elements.get(pid, {})
+                    mult = pick.get('multiplier', 0)
+                    players.append({
+                        'player_id': pid,
+                        'name': info.get('name') or '-',
+                        'position': info.get('position'),  # 1=GKP,2=DEF,3=MID,4=FWD
+                        'is_captain': bool(pick.get('is_captain')),
+                        'is_vc': bool(pick.get('is_vice_captain')),
+                        'is_starter': pick.get('position', 16) <= 11,
+                        'multiplier': mult,
+                        'raw_points': live.get('total_points', 0),
+                        'effective_points': live.get('total_points', 0) * (mult if mult > 0 else 0),
+                        'minutes': live.get('minutes', 0),
+                    })
+                return {
+                    'players': players,
+                    'chip': pd.get('active_chip'),
+                    'hit': pd.get('entry_history', {}).get('event_transfers_cost', 0),
+                }
+
+            for m in bracket[current_round]:
+                url_1 = f"https://fantasy.premierleague.com/api/entry/{m['entry_1_id']}/event/{current_gw}/picks/" if m['entry_1_id'] else None
+                url_2 = f"https://fantasy.premierleague.com/api/entry/{m['entry_2_id']}/event/{current_gw}/picks/" if m['entry_2_id'] else None
+                s1 = _build_side(picks_data.get(url_1)) if url_1 else None
+                s2 = _build_side(picks_data.get(url_2)) if url_2 else None
+                if s1 and s2:
+                    ids_1 = {p['player_id'] for p in s1['players']}
+                    ids_2 = {p['player_id'] for p in s2['players']}
+                    for p in s1['players']:
+                        p['is_differential'] = p['player_id'] not in ids_2
+                    for p in s2['players']:
+                        p['is_differential'] = p['player_id'] not in ids_1
+                    # Captain name for the card subtitle
+                    cap_1 = next((p for p in s1['players'] if p['is_captain']), None)
+                    cap_2 = next((p for p in s2['players'] if p['is_captain']), None)
+                    m['entry_1_captain'] = cap_1['name'] if cap_1 else None
+                    m['entry_2_captain'] = cap_2['name'] if cap_2 else None
+                m['detail'] = {'side_1': s1, 'side_2': s2}
+
     # Auto-advance: if the current GW is data_checked and any round up to
     # current_round is incomplete, resolve it. This handles late page loads
     # without needing a separate cron.
