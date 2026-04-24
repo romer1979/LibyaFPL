@@ -19,7 +19,12 @@ Usage:
 import sys
 from app import app, db
 from models import TeamLeagueMatches
-from core.fpl_api import FPL_BASE_URL, fetch_data, fetch_multiple_parallel  # noqa: F401
+from core.fpl_api import (
+    FPL_BASE_URL,
+    fetch_data,
+    fetch_multiple_parallel,
+    get_multiple_entry_history,
+)
 
 # Reuse the scoring logic that the Libyan fix script already uses.
 # It implements the custom rules: TC=2x, Bench Boost ignored, hits subtracted,
@@ -45,11 +50,16 @@ def get_teams(league):
     return TEAMS_FPL_IDS
 
 
-def compute_team_totals_for_gw(gw, teams, player_info, return_raw=False):
-    """Return {team_name: int} of recomputed points for every team in `teams` for GW `gw`.
-    If any manager's picks can't be fetched after retries, returns None so the
-    caller skips that GW rather than producing a silently wrong total.
-    If return_raw=True, also returns (live_elements, picks_by_entry) for debug."""
+def compute_team_totals_for_gw(gw, teams, player_info, histories, return_raw=False):
+    """Return {team_name: int} of recomputed points for every team.
+
+    If picks are missing after retries, cross-check the manager's history:
+      - If history shows points > 0 for that GW -> real fetch failure, abort.
+      - If history shows 0 or no entry -> manager didn't play, treat as 0.
+
+    histories: dict {entry_id: entry_history_dict} fetched once by caller.
+    """
+    import time as _time
     live = get_live_data(gw)
     if not live:
         return (None, None, None) if return_raw else None
@@ -63,29 +73,45 @@ def compute_team_totals_for_gw(gw, teams, player_info, return_raw=False):
         for eid in all_entries
     }
 
-    # Retry any entries whose picks came back empty. fetch_multiple_parallel
-    # treats any non-200 or timeout as None; a single missing manager silently
-    # zeros their contribution and corrupts the team total.
-    import time as _time
     missing = [eid for eid, pd in picks_by_entry.items() if not pd]
     if missing:
         print(f"  retrying {len(missing)} missing pick(s) serially...")
         for eid in missing:
-            for attempt in range(3):
-                retry = fetch_data(f"{FPL_BASE_URL}/entry/{eid}/event/{gw}/picks/")
-                if retry:
-                    picks_by_entry[eid] = retry
-                    break
+            for attempt in range(2):
+                try:
+                    retry = fetch_data(f"{FPL_BASE_URL}/entry/{eid}/event/{gw}/picks/")
+                    if retry:
+                        picks_by_entry[eid] = retry
+                        break
+                except Exception:
+                    pass
                 _time.sleep(1.5)
+
+        # For entries still missing, check their history to see if they actually
+        # played this GW. If history has positive points for this GW -> real API
+        # failure (abort). If history is 0 or absent -> manager didn't play
+        # (legit 0 contribution).
         still_missing = [eid for eid, pd in picks_by_entry.items() if not pd]
-        if still_missing:
-            print(f"  ABORT GW{gw}: picks still missing for entries {still_missing}. "
-                  f"FPL API is rate-limiting or the entries have no squad for that GW. "
-                  f"Skipping this GW from the audit.")
+        real_failures = []
+        for eid in still_missing:
+            h = histories.get(eid) or {}
+            gw_entry = next(
+                (g for g in h.get('current', []) if g.get('event') == gw),
+                None,
+            )
+            gross = (gw_entry or {}).get('points', 0) or 0
+            if gross > 0:
+                real_failures.append((eid, gross))
+        if real_failures:
+            print(f"  ABORT GW{gw}: {len(real_failures)} manager(s) have scores in "
+                  f"history but picks unavailable: {real_failures}. Skipping this GW.")
             return (None, None, None) if return_raw else None
+        if still_missing:
+            print(f"  {len(still_missing)} manager(s) have no picks and no history "
+                  f"for this GW (didn't play) -> treated as 0.")
 
     mgr_points = {
-        eid: calculate_manager_points(pd, live_elements, player_info)
+        eid: (calculate_manager_points(pd, live_elements, player_info) if pd else 0)
         for eid, pd in picks_by_entry.items()
     }
     totals = {
@@ -227,6 +253,10 @@ def main():
         player_info = build_player_info(bootstrap)
         bootstrap_elements = bootstrap.get('elements', [])
 
+        all_entries = [eid for entries in teams.values() for eid in entries]
+        print(f"Fetching histories for {len(all_entries)} managers (for fallback checks)...")
+        histories = get_multiple_entry_history(all_entries)
+
         points_diffs = []    # (gw, team, stored, recomputed, delta)
         winner_diffs = []    # (gw, team1, team2, s_p1, s_p2, n_p1, n_p2, s_res, n_res)
         match_updates = []   # (match_row, new_t1, new_t2) — rows to rewrite under --apply
@@ -235,7 +265,7 @@ def main():
         for gw in saved_gws:
             print(f"\nGW{gw}... fetching {sum(len(v) for v in teams.values())} picks")
             recomputed, live_elements, picks_by_entry = compute_team_totals_for_gw(
-                gw, teams, player_info, return_raw=True
+                gw, teams, player_info, histories, return_raw=True
             )
             if not recomputed:
                 print(f"  skipped (no live data)")
