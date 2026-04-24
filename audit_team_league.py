@@ -73,13 +73,16 @@ def compute_team_totals_for_gw(gw, teams, player_info):
 
 
 def main():
-    if len(sys.argv) < 2 or sys.argv[1] not in ('libyan', 'arab', 'cities'):
-        print("Usage: python audit_team_league.py {libyan|arab|cities}")
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    apply_mode = '--apply' in sys.argv
+    if not args or args[0] not in ('libyan', 'arab', 'cities'):
+        print("Usage: python audit_team_league.py {libyan|arab|cities} [--apply]")
         return
-    league_type = sys.argv[1]
+    league_type = args[0]
     teams = get_teams(league_type)
     print(f"Auditing {league_type} league: {len(teams)} teams, "
-          f"{sum(len(v) for v in teams.values())} managers")
+          f"{sum(len(v) for v in teams.values())} managers"
+          f"{' (APPLY mode)' if apply_mode else ' (dry run)'}")
 
     with app.app_context():
         saved_gws = sorted({
@@ -101,6 +104,7 @@ def main():
 
         points_diffs = []    # (gw, team, stored, recomputed, delta)
         winner_diffs = []    # (gw, team1, team2, s_p1, s_p2, n_p1, n_p2, s_res, n_res)
+        match_updates = []   # (match_row, new_t1, new_t2) — rows to rewrite under --apply
 
         for gw in saved_gws:
             print(f"\nGW{gw}... fetching {sum(len(v) for v in teams.values())} picks")
@@ -120,6 +124,8 @@ def main():
                     points_diffs.append((gw, m.team1_name, m.team1_points, n1, n1 - m.team1_points))
                 if n2 != m.team2_points:
                     points_diffs.append((gw, m.team2_name, m.team2_points, n2, n2 - m.team2_points))
+                if n1 != m.team1_points or n2 != m.team2_points:
+                    match_updates.append((m, n1, n2))
 
                 def winner(p1, p2):
                     if p1 > p2: return 'team1'
@@ -159,9 +165,28 @@ def main():
 
         if not points_diffs and not winner_diffs:
             print("\n  Clean. No discrepancies.")
-        else:
-            print("\n  READ-ONLY. Nothing written. If you want to fix, say the word and")
-            print("  we'll write a rebuild script.")
+            return
+
+        if winner_diffs:
+            print("\n  At least one match has a different winner under recomputed points.")
+            print("  --apply will NOT write in that case (would change standings). Aborting.")
+            return
+
+        if not apply_mode:
+            print(f"\n  Dry run. Rerun with --apply to rewrite {len(match_updates)} match rows")
+            print("  (winners are unchanged; only team1_points/team2_points get corrected).")
+            return
+
+        confirm = input(f"\nType 'yes' to rewrite {len(match_updates)} team_league_matches rows: ")
+        if confirm.strip().lower() != 'yes':
+            print("Aborted.")
+            return
+
+        for m, n1, n2 in match_updates:
+            m.team1_points = n1
+            m.team2_points = n2
+        db.session.commit()
+        print(f"Committed {len(match_updates)} match-row updates.")
 
 
 if __name__ == '__main__':
