@@ -673,12 +673,13 @@ def get_championship_data(current_gw, league_id=THE100_LEAGUE_ID):
     gw_to_round = {v: k for k, v in CHAMPIONSHIP_ROUND_GW.items()}
     current_round = gw_to_round.get(current_gw)
 
-    # Ensure bracket exists (auto-generate if empty). If an older schema of
-    # the table exists in Postgres, the first query fails with UndefinedColumn
-    # -- detect that and drop/recreate with the current schema before retrying.
+    # Page load only READS the bracket from the DB. Generation is done
+    # explicitly via seed_the100_championship.py (run on Render Shell once
+    # the 16 survivors are settled). Self-heal stale schema if needed.
+    bracket = {}
     if DB_AVAILABLE:
         try:
-            bracket_count = The100ChampionshipMatch.query.count()
+            bracket = get_the100_bracket()
         except Exception as e:
             msg = str(e).lower()
             if 'undefinedcolumn' in msg or 'does not exist' in msg:
@@ -686,44 +687,9 @@ def get_championship_data(current_gw, league_id=THE100_LEAGUE_ID):
                 db.session.rollback()
                 The100ChampionshipMatch.__table__.drop(db.engine, checkfirst=True)
                 The100ChampionshipMatch.__table__.create(db.engine)
-                bracket_count = 0
+                bracket = {}
             else:
                 raise
-        if bracket_count == 0:
-            # Gather the 16 alive managers + their total season points
-            alive = The100QualifiedManager.query.filter(
-                The100QualifiedManager.eliminated_gw.is_(None)
-            ).all()
-            if len(alive) != 16:
-                print(f"Cannot generate bracket: {len(alive)} alive managers (need exactly 16)")
-            else:
-                # We only need the totals for the 16 survivors, not the whole
-                # league. Fetch each survivor's /entry/{id}/ in parallel -- far
-                # faster than paginating the whole ~1000-manager classic league.
-                totals_by_entry = {}
-                entry_urls = [
-                    f"https://fantasy.premierleague.com/api/entry/{m.entry_id}/"
-                    for m in alive
-                ]
-                entry_data = fetch_multiple_parallel(entry_urls, cookies)
-                for m in alive:
-                    url = f"https://fantasy.premierleague.com/api/entry/{m.entry_id}/"
-                    d = entry_data.get(url) or {}
-                    totals_by_entry[m.entry_id] = d.get('summary_overall_points', 0)
-
-                survivors = [{
-                    'entry_id': m.entry_id,
-                    'manager_name': m.manager_name,
-                    'team_name': m.team_name,
-                    'total_points': totals_by_entry.get(m.entry_id, 0),
-                } for m in alive]
-                try:
-                    generate_the100_bracket(survivors)
-                    print(f"Generated The 100 championship bracket from 16 survivors")
-                except Exception as e:
-                    print(f"Failed to generate bracket: {e}")
-
-    bracket = get_the100_bracket() if DB_AVAILABLE else {}
 
     # Live-score the current round's matches (if the GW has any fixtures started)
     fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
