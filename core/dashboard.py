@@ -891,7 +891,14 @@ class DashboardData:
                 gw_points = None
                 
                 if gw_data:
-                    gw_points = gw_data.get('entry_history', {}).get('points')
+                    # Net = FPL gross points minus this GW's transfer-hit cost.
+                    # The audit showed saving gross here flipped H2H winners
+                    # for hit-takers; net is the value FPL itself uses for
+                    # H2H league results.
+                    eh = gw_data.get('entry_history', {})
+                    gross = eh.get('points', 0) or 0
+                    hit = eh.get('event_transfers_cost', 0) or 0
+                    gw_points = gross - hit
                     captain_id = next((p['element'] for p in gw_data.get('picks', []) if p.get('is_captain')), None)
                     if captain_id:
                         capt = next((pl for pl in elements if pl.get('id') == captain_id), None)
