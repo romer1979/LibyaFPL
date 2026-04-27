@@ -137,6 +137,21 @@ def get_previous_standings(gameweek, entry_id):
     ).first()
 
 
+def get_elite_previous_league_points(gameweek):
+    """
+    Return {entry_id: league_points} from StandingsHistory for gameweek-1.
+    Empty dict if nothing saved yet (e.g. GW1 or fresh DB).
+
+    Used by the Elite dashboard to compute current-GW projected league points
+    as `prev_cumulative + this_gw_h2h_delta` instead of trusting FPL's `total`
+    field (which lags during/just after a GW).
+    """
+    if gameweek <= 1:
+        return {}
+    rows = StandingsHistory.query.filter_by(gameweek=gameweek - 1).all()
+    return {r.entry_id: (r.league_points or 0) for r in rows}
+
+
 def get_standings_history(entry_id):
     """Get all historical standings for a player"""
     return StandingsHistory.query.filter_by(

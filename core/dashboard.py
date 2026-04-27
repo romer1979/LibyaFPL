@@ -24,6 +24,7 @@ from core.fpl_api import (
     GameweekNotStartedError
 )
 from config import LEAGUE_ID, POSTPONED_GAMES, EXCLUDED_PLAYERS, get_chip_arabic, is_chip_active
+from models import get_elite_previous_league_points
 
 
 class DashboardData:
@@ -44,6 +45,9 @@ class DashboardData:
         self.gw_finished = False
         self.showing_previous_gw = False
         self.fixtures_started = False
+        # {entry_id: league_points} from prev GW's StandingsHistory; populated
+        # in get_dashboard_data() to avoid relying on FPL's lagging `total`.
+        self.prev_db_lp = {}
     
     def _initialize_base_data(self):
         """Initialize base data from bootstrap"""
@@ -708,7 +712,12 @@ class DashboardData:
         """Get all dashboard data - fixtures and standings"""
         try:
             self._initialize_base_data()
-            
+
+            # Load prev-GW cumulative league points from our DB. We use this as
+            # the base for projected_league_points instead of FPL's `total`,
+            # which lags during/just after a GW (especially during buffer mode).
+            self.prev_db_lp = get_elite_previous_league_points(self.current_gameweek)
+
             # Get league data
             league_data = get_league_standings(self.league_id)
             league_name = league_data.get('league', {}).get('name', 'Elite League')
@@ -804,12 +813,17 @@ class DashboardData:
                     ]:
                         if name not in standings_dict:
                             info = next((t for t in teams_league if t['entry'] == entry), {})
+                            # Prior cumulative comes from our DB (StandingsHistory).
+                            # Falls back to FPL's `total` only if no DB row exists
+                            # (e.g. GW1 or fresh deploy before backfill).
+                            prev_lp = self.prev_db_lp.get(entry, int(info.get('total', 0) or 0))
+                            delta = 3 if result == 'W' else 1 if result == 'D' else 0
                             standings_dict[name] = {
                                 'entry_id': entry,
                                 'player_name': name,
                                 'team_name': info.get('entry_name', ''),
-                                'base_league_points': int(info.get('total', 0) or 0),
-                                'projected_league_points': int(info.get('total', 0) or 0),
+                                'base_league_points': prev_lp,
+                                'projected_league_points': prev_lp + delta,
                                 'current_gw_points': data['total_points'],
                                 'captain': data['captain'],
                                 'chip': data['chip_ar'],
@@ -817,13 +831,6 @@ class DashboardData:
                                 'result': result,
                                 'opponent': opponent
                             }
-                            
-                            # In buffer mode, API total already includes this GW's result
-                            if not self.buffer_mode:
-                                if result == 'W':
-                                    standings_dict[name]['projected_league_points'] += 3
-                                elif result == 'D':
-                                    standings_dict[name]['projected_league_points'] += 1
                 
                 self.display_gameweek = self.current_gameweek
                 self.fixtures_gameweek = self.current_gameweek
@@ -899,12 +906,14 @@ class DashboardData:
                     standings_dict[name]['overall_rank'] = overall_rank
                     standings_dict[name]['total_points'] = entry.get('points_for')
                 else:
+                    # Prior cumulative from our DB; FPL's `total` is fallback only.
+                    prev_lp = self.prev_db_lp.get(entry_id, int(entry.get('total', 0) or 0))
                     standings_dict[name] = {
                         'entry_id': entry_id,
                         'player_name': name,
                         'team_name': entry.get('entry_name', ''),
-                        'base_league_points': int(entry.get('total', 0) or 0),
-                        'projected_league_points': int(entry.get('total', 0) or 0),
+                        'base_league_points': prev_lp,
+                        'projected_league_points': prev_lp,
                         'current_gw_points': gw_points or 0,
                         'total_points': entry.get('points_for'),
                         'overall_rank': overall_rank,
