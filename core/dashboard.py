@@ -23,7 +23,7 @@ from core.fpl_api import (
     FPLApiError,
     GameweekNotStartedError
 )
-from config import LEAGUE_ID, POSTPONED_GAMES, EXCLUDED_PLAYERS, get_chip_arabic, is_chip_active
+from config import LEAGUE_ID, POSTPONED_GAMES, EXCLUDED_PLAYERS, KNOCKOUT_START_GW, get_chip_arabic, is_chip_active
 from models import get_elite_previous_league_points
 
 
@@ -817,7 +817,14 @@ class DashboardData:
                             # Falls back to FPL's `total` only if no DB row exists
                             # (e.g. GW1 or fresh deploy before backfill).
                             prev_lp = self.prev_db_lp.get(entry, int(info.get('total', 0) or 0))
-                            delta = 3 if result == 'W' else 1 if result == 'D' else 0
+                            # During the FPL-managed knockout phase the
+                            # round-robin league total is frozen — knockout
+                            # match results (W/L) are still recorded for
+                            # display but don't move projected_league_points.
+                            if self.current_gameweek >= KNOCKOUT_START_GW:
+                                delta = 0
+                            else:
+                                delta = 3 if result == 'W' else 1 if result == 'D' else 0
                             standings_dict[name] = {
                                 'entry_id': entry,
                                 'player_name': name,
@@ -961,6 +968,7 @@ class DashboardData:
                 'gw_finished': self.gw_finished,
                 'gw_not_started': not self.fixtures_started and not self.gw_finished,
                 'showing_previous_gw': self.showing_previous_gw,
+                'is_knockout': self.current_gameweek >= KNOCKOUT_START_GW,
                 'fixtures': fixtures,
                 'standings': standings_list,
                 'last_updated_utc': datetime.utcnow().isoformat() + 'Z'

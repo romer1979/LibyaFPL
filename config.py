@@ -19,6 +19,13 @@ POSTPONED_GAMES = {}
 # Players to exclude from standings (if any)
 EXCLUDED_PLAYERS = ["Mustafa Elessawi"]
 
+# First GW of the FPL-managed knockout phase. From this GW onward FPL sends
+# only the matches between still-active managers, and the round-robin league
+# total stops accumulating. Knockout match results (W/L) are still displayed
+# but no longer add +3/+1/+0 to projected_league_points, so the standings
+# table stays frozen at the league-phase final order — matching FPL's UI.
+KNOCKOUT_START_GW = 36
+
 # API Base URLs
 FPL_BASE_URL = "https://fantasy.premierleague.com/api"
 
