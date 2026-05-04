@@ -150,17 +150,18 @@ def main():
                 print(f"  ! GW{gw} has no saved standings; skipping")
                 continue
 
-            # Seed corrected_cum from prev GW (use already-corrected if available)
+            # Seed prev cumulative from DB (every entry, even unchanged ones),
+            # then overlay any in-memory corrections from a prev-GW rebuild
+            # earlier in this same run. Always-seed-from-DB is essential
+            # because a prev-GW rebuild that produced 0 changes still leaves
+            # `h2h_updates_by_gw[prev_gw] = []`, and an empty loop wouldn't
+            # populate prev_cum at all.
             prev_gw = gw - 1
             prev_cum = {}
-            if prev_gw in h2h_updates_by_gw:
-                # already rebuilt earlier in this run
-                for r, _info, new_lp in h2h_updates_by_gw[prev_gw]:
-                    prev_cum[r.entry_id] = new_lp
-            else:
-                # read from DB
-                for r in StandingsHistory.query.filter_by(gameweek=prev_gw).all():
-                    prev_cum[r.entry_id] = r.league_points or 0
+            for pr in StandingsHistory.query.filter_by(gameweek=prev_gw).all():
+                prev_cum[pr.entry_id] = pr.league_points or 0
+            for pr, _info, new_lp in h2h_updates_by_gw.get(prev_gw, []):
+                prev_cum[pr.entry_id] = new_lp
 
             net_for_gw = net_by_gw_entry.get(gw, {})
             results = derive_h2h_results(gw, net_for_gw, entry_to_info)
