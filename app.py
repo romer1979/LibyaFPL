@@ -370,13 +370,12 @@ def elite_dashboard():
         except Exception as e:
             print(f"[elite] Backfill failed: {e}")
 
-        for team in data['standings']:
-            entry_id = team.get('entry_id')
-            current_rank = team.get('rank', 0)
-
-            # Get rank change from previous gameweek
-            rank_change = calculate_rank_change(gameweek, entry_id, current_rank)
-            team['rank_change'] = rank_change
+        # rank_change is already computed by DashboardData.get_dashboard_data()
+        # as `base_rank - i` (movement caused by THIS GW's H2H deltas, using
+        # current tiebreakers consistently). That value is correct for live
+        # play even when the saved StandingsHistory.rank column is stale.
+        # Previously this block overrode it with `prev_saved_rank - current_rank`
+        # which broke arrows whenever the saved rank lagged the actual standings.
 
         # Save current standings to database (if gameweek is finished or live)
         if data.get('gw_finished') or data.get('is_live'):
