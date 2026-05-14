@@ -622,6 +622,19 @@ def get_arab_league_data():
             team_captains[team_name] = captains
             team_picks_counter[team_name] = picks_counter
 
+        # If DB has saved matches for this GW, treat them as canonical and
+        # override the live recompute. The live path recalculates bonus from
+        # BPS which can drift a few pts from FPL's finalized bonus once a GW
+        # ends; the saved rows (written via the normal flow or force_save)
+        # use FPL's final total_points and are authoritative.
+        saved_match_rows = TeamLeagueMatches.query.filter_by(
+            league_type=LEAGUE_TYPE, gameweek=current_gw
+        ).all()
+        if saved_match_rows:
+            for sm in saved_match_rows:
+                team_live_points[sm.team1_name] = sm.team1_points
+                team_live_points[sm.team2_name] = sm.team2_points
+
         # Find best team(s) (team of the week) - show all tied winners
         if team_live_points:
             max_team_pts = max(team_live_points.values())
