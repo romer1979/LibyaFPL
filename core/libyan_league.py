@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 import time
 from collections import Counter
-from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings, get_team_league_standings_full, save_team_league_matches
+from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings, get_team_league_standings_full, save_team_league_matches, TeamLeagueMatches
 from core.fpl_api import is_gameweek_finished
 
 # Configuration
@@ -824,8 +824,16 @@ def get_libyan_league_data():
         
         # 10) Save standings and matches to database if GW is finished (24 hours after last match)
         if gw_finished_for_save:
+            # First-write-wins: never overwrite a GW that already has saved rows.
+            # Protects manual fixes (e.g. force_save_gw36.py) from being clobbered
+            # by the live BPS-recalc on the next page load.
+            already_saved = TeamLeagueMatches.query.filter_by(
+                league_type=LEAGUE_TYPE, gameweek=current_gw
+            ).first() is not None
+            if already_saved:
+                pass  # canonical data already in DB; don't overwrite
             # Guard: only save if all data was fetched successfully
-            if fetch_failures > 0:
+            elif fetch_failures > 0:
                 print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: {fetch_failures} manager picks failed to fetch")
             elif not match_results:
                 print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: no match results (H2H data may have failed)")
