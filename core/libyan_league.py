@@ -13,7 +13,7 @@ from datetime import datetime
 import time
 from collections import Counter
 from models import get_latest_team_league_standings, save_team_league_standings, get_team_league_standings, get_team_league_standings_full, save_team_league_matches, TeamLeagueMatches
-from core.fpl_api import is_gameweek_finished
+from core.fpl_api import is_gameweek_finished, get_multiple_entry_history
 
 # Configuration
 LIBYAN_H2H_LEAGUE_ID = 1231867
@@ -245,54 +245,71 @@ def get_libyan_league_data():
         # 3) Get fixtures (moved up for DGW BPS lookup)
         fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
 
-        # Build per-fixture BPS lookup from fixtures data for DGW support
-        fixture_bps = {}
-        for fix in fixtures:
-            fix_id = fix.get('id')
-            if fix_id is None:
-                continue
-            fixture_bps[fix_id] = {}
-            for stat_group in fix.get('stats', []):
-                if stat_group.get('identifier') == 'bps':
-                    for entry in stat_group.get('h', []):
-                        fixture_bps[fix_id][entry['element']] = entry['value']
-                    for entry in stat_group.get('a', []):
-                        fixture_bps[fix_id][entry['element']] = entry['value']
+        # Compute "is GW finished" early. Two uses:
+        #   - skip the projected-bonus recalc once FPL has finalized bonus
+        #     (the BPS tie-handling in our recalc can drift 1-5pts from FPL)
+        #   - prefetch entry histories so the save guard can tell a real
+        #     pick-fetch failure from a manager who simply didn't play.
+        gw_finished_for_save = is_gameweek_finished(current_gw, fixtures)
 
-        # Build player list for bonus calculation (DGW-safe: uses per-fixture BPS)
-        bonus_players = []
-        for player_data in live_data['elements']:
-            player_id = player_data['id']
-            minutes = player_data['stats']['minutes']
+        histories = {}
+        if gw_finished_for_save:
+            all_entries_flat = [eid for ents in TEAMS_FPL_IDS.values() for eid in ents]
+            histories = get_multiple_entry_history(all_entries_flat)
 
-            for fixture_info in player_data.get('explain', []):
-                fixture_id = fixture_info['fixture']
-                player_fix_bps = fixture_bps.get(fixture_id, {}).get(player_id, 0)
-                player_fix_mins = any(
-                    s.get('value', 0) > 0
-                    for s in fixture_info.get('stats', [])
-                    if s.get('identifier') == 'minutes'
-                )
-                if player_fix_bps > 0 or player_fix_mins:
-                    bonus_players.append({
-                        'player_id': player_id,
-                        'fixture_id': fixture_id,
-                        'bps': player_fix_bps,
-                        'total_points': player_data['stats']['total_points'],
-                        'bonus': 0
-                    })
-        
-        if bonus_players:
-            import pandas as pd
-            df = pd.DataFrame(bonus_players)
-            df = df.groupby('fixture_id', group_keys=False).apply(assign_bonus_points)
-            bonus_points_dict = df.set_index('player_id')['bonus'].to_dict()
-            
-            for player_id, stats in live_elements.items():
-                new_bonus = bonus_points_dict.get(player_id, 0)
-                stats['total_points'] += new_bonus - stats.get('bonus', 0)
-                stats['bonus'] = new_bonus
-        
+        # When GW is unfinished, recompute bonus from BPS (projected, live).
+        # When finished, leave live_elements alone — total_points already
+        # contains FPL's authoritative final bonus.
+        if not gw_finished_for_save:
+            # Build per-fixture BPS lookup from fixtures data for DGW support
+            fixture_bps = {}
+            for fix in fixtures:
+                fix_id = fix.get('id')
+                if fix_id is None:
+                    continue
+                fixture_bps[fix_id] = {}
+                for stat_group in fix.get('stats', []):
+                    if stat_group.get('identifier') == 'bps':
+                        for entry in stat_group.get('h', []):
+                            fixture_bps[fix_id][entry['element']] = entry['value']
+                        for entry in stat_group.get('a', []):
+                            fixture_bps[fix_id][entry['element']] = entry['value']
+
+            # Build player list for bonus calculation (DGW-safe: uses per-fixture BPS)
+            bonus_players = []
+            for player_data in live_data['elements']:
+                player_id = player_data['id']
+                minutes = player_data['stats']['minutes']
+
+                for fixture_info in player_data.get('explain', []):
+                    fixture_id = fixture_info['fixture']
+                    player_fix_bps = fixture_bps.get(fixture_id, {}).get(player_id, 0)
+                    player_fix_mins = any(
+                        s.get('value', 0) > 0
+                        for s in fixture_info.get('stats', [])
+                        if s.get('identifier') == 'minutes'
+                    )
+                    if player_fix_bps > 0 or player_fix_mins:
+                        bonus_players.append({
+                            'player_id': player_id,
+                            'fixture_id': fixture_id,
+                            'bps': player_fix_bps,
+                            'total_points': player_data['stats']['total_points'],
+                            'bonus': 0
+                        })
+
+            if bonus_players:
+                import pandas as pd
+                df = pd.DataFrame(bonus_players)
+                df = df.groupby('fixture_id', group_keys=False).apply(assign_bonus_points)
+                bonus_points_dict = df.set_index('player_id')['bonus'].to_dict()
+
+                for player_id, stats in live_elements.items():
+                    new_bonus = bonus_points_dict.get(player_id, 0)
+                    stats['total_points'] += new_bonus - stats.get('bonus', 0)
+                    stats['bonus'] = new_bonus
+
+
         # Build team fixture started status
         team_fixture_started = {}
         for fix in fixtures:
@@ -559,7 +576,8 @@ def get_libyan_league_data():
             
             return xi_ids
         
-        fetch_failures = 0  # Track failed picks fetches
+        fetch_failures = 0       # Any missing picks (includes absent managers)
+        real_fetch_failures = 0  # Picks missing AND history shows they played
 
         for team_name, entry_ids in TEAMS_FPL_IDS.items():
             total_pts = 0
@@ -616,7 +634,25 @@ def get_libyan_league_data():
                 else:
                     captains.append('-')
                     fetch_failures += 1
-                    print(f"[{LEAGUE_TYPE}] WARNING: Failed to fetch picks for entry {entry_id} (team: {team_name}) in GW{current_gw}")
+                    # Classify: real failure vs manager who simply didn't play.
+                    # Only counts as a real failure if history is missing OR shows
+                    # >0 points for this GW. Otherwise (history shows 0 / no entry)
+                    # they're confirmed absent and shouldn't block the save.
+                    is_real_failure = True  # default to safe-side if no history
+                    if gw_finished_for_save:
+                        h = histories.get(entry_id)
+                        if h is not None:
+                            gw_entry = next(
+                                (g for g in h.get('current', []) if g.get('event') == current_gw),
+                                None,
+                            )
+                            if gw_entry is None or (gw_entry.get('points', 0) or 0) == 0:
+                                is_real_failure = False
+                    if is_real_failure:
+                        real_fetch_failures += 1
+                    print(f"[{LEAGUE_TYPE}] WARNING: Failed to fetch picks for entry {entry_id} "
+                          f"(team: {team_name}) in GW{current_gw} "
+                          f"(real_failure={is_real_failure})")
 
             team_live_points[team_name] = total_pts
             team_captains[team_name] = captains
@@ -829,12 +865,11 @@ def get_libyan_league_data():
         all_matches_done = all(f.get('finished') or f.get('finished_provisional') for f in fixtures) if fixtures else False
         is_live = any_started and not all_matches_done
         
-        # Use 24-hour buffer ONLY for saving standings to database
-        gw_finished_for_save = is_gameweek_finished(current_gw, fixtures)
-        
-        # For display purposes, GW is "finished" when all matches are done
+        # gw_finished_for_save was computed earlier (used to gate bonus recalc
+        # and prefetch histories). For display purposes, GW is "finished" when
+        # all matches are done.
         gw_finished_display = all_matches_done
-        
+
         # 10) Save standings and matches to database if GW is finished (24 hours after last match)
         if gw_finished_for_save:
             # First-write-wins: never overwrite a GW that already has saved rows.
@@ -845,9 +880,11 @@ def get_libyan_league_data():
             ).first() is not None
             if already_saved:
                 pass  # canonical data already in DB; don't overwrite
-            # Guard: only save if all data was fetched successfully
-            elif fetch_failures > 0:
-                print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: {fetch_failures} manager picks failed to fetch")
+            # Guard: only abort on real fetch failures, not confirmed-absent managers
+            elif real_fetch_failures > 0:
+                print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: "
+                      f"{real_fetch_failures} real pick fetch failure(s) "
+                      f"(of {fetch_failures} total missing)")
             elif not match_results:
                 print(f"[{LEAGUE_TYPE}] SKIPPING SAVE for GW{current_gw}: no match results (H2H data may have failed)")
             else:
