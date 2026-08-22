@@ -42,10 +42,10 @@ CHAMPIONSHIP_END_GW = 37
 ELIMINATIONS_PER_GW = 6
 
 # Last season winner - auto-qualifies regardless of position.
-# Set this to the defending champion's entry ID before GW19 (the qualification
-# cutoff). While None, qualification takes a plain top 100 instead of top 99 +
-# champion.
-WINNER_ENTRY_ID = None
+# Update each season before GW19 (the qualification cutoff). While None,
+# qualification takes a plain top 100 instead of top 99 + champion.
+# 2025/26 champion: Mersal92 Alhraray (mersal92)
+WINNER_ENTRY_ID = 6272658
 
 # Cache
 _cache = {
