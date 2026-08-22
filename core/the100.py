@@ -26,7 +26,7 @@ from config import get_chip_arabic
 from core.fpl_api import get_bootstrap_data, build_player_info
 
 # Configuration
-THE100_LEAGUE_ID = 8921
+THE100_LEAGUE_ID = 211682
 TIMEOUT = 15
 LIVE_CALC_LIMIT = 150  # Max managers to calculate live for in large leagues
 LARGE_LEAGUE_THRESHOLD = 200  # Above this, only top N get live
@@ -41,8 +41,11 @@ CHAMPIONSHIP_END_GW = 37
 # Eliminations per gameweek
 ELIMINATIONS_PER_GW = 6
 
-# Last season winner - auto-qualifies regardless of position
-WINNER_ENTRY_ID = 49250
+# Last season winner - auto-qualifies regardless of position.
+# Set this to the defending champion's entry ID before GW19 (the qualification
+# cutoff). While None, qualification takes a plain top 100 instead of top 99 +
+# champion.
+WINNER_ENTRY_ID = None
 
 # Cache
 _cache = {
@@ -1114,7 +1117,10 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                 if not qual_standings:
                     raise RuntimeError("No qualification standings found")
 
-                # Determine qualified managers (top 99 + winner)
+                # Determine qualified managers (top 99 + winner).
+                # With no defending champion configured, take a plain top 100 —
+                # otherwise the pass below fills only 99 slots.
+                take_plain_top_100 = WINNER_ENTRY_ID is None
                 winner_in_top_99 = False
 
                 # First pass: check if winner is in top 99
@@ -1130,8 +1136,8 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                     rank = row.get('rank', 0)
                     is_winner = (entry_id == WINNER_ENTRY_ID)
 
-                    # If winner is in top 99, just take top 100
-                    if winner_in_top_99:
+                    # If winner is in top 99 (or none is configured), take top 100
+                    if take_plain_top_100 or winner_in_top_99:
                         if rank <= 100:
                             qualified.append({
                                 'entry_id': entry_id,

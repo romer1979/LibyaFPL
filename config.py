@@ -5,7 +5,7 @@ Elite League Configuration
 import os
 
 # League ID for your H2H league
-LEAGUE_ID = 639056
+LEAGUE_ID = 1558708
 
 # Authentication cookies - READ FROM ENVIRONMENT VARIABLES (secure)
 COOKIES = {
@@ -17,7 +17,7 @@ COOKIES = {
 POSTPONED_GAMES = {}
 
 # Players to exclude from standings (if any)
-EXCLUDED_PLAYERS = ["Mustafa Elessawi"]
+EXCLUDED_PLAYERS = []
 
 # First GW of the FPL-managed knockout phase. From this GW onward FPL sends
 # only the matches between still-active managers, and the round-robin league
