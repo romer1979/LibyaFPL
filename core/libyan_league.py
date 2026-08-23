@@ -641,18 +641,31 @@ def get_libyan_league_data():
             team_captains[team_name] = captains
             team_picks_counter[team_name] = picks_counter
 
-        # If DB has saved matches for this GW, treat them as canonical and
-        # override the live recompute. The live path recalculates bonus from
-        # BPS which can drift a few pts from FPL's finalized bonus once a GW
-        # ends; the saved rows (written via the normal flow or force_save)
-        # use FPL's final total_points and are authoritative.
+        # Once a GW is finished and saved, the DB rows are canonical: the live
+        # path recalculates bonus from BPS, which can drift a few pts from
+        # FPL's finalized bonus, while the saved rows use FPL's final
+        # total_points. Only trust them for a finished GW.
         saved_match_rows = TeamLeagueMatches.query.filter_by(
             league_type=LEAGUE_TYPE, gameweek=current_gw
-        ).all()
-        if saved_match_rows:
+        ).all() if gw_finished_for_save else []
+
+        # All-or-nothing: if any row names a team that isn't in this season's
+        # roster, the whole set predates a roster change (typically last
+        # season's rows still in the table before new_season_reset.py has run).
+        # Rows whose names happen to survive a season would carry the wrong
+        # points, and unknown names would leak into team_live_points and win
+        # "team of the week", so discard the set rather than merge it.
+        rows_match_roster = all(
+            sm.team1_name in team_live_points and sm.team2_name in team_live_points
+            for sm in saved_match_rows
+        )
+        if saved_match_rows and rows_match_roster:
             for sm in saved_match_rows:
                 team_live_points[sm.team1_name] = sm.team1_points
                 team_live_points[sm.team2_name] = sm.team2_points
+        elif saved_match_rows:
+            print(f"[{LEAGUE_TYPE}] Ignoring {len(saved_match_rows)} saved GW{current_gw} "
+                  f"match row(s): they reference teams outside this season's roster")
 
         # Find best team(s) (team of the week) - show all tied winners
         if team_live_points:
