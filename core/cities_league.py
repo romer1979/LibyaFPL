@@ -16,38 +16,14 @@ from models import get_latest_team_league_standings, save_team_league_standings,
 from core.fpl_api import is_gameweek_finished, get_multiple_entry_history
 
 # Configuration
-CITIES_H2H_LEAGUE_ID = 1011575
+CITIES_H2H_LEAGUE_ID = 1004666
 TIMEOUT = 15
 LEAGUE_TYPE = 'cities'
 
-# Hardcoded standings per gameweek
-# When a new GW finishes, add its standings here
-STANDINGS_BY_GW = {
-    12: {
-        "جالو": 33,
-        "طرميسة": 24,
-        "غريان": 24,
-        "اوجلة": 21,
-        "حي 9 يونيو": 19,
-        "ترهونة": 19,
-        "الهضبة": 19,
-        "المحجوب": 18,
-        "القطرون": 18,
-        "بنغازي": 18,
-        "طرابلس": 18,
-        "درنه": 18,
-        "بوسليم": 16,
-        "الخمس": 16,
-        "البازة": 15,
-        "زليتن": 15,
-        "الفرناج": 15,
-        "الزاوية": 13,
-        "سوق الجمعة": 9,
-        "مصراتة": 9,
-    },
-    # GW13 standings will be added here after you provide them
-    # 13: { ... }
-}
+# Hardcoded standings per gameweek.
+# Empty for a new season: every team starts on 0 and standings accumulate
+# in the database from GW1 onward. Only needed to seed a mid-season start.
+STANDINGS_BY_GW = {}
 
 def get_base_standings_hardcoded(current_gw):
     """Get base standings from hardcoded values for previous GW"""
@@ -63,28 +39,30 @@ def get_base_standings_hardcoded(current_gw):
         return STANDINGS_BY_GW[earliest].copy(), earliest
     return {}, 0
 
-# Team definitions: team_name -> list of FPL entry IDs
+# Team definitions: team_name -> list of FPL entry IDs (3 managers per team).
+# Exactly one manager per team is also a member of the H2H league above —
+# that entry is what maps an FPL H2H fixture onto a team.
 TEAMS_FPL_IDS = {
-    "بوسليم": [102255, 170629, 50261],
-    "اوجلة": [423562, 49250, 99910],
-    "البازة": [116175, 4005689, 2486966],
-    "طرميسة": [701092, 199211, 2098119],
-    "درنه": [191337, 4696003, 2601894],
-    "ترهونة": [1941402, 2940600, 179958],
-    "غريان": [7928, 6889159, 110964],
-    "الهضبة": [3530273, 2911452, 1128265],
-    "بنغازي": [372479, 568897, 3279877],
-    "حي 9 يونيو": [7934485, 1651522, 5259149],
-    "الخمس": [1301966, 4168085, 8041861],
-    "المحجوب": [2780336, 746231, 1841364],
-    "طرابلس": [2841954, 974668, 554016],
-    "الفرناج": [129548, 1200849, 1163868],
-    "مصراتة": [2501532, 255116, 346814],
-    "زليتن": [4795379, 1298141, 3371889],
-    "الزاوية": [3507158, 851661, 2811004],
-    "القطرون": [3142905, 1760648, 43105],
-    "جالو": [5026431, 117063, 97707],
-    "سوق الجمعة": [46435, 57593, 4701548],
+    "الفرناج": [5320360, 647597, 131932],
+    "جالو": [136096, 5037463, 1414144],
+    "أوجلة": [39490, 35149, 297024],
+    "الظهرة": [515842, 505354, 3822196],
+    "درنة": [36116, 1564218, 1051476],
+    "الويغ": [464954, 26444, 5558429],
+    "أبوسليم": [3930015, 3284281, 3967184],
+    "المحجوب": [2378814, 5838622, 3640280],
+    "الجميل": [1326796, 371896, 66464],
+    "الخمس": [4892930, 6840208, 5590427],
+    "ترهونه": [732367, 76674, 5228721],
+    "الأبيار": [1068608, 4695919, 15025],
+    "بنغازي": [64661, 1703122, 2896607],
+    "غريان": [5002182, 5478973, 2793597],
+    "زليتن": [4283873, 1014745, 5032377],
+    "طرابلس": [204839, 104467, 13685],
+    "مصراته": [132273, 927505, 1136953],
+    "يفرن": [983366, 2427957, 1973156],
+    "الهضبة": [4707234, 2861742, 2493944],
+    "طرميسه": [416876, 1919170, 2347964],
 }
 
 # Reverse lookup: entry_id -> team_name

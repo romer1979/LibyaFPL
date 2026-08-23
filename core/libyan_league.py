@@ -16,37 +16,14 @@ from models import get_latest_team_league_standings, save_team_league_standings,
 from core.fpl_api import is_gameweek_finished, get_multiple_entry_history
 
 # Configuration
-LIBYAN_H2H_LEAGUE_ID = 1231867
+LIBYAN_H2H_LEAGUE_ID = 1001036
 TIMEOUT = 15
 LEAGUE_TYPE = 'libyan'
 
-# Hardcoded standings per gameweek
-STANDINGS_BY_GW = {
-    12: {
-        "الأخضر": 28,
-        "يفرن": 27,
-        "الصقور": 24,
-        "المستقبل": 24,
-        "الظهرة": 24,
-        "العروبة": 24,
-        "الشط": 22,
-        "النصر": 21,
-        "الجزيرة": 21,
-        "الصداقة": 18,
-        "الأولمبي": 18,
-        "الملعب": 18,
-        "النصر زليتن": 15,
-        "الأفريقي درنة": 15,
-        "الإخاء": 12,
-        "المدينة": 12,
-        "دارنس": 9,
-        "الأهلي طرابلس": 9,
-        "الشرارة": 9,
-        "السويحلي": 9,
-    },
-    # GW13 standings will be added here
-    # 13: { ... }
-}
+# Hardcoded standings per gameweek.
+# Empty for a new season: every team starts on 0 and standings accumulate
+# in the database from GW1 onward. Only needed to seed a mid-season start.
+STANDINGS_BY_GW = {}
 
 def get_base_standings_hardcoded(current_gw):
     """Get base standings from hardcoded values"""
@@ -60,28 +37,34 @@ def get_base_standings_hardcoded(current_gw):
         return STANDINGS_BY_GW[earliest].copy(), earliest
     return {}, 0
 
-# Team definitions: team_name -> list of FPL entry IDs
+# Team definitions: team_name -> list of FPL entry IDs (3 managers per team).
+# Exactly one manager per team is also a member of the H2H league above —
+# that entry is what maps an FPL H2H fixture onto a team.
 TEAMS_FPL_IDS = {
-    "السويحلي": [90627, 4314045, 6904125],
-    "الأفريقي درنة": [73166, 48803, 157909],
-    "المدينة": [1801960, 1616108, 3708101],
-    "النصر زليتن": [2864, 32014, 1138535],
-    "دارنس": [2042169, 79249, 6918866],
-    "النصر": [31117, 1145928, 992855],
-    "الصقور": [2365915, 372802, 4991175],
-    "الأهلي طرابلس": [1731626, 108289, 1470003],
-    "الصداقة": [3714390, 856776, 191126],
-    "الأخضر": [48104, 42848, 33884],
-    "الأولمبي": [48946, 3990916, 2188316],
-    "المستقبل": [1426246, 249320, 2083158],
-    "الملعب": [3669605, 1094184, 1847110],
-    "الإخاء": [59863, 976705, 6253123],
-    "الجزيرة": [165841, 1269288, 2588180],
-    "الظهرة": [333686, 5677799, 1306887],
-    "الشرارة": [5614876, 1026083, 1037827],
-    "يفرن": [2537692, 860303, 4666133],
-    "العروبة": [947836, 3954364, 3209689],
-    "الشط": [1357695, 318013, 330526],
+    "المدينة": [52343, 6114601, 687531],
+    "الشط": [552690, 157855, 178205],
+    "الترسانة": [11368, 51226, 1005163],
+    "الاهلي طرابلس": [1024978, 273011, 1268546],
+    "الاخاء": [4725798, 2741006, 2425681],
+    "الريف": [4670658, 275456, 4671566],
+    "الأولمبي": [2044759, 540025, 49520],
+    "الوفاق إجدابيا": [16953, 348416, 164444],
+    "نجوم البازة": [4642560, 2985306, 2072713],
+    "الاتحاد": [4678581, 4741109, 2079054],
+    "الوحدة": [4673324, 15300, 312515],
+    "الشرارة": [3886925, 739270, 1889623],
+    "آبي الاشهر": [22670, 4935251, 1331931],
+    # INCOMPLETE — the IDs supplied for this team were a duplicate of the Arab
+    # league's "الرجاء" and none of them belong to this league. 4067029 is the
+    # only unassigned member of H2H league 1001036, so it is this team's
+    # representative; the other two managers' entry IDs are still needed.
+    "الأمل الاخضر": [4067029],
+    "الصقور": [2105278, 4864580, 69442],
+    "النصر زليتن": [3393, 867098, 1930448],
+    "الأفريقي درنة": [1156304, 4900747, 678302],
+    "التعاون إجدابيا": [4235600, 963493, 3722711],
+    "اليرموك": [1530880, 541113, 4188051],
+    "آساريا": [212360, 1421326, 176629],
 }
 
 # Reverse lookup: entry_id -> team_name
