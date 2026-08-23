@@ -54,11 +54,7 @@ TEAMS_FPL_IDS = {
     "الوحدة": [4673324, 15300, 312515],
     "الشرارة": [3886925, 739270, 1889623],
     "آبي الاشهر": [22670, 4935251, 1331931],
-    # INCOMPLETE — the IDs supplied for this team were a duplicate of the Arab
-    # league's "الرجاء" and none of them belong to this league. 4067029 is the
-    # only unassigned member of H2H league 1001036, so it is this team's
-    # representative; the other two managers' entry IDs are still needed.
-    "الأمل الاخضر": [4067029],
+    "الأمل الاخضر": [4067029, 4499218, 4750101],
     "الصقور": [2105278, 4864580, 69442],
     "النصر زليتن": [3393, 867098, 1930448],
     "الأفريقي درنة": [1156304, 4900747, 678302],
