@@ -69,7 +69,7 @@ def backfill_elite_standings(current_gw):
             get_bootstrap_data, get_league_standings, get_league_matches,
             get_multiple_entry_data, get_multiple_entry_picks, build_player_info
         )
-        from config import LEAGUE_ID, EXCLUDED_PLAYERS, get_chip_arabic
+        from config import LEAGUE_ID, EXCLUDED_PLAYERS, KNOCKOUT_START_GW, get_chip_arabic
 
         # Find which GWs have standings saved
         saved_standings_gws = db.session.query(
@@ -112,6 +112,43 @@ def backfill_elite_standings(current_gw):
                 ).first()
                 if not has_nonzero:
                     zero_lp_gws.append(gw)
+
+        # Detect league_points that are stale rather than zero. A GW saved
+        # while it was still live keeps whatever the result was at that moment;
+        # once FPL moves on, current_gameweek advances and nothing ever re-saves
+        # that GW with its final result. Such rows have plausible non-zero
+        # values, so neither the "missing" nor the "all zero" check above sees
+        # them.
+        #
+        # FPL's own `total` is the cumulative league points after the last
+        # finished GW, so it is a free cross-check — but only while the current
+        # GW is unfinished, otherwise `total` includes a GW we have not settled
+        # yet. get_league_standings is cached, so this costs no extra request.
+        stale_lp_gws = []
+        settled_gws = [gw for gw in finished_gws if gw < current_gw and gw in saved_standings_set]
+        if settled_gws and current_gw not in finished_gws:
+            last_settled = max(settled_gws)
+            try:
+                fpl_totals = {
+                    e.get('entry'): int(e.get('total', 0) or 0)
+                    for e in get_league_standings(LEAGUE_ID)['standings']['results']
+                    if e.get('player_name') not in EXCLUDED_PLAYERS
+                }
+                for row in StandingsHistory.query.filter_by(gameweek=last_settled).all():
+                    want = fpl_totals.get(row.entry_id)
+                    if want is not None and (row.league_points or 0) != want:
+                        # One wrong row means the chain is untrustworthy; every
+                        # settled GW gets recomputed from its match results.
+                        stale_lp_gws = settled_gws
+                        print(f"[elite] GW{last_settled} league_points disagree with FPL "
+                              f"totals (e.g. {row.player_name}: saved "
+                              f"{row.league_points}, FPL {want}) — recomputing "
+                              f"GWs {settled_gws}")
+                        break
+            except Exception as e:
+                print(f"[elite] Could not cross-check league_points against FPL: {e}")
+
+        zero_lp_gws = sorted(set(zero_lp_gws) | set(stale_lp_gws))
 
         missing_gws = missing_standings
         all_gws_to_process = sorted(set(missing_standings + missing_fixtures_only + standings_missing_results))
@@ -328,6 +365,11 @@ def backfill_elite_standings(current_gw):
                         e2 = match.get('entry_2_entry')
                         p1 = match.get('entry_1_points', 0)
                         p2 = match.get('entry_2_points', 0)
+                        # Knockout rounds don't add to the round-robin total —
+                        # FPL freezes `total` there, so accumulating would make
+                        # this diverge from the numbers we cross-check against.
+                        if gw >= KNOCKOUT_START_GW:
+                            continue
                         if e1 in cumulative_lp:
                             cumulative_lp[e1] += 3 if p1 > p2 else (1 if p1 == p2 else 0)
                         if e2 in cumulative_lp:
