@@ -77,7 +77,7 @@ body {
 
 /* Header */
 .header {
-    background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+    background: linear-gradient(180deg, var(--dark-card) 0%, var(--dark-bg) 100%);
     padding: 1rem 2rem;
     position: sticky;
     top: 0;
@@ -465,7 +465,28 @@ body {
     .header {
         padding: 0.75rem 1rem;
     }
-    
+
+    /* The logo and the nav could not both fit on one line below ~600px, and
+       because the row never wrapped the nav was pushed off the start edge —
+       the home link sat at left:-33px and was unreachable. */
+    .header-content {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem 0.75rem;
+    }
+
+    .header-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .nav-link {
+        padding: 0.45rem 0.7rem;
+        font-size: 0.85rem;
+    }
+
     .logo-img {
         height: 45px;
     }

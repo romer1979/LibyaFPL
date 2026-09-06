@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#08080b">
     <title>سجل مرحلة الإقصاء - The 100</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
@@ -114,7 +115,7 @@
 
         .rank-table th {
             background: var(--dark-card);
-            color: #aaa;
+            color: var(--text-muted);
             font-weight: 600;
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -257,9 +258,14 @@
         {% endfor %}
 
         {% else %}
+        {# Members see this, not developers — the old copy told them to run a
+           Python script. Before GW20 there is simply nothing to show yet. #}
         <div class="empty">
-            <p>لا يوجد سجل محفوظ للجولات بعد.</p>
-            <p style="font-size: 0.8rem; margin-top: 0.5rem;">شغّل replay_the100_eliminations.py --apply لبناء السجل.</p>
+            <p>لم تبدأ مرحلة الإقصاء بعد.</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">
+                يبدأ الإقصاء من الجولة 20، ويخرج 6 مدربين كل جولة.
+                سيظهر هنا سجل كل جولة فور انطلاقها.
+            </p>
         </div>
         {% endif %}
     </main>

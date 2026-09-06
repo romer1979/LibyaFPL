@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0a0a0a">
+    <meta name="theme-color" content="#08080b">
     <title>The 100 - Fantasy Premier League</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
@@ -242,7 +242,7 @@
         
         .search-box:focus {
             outline: none;
-            border-color: #555;
+            border-color: var(--border-mid);
         }
         
         .search-box::placeholder {
@@ -276,7 +276,7 @@
             align-items: center;
             gap: 0.5rem;
             background: rgba(255, 39, 64, 0.2);
-            color: #ef4444;
+            color: var(--signature);
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.8rem;
@@ -287,7 +287,7 @@
             content: '';
             width: 8px;
             height: 8px;
-            background: #ef4444;
+            background: var(--signature);
             border-radius: 50%;
             animation: pulse 1.5s ease-in-out infinite;
         }
@@ -311,7 +311,7 @@
         
         .refresh-btn:hover {
             background: #3a3a3a;
-            border-color: #555;
+            border-color: var(--border-mid);
         }
         
         .refresh-btn.loading {
@@ -330,7 +330,7 @@
         
         .stats-btn:hover {
             background: #3a3a3a;
-            border-color: #555;
+            border-color: var(--border-mid);
         }
         
         /* Qualification rank badge */
@@ -362,7 +362,7 @@
         
         .dropdown-toggle:hover {
             background: #3a3a3a;
-            border-color: #555;
+            border-color: var(--border-mid);
         }
         
         .dropdown-content {
@@ -422,10 +422,10 @@
         
         /* Player status colors */
         .player-playing {
-            background: rgba(59, 130, 246, 0.15);
-            border-right: 3px solid #3b82f6;
+            background: rgba(90, 168, 255, 0.15);
+            border-right: 3px solid var(--info);
         }
-        .player-playing .player-points { color: #3b82f6; }
+        .player-playing .player-points { color: var(--info); }
         
         .player-played {
             background: rgba(156, 163, 175, 0.1);
@@ -474,7 +474,7 @@
         }
         
         .sub-out-badge {
-            background: #ef4444;
+            background: var(--signature);
             color: var(--text-light);
         }
         
@@ -590,10 +590,10 @@
         
         /* Player status colors for expandable row */
         .player-row.player-playing {
-            background: rgba(59, 130, 246, 0.15);
-            border-right: 3px solid #3b82f6;
+            background: rgba(90, 168, 255, 0.15);
+            border-right: 3px solid var(--info);
         }
-        .player-row.player-playing .player-points { color: #3b82f6; }
+        .player-row.player-playing .player-points { color: var(--info); }
         
         .player-row.player-played {
             background: rgba(156, 163, 175, 0.1);
@@ -650,7 +650,7 @@
             border-radius: 2px;
         }
         
-        .legend-dot.playing { background: #3b82f6; }
+        .legend-dot.playing { background: var(--info); }
         .legend-dot.played { background: var(--text-muted); }
         .legend-dot.pending { background: #a855f7; }
         .legend-dot.sub-in { background: #22c55e; }

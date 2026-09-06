@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#08080b">
     <title>إحصائيات The 100</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
@@ -88,7 +89,7 @@
         
         .point-card .managers {
             font-size: 0.75rem;
-            color: #aaa;
+            color: var(--text-muted);
             margin-top: 0.25rem;
         }
         
@@ -163,7 +164,7 @@
         }
         
         .ownership-percentage {
-            background: #3b82f6;
+            background: var(--info);
             color: var(--text-light);
             padding: 0.2rem 0.5rem;
             border-radius: 4px;
@@ -262,7 +263,7 @@
             align-items: center;
             gap: 0.5rem;
             background: rgba(255, 39, 64, 0.2);
-            color: #ef4444;
+            color: var(--signature);
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.8rem;
@@ -273,7 +274,7 @@
             content: '';
             width: 8px;
             height: 8px;
-            background: #ef4444;
+            background: var(--signature);
             border-radius: 50%;
             animation: pulse 1.5s ease-in-out infinite;
         }
@@ -300,7 +301,7 @@
         }
         
         .phase-badge.qualification {
-            background: rgba(59, 130, 246, 0.2);
+            background: rgba(90, 168, 255, 0.2);
             color: var(--info);
         }
         
