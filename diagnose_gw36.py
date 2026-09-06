@@ -25,7 +25,7 @@ from core.fpl_api import (
     fetch_multiple_parallel,
     get_multiple_entry_history,
 )
-from fix_gw24_libyan import (
+from core.team_scoring import (
     calculate_manager_points,
     build_live_elements,
     build_player_info,

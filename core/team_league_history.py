@@ -7,24 +7,29 @@ Reads from database for fast loading.
 """
 
 from models import TeamLeagueStandings, TeamLeagueMatches, db
+from core.arab_league import ARAB_H2H_LEAGUE_ID
+from core.libyan_league import LIBYAN_H2H_LEAGUE_ID
+from core.cities_league import CITIES_H2H_LEAGUE_ID
 
-# League configurations
+# League configurations.
+# h2h_id is sourced from the league modules rather than duplicated here, so it
+# cannot silently go stale when the leagues are repointed at a new season.
 LEAGUE_CONFIGS = {
     'arab': {
         'name': 'البطولة العربية',
-        'h2h_id': 1015271,
+        'h2h_id': ARAB_H2H_LEAGUE_ID,
         'logo': 'arab_logo.png',
         'back_url': '/league/arab',
     },
     'libyan': {
         'name': 'الدوري الليبي',
-        'h2h_id': 1231867,
+        'h2h_id': LIBYAN_H2H_LEAGUE_ID,
         'logo': 'libyan_logo.png',
         'back_url': '/league/libyan',
     },
     'cities': {
         'name': 'دوري المدن',
-        'h2h_id': 1011575,
+        'h2h_id': CITIES_H2H_LEAGUE_ID,
         'logo': 'cities_logo.png',
         'back_url': '/league/cities',
     }

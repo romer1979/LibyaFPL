@@ -48,7 +48,7 @@ from core.fpl_api import (
     fetch_multiple_parallel,
     get_multiple_entry_history,
 )
-from fix_gw24_libyan import (
+from core.team_scoring import (
     calculate_manager_points,
     build_live_elements,
     build_player_info,
@@ -183,13 +183,19 @@ def process_league(league, gw, player_info, apply_mode):
     teams, league_id = get_league_config(league)
     entry_to_team = {eid: tn for tn, ents in teams.items() for eid in ents}
 
-    # 1) Base standings from GW(gw-1)
-    base_data = get_team_league_standings_full(league, gw - 1)
-    if not base_data:
-        print(f"  ABORT: no GW{gw-1} standings in DB for {league}. Backfill GW{gw-1} first.")
-        return None
-    base_standings = {k: v['league_points'] for k, v in base_data.items()}
-    base_fpl_totals = {k: v['total_fpl_points'] for k, v in base_data.items()}
+    # 1) Base standings from GW(gw-1). GW1 has no predecessor: everyone
+    #    starts a season on zero, which is a valid base, not a missing one.
+    if gw <= 1:
+        base_standings = {t: 0 for t in teams}
+        base_fpl_totals = {t: 0 for t in teams}
+        print("  base: start of season (all teams on 0)")
+    else:
+        base_data = get_team_league_standings_full(league, gw - 1)
+        if not base_data:
+            print(f"  ABORT: no GW{gw-1} standings in DB for {league}. Backfill GW{gw-1} first.")
+            return None
+        base_standings = {k: v['league_points'] for k, v in base_data.items()}
+        base_fpl_totals = {k: v['total_fpl_points'] for k, v in base_data.items()}
 
     # 2) Recompute team totals
     print(f"  computing live team totals from {sum(len(v) for v in teams.values())} pick fetches...")

@@ -20,7 +20,7 @@ Standalone — no DB needed, runs anywhere with `requests`.
 
 Usage:
     python new_season_roster.py <league_id>
-    python new_season_roster.py 1231867
+    python new_season_roster.py 1001036
 """
 
 import sys

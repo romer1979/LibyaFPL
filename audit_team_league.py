@@ -26,10 +26,7 @@ from core.fpl_api import (
     get_multiple_entry_history,
 )
 
-# Reuse the scoring logic that the Libyan fix script already uses.
-# It implements the custom rules: TC=2x, Bench Boost ignored, hits subtracted,
-# plus captain/vice-captain and auto-sub handling.
-from fix_gw24_libyan import (
+from core.team_scoring import (
     calculate_manager_points,
     build_live_elements,
     build_player_info,
