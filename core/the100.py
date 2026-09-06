@@ -44,8 +44,8 @@ ELIMINATIONS_PER_GW = 6
 # Last season winner - auto-qualifies regardless of position.
 # Update each season before GW19 (the qualification cutoff). While None,
 # qualification takes a plain top 100 instead of top 99 + champion.
-# 2025/26 champion: Mersal92 Alhraray (mersal92)
-WINNER_ENTRY_ID = 6272658
+# 2025/26 champion: Aziz Almagdoob (عزيز التريس)
+WINNER_ENTRY_ID = 1180384
 
 # Cache
 _cache = {
