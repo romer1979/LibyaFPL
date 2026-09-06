@@ -11,10 +11,26 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/the100.css') }}">
     <style>
         /* Additional styles for standings */
+        /* No max-height: a scroll region nested inside the page scroll traps
+           touch gestures and hid a 36,000px list behind a 503px window. The
+           table is bounded by row count now, so the page just scrolls. */
         .standings-container {
-            max-height: 70vh;
-            overflow-y: auto;
+            overflow-x: auto;
             border-radius: 8px;
+        }
+
+        .table-footnote {
+            margin-top: 0.75rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #8b8b8b;
+        }
+
+        /* Column headers stay visible while scrolling a long table. */
+        .standings-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         .standings-table {
@@ -1028,6 +1044,12 @@
                     </div>
                     
                     {% if data.phase == 'qualification' and data.standings %}
+                    {# Render only the qualifying places by default. Rendering all
+                       899 rows produced ~950KB of HTML and 6,400 DOM nodes inside a
+                       503px scroll box holding 36,000px of content — 72 screens of
+                       nested scrolling on a phone. Search still covers everyone via
+                       the compact index below, so nobody becomes unreachable. #}
+                    {% set visible_count = 100 %}
                     <div class="standings-container">
                         <table class="standings-table" id="standingsTableQual">
                             <thead>
@@ -1040,7 +1062,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for team in data.standings %}
+                                {% for team in data.standings[:visible_count] %}
                                 <tr class="{% if team.is_winner %}winner-zone{% elif team.live_rank <= 99 %}safe-zone{% else %}danger-zone{% endif %}{% if team.live_rank == 99 and not team.is_winner %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}">
                                     <td class="rank">
                                         {% if team.live_rank == 1 %}
@@ -1067,6 +1089,18 @@
                             </tbody>
                         </table>
                     </div>
+                    {% if data.standings|length > visible_count %}
+                    <div class="table-footnote" id="qualFootnote">
+                        عرض أفضل {{ visible_count }} من {{ data.standings|length }} —
+                        استخدم البحث للعثور على أي مدرب
+                    </div>
+                    {% endif %}
+                    {# Compact index of every manager, for search beyond the rendered
+                       rows. ~60 bytes each rather than a full HTML row, so all 899
+                       cost well under a tenth of what the markup did. #}
+                    <script type="application/json" id="qualIndexRows">
+                        [{% for t in data.standings %}{% if not loop.first %},{% endif %}[{{ t.live_rank }},{{ t.manager_name|tojson }},{{ t.team_name|tojson }},{{ t.live_gw_points }},{{ t.live_total }},{{ 1 if t.is_winner else 0 }}]{% endfor %}]
+                    </script>
                     {% elif data.phase != 'qualification' %}
                     <div class="coming-soon-message">
                         <div class="icon">✅</div>
@@ -1449,6 +1483,32 @@
             event.target.closest('.phase-tab').classList.add('active');
         }
         
+        // Every manager, for searching past the rows actually rendered.
+        // [rank, manager, team, gwPoints, total, isWinner]
+        const QUAL_INDEX = (() => {
+            const el = document.getElementById('qualIndexRows');
+            if (!el) return null;
+            try { return JSON.parse(el.textContent); } catch (e) { return null; }
+        })();
+
+        function qualRowHtml(r) {
+            const [rank, manager, team, gw, total, winner] = r;
+            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+            const cls = winner ? 'winner-zone' : (rank <= 99 ? 'safe-zone' : 'danger-zone');
+            const esc = s => String(s).replace(/[&<>"]/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            return `<tr class="${cls}" data-manager="${esc(String(manager).toLowerCase())}" ` +
+                   `data-team="${esc(String(team).toLowerCase())}">` +
+                   `<td class="rank">${medal}</td>` +
+                   `<td class="manager-cell">${esc(manager)}${winner ? ' 🏆' : ''}</td>` +
+                   `<td class="team-name-cell">${esc(team)}</td>` +
+                   `<td class="gw-points">${gw}</td>` +
+                   `<td class="total-points">${total}</td></tr>`;
+        }
+
+        // Rows rendered by the server, kept so clearing the box restores them.
+        let QUAL_DEFAULT_HTML = null;
+
         function filterTable(phase) {
             const targets = {
                 qualification: ['searchBoxQual', 'standingsTableQual'],
@@ -1461,6 +1521,35 @@
             if (!box || !table) return;
 
             const term = box.value.trim().toLowerCase();
+
+            // Qualification searches the full index, not just the rendered rows,
+            // so a manager outside the top 100 is still findable.
+            if (phase === 'qualification' && QUAL_INDEX) {
+                const tbody = table.querySelector('tbody');
+                const note = document.getElementById('qualFootnote');
+                if (QUAL_DEFAULT_HTML === null) QUAL_DEFAULT_HTML = tbody.innerHTML;
+
+                if (!term) {
+                    tbody.innerHTML = QUAL_DEFAULT_HTML;
+                    if (note) note.style.display = '';
+                    return;
+                }
+
+                const hits = QUAL_INDEX.filter(r =>
+                    String(r[1]).toLowerCase().includes(term) ||
+                    String(r[2]).toLowerCase().includes(term));
+
+                tbody.innerHTML = hits.length
+                    ? hits.map(qualRowHtml).join('')
+                    : `<tr class="no-results-row"><td colspan="5" ` +
+                      `style="text-align:center; padding:18px; opacity:0.7;">` +
+                      `لا توجد نتائج لـ "${box.value.trim().replace(/</g,'&lt;')}"</td></tr>`;
+                if (note) {
+                    note.style.display = '';
+                    note.textContent = `${hits.length} نتيجة من ${QUAL_INDEX.length}`;
+                }
+                return;
+            }
 
             // Select on the data attribute rather than .clickable-row: only the
             // elimination table's rows carry that class, so the qualification
