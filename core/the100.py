@@ -341,6 +341,39 @@ def calculate_live_points(picks_data, live_elements, player_info, fixtures):
     return total_points - hits
 
 
+def extract_pick_meta(picks_data, player_info):
+    """Pull captain name, chip and the counted squad out of a picks payload.
+
+    The qualification phase already fetches picks in order to compute live
+    points, but only kept the score — so the stats page had no captain, chip
+    or ownership data for GW1-19 and rendered three empty sections for more
+    than half the season. This costs no extra API call; it reads what is
+    already in memory.
+
+    `players` carries the picks that count towards ownership: the starting XI,
+    or all 15 under bench boost. Ordering is preserved so downstream code can
+    keep treating index >= 11 as bench.
+    """
+    if not picks_data:
+        return '-', None, []
+
+    picks = picks_data.get('picks', [])
+    chip = picks_data.get('active_chip')
+
+    captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+    captain_name = player_info.get(captain_id, {}).get('name', '-') if captain_id else '-'
+
+    counted = picks[:15] if chip == 'bboost' else picks[:11]
+    players = [{
+        'id': p['element'],
+        'name': player_info.get(p['element'], {}).get('name', 'Unknown'),
+        'is_captain': bool(p.get('is_captain')),
+        'is_vice': bool(p.get('is_vice_captain')),
+    } for p in counted]
+
+    return captain_name, chip, players
+
+
 def calculate_auto_subs(picks, live_elements, player_info, fixtures, team_done_fn):
     """
     FPL auto-subs (DGW-safe):
@@ -1004,6 +1037,9 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                         live_gw_pts = calculate_live_points(
                             picks_data, live_elements, player_info, fixtures
                         )
+                        captain_name, chip, players = extract_pick_meta(
+                            picks_data, player_info
+                        )
                         base_total = api_total - api_gw  # Total before this GW
                         live_total = base_total + live_gw_pts
 
@@ -1015,6 +1051,14 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                             'last_rank': last_rank,
                             'entry_id': entry_id,
                             'is_winner': is_winner,
+                            'captain': captain_name,
+                            'chip': chip,
+                            'players': players,
+                            # Marks rows whose numbers come from our own live
+                            # calculation. Rows below LIVE_CALC_LIMIT fall back
+                            # to FPL's lagging values, so the two are not
+                            # comparable mid-gameweek and stats must not mix them.
+                            'is_live_calc': True,
                         })
                     else:
                         # Use API values as-is
@@ -1026,6 +1070,10 @@ def get_the100_standings(league_id=THE100_LEAGUE_ID):
                             'last_rank': last_rank,
                             'entry_id': entry_id,
                             'is_winner': is_winner,
+                            'captain': '-',
+                            'chip': None,
+                            'players': [],
+                            'is_live_calc': False,
                         })
 
                 # Sort by live_total descending, then by GW points
@@ -1357,19 +1405,29 @@ def get_the100_stats():
         bootstrap_data = get_bootstrap_data()
         player_info = build_player_info(bootstrap_data)
 
+        # Only rows we calculated ourselves are comparable mid-gameweek. Below
+        # LIVE_CALC_LIMIT the numbers come from FPL's `event_total`, which lags
+        # during a live GW — averaging the two together produced a figure that
+        # was not any real quantity. When nothing is flagged (settled GW, or
+        # the elimination phase, where every row is computed) this is the whole
+        # league, and the stats are league-wide as before.
+        live_rows = [t for t in standings if t.get('is_live_calc')]
+        cohort = live_rows if (is_live and live_rows) else standings
+        cohort_is_partial = len(cohort) < len(standings)
+
         # Initialize collectors
         gw_points = []
-        manager_points = {}
+        manager_points = {}   # keyed by entry_id: manager names are not unique
         captains = []
         chips_used = []
         player_ownership = Counter()
 
-        for team in standings:
+        for team in cohort:
             manager_name = team.get('manager_name', 'Unknown')
             points = team.get('live_gw_points', 0)
 
             gw_points.append(points)
-            manager_points[manager_name] = points
+            manager_points[team.get('entry_id', manager_name)] = (manager_name, points)
 
             # Captain
             captain_name = team.get('captain', '-')
@@ -1419,8 +1477,8 @@ def get_the100_stats():
             min_points = min(gw_points)
             max_points = max(gw_points)
 
-            min_managers = [name for name, pts in manager_points.items() if pts == min_points]
-            max_managers = [name for name, pts in manager_points.items() if pts == max_points]
+            min_managers = [nm for nm, pts in manager_points.values() if pts == min_points]
+            max_managers = [nm for nm, pts in manager_points.values() if pts == max_points]
 
             points_stats = {
                 'min': min_points,
@@ -1437,9 +1495,12 @@ def get_the100_stats():
                 'avg': 0, 'total_managers': 0
             }
 
-        # Calculate effective ownership (top 15 players)
+        # Calculate effective ownership (top 15 players).
+        # Denominator must be the cohort the picks were counted over, not the
+        # whole league — dividing 150 managers' picks by 899 would understate
+        # every percentage by roughly six times.
         effective_ownership = []
-        total_managers = len(standings)
+        total_managers = len(cohort)
 
         for element_id, count in player_ownership.most_common(15):
             player = player_info.get(element_id, {})
@@ -1490,6 +1551,11 @@ def get_the100_stats():
             'points_stats': points_stats,
             'effective_ownership': effective_ownership,
             'total_managers': total_managers,
+            # So the page can say what these numbers are actually drawn from,
+            # rather than implying they cover all 899 managers.
+            'cohort_size': len(cohort),
+            'league_size': len(standings),
+            'cohort_is_partial': cohort_is_partial,
             'elimination_stats': elimination_stats,
             'last_updated': standings_data.get('last_updated')
         }

@@ -283,6 +283,13 @@
             50% { opacity: 0.5; }
         }
         
+        .cohort-note {
+            margin-top: 0.4rem;
+            font-size: 0.8rem;
+            color: #8b8b8b;
+            line-height: 1.5;
+        }
+
         .phase-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -395,6 +402,15 @@
                     الجولة {{ data.gameweek }} - {{ data.total_managers }} مدرب
                     {% if data.is_live %}<span class="live-badge">مباشر</span>{% endif %}
                 </p>
+                {% if data.cohort_is_partial %}
+                {# During a live GW only the top N are recalculated from picks;
+                   the rest carry FPL's lagging figures. Say which set these
+                   numbers describe rather than implying all {{ data.league_size }}. #}
+                <p class="cohort-note">
+                    الإحصائيات محسوبة على أفضل {{ data.cohort_size }} مدرب من أصل {{ data.league_size }}
+                    خلال الجولة المباشرة
+                </p>
+                {% endif %}
             </div>
             
             <div class="stats-grid">
