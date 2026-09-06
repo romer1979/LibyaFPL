@@ -23,7 +23,7 @@
             margin-top: 0.75rem;
             text-align: center;
             font-size: 0.8rem;
-            color: #8b8b8b;
+            color: var(--text-muted);
         }
 
         /* Column headers stay visible while scrolling a long table. */
@@ -46,84 +46,84 @@
         }
         
         .standings-table th {
-            background: #1a1a1a;
+            background: var(--dark-card);
             padding: 0.75rem 0.5rem;
             text-align: center;
             font-weight: 600;
-            color: #888;
+            color: var(--text-muted);
             font-size: 0.8rem;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid var(--border-mid);
         }
         
         .standings-table td {
             padding: 0.6rem 0.5rem;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border-dark);
             text-align: center;
         }
         
         .standings-table tbody tr:hover {
-            background: #222;
+            background: var(--dark-card-hover);
         }
         
         /* Safe Zone - Qualified / Safe */
         .standings-table tr.safe-zone {
-            background: rgba(74, 222, 128, 0.05);
+            background: rgba(47, 214, 165, 0.05);
         }
         
         .standings-table tr.safe-zone:hover {
-            background: rgba(74, 222, 128, 0.1);
+            background: rgba(47, 214, 165, 0.1);
         }
         
         .standings-table tr.safe-zone .rank {
-            color: #4ade80;
+            color: var(--safe);
         }
         
         /* Winner Zone - Last season champion */
         .standings-table tr.winner-zone {
-            background: rgba(251, 191, 36, 0.1);
+            background: rgba(245, 181, 61, 0.1);
         }
         
         .standings-table tr.winner-zone:hover {
-            background: rgba(251, 191, 36, 0.15);
+            background: rgba(245, 181, 61, 0.15);
         }
         
         .standings-table tr.winner-zone .rank {
-            color: #fbbf24;
+            color: var(--cutoff);
         }
         
         .standings-table tr.winner-zone .manager-cell {
-            color: #fbbf24;
+            color: var(--cutoff);
         }
         
         /* Cutoff Row */
         .standings-table tr.cutoff-row {
-            border-bottom: 3px solid #4ade80;
+            border-bottom: 3px solid var(--safe);
         }
         
         /* Danger Zone */
         .standings-table tr.danger-zone {
-            background: rgba(248, 113, 113, 0.05);
+            background: rgba(255, 39, 64, 0.05);
         }
         
         .standings-table tr.danger-zone:hover {
-            background: rgba(248, 113, 113, 0.1);
+            background: rgba(255, 39, 64, 0.1);
         }
         
         .standings-table tr.danger-zone .rank {
-            color: #f87171;
+            color: var(--danger);
         }
         
         /* Elimination zone (bottom 6) */
         .standings-table tr.elimination-zone {
-            background: rgba(248, 113, 113, 0.15);
+            background: rgba(255, 39, 64, 0.15);
         }
         
         .standings-table tr.elimination-zone:hover {
-            background: rgba(248, 113, 113, 0.2);
+            background: rgba(255, 39, 64, 0.2);
         }
         
         .standings-table tr.elimination-zone .rank {
-            color: #f87171;
+            color: var(--danger);
             font-weight: 800;
         }
         
@@ -151,19 +151,19 @@
         }
         
         .manager-link:hover {
-            color: #60a5fa;
+            color: var(--info);
             text-decoration: underline;
         }
         
         .team-name {
             font-size: 0.75rem;
-            color: #666;
+            color: var(--text-dim);
             display: block;
         }
         
         .team-name-cell {
             font-size: 0.8rem;
-            color: #888;
+            color: var(--text-muted);
             max-width: 150px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -173,28 +173,28 @@
         /* Points */
         .gw-points {
             font-weight: 600;
-            color: #c0c0c0;
+            color: var(--metallic-silver);
         }
         
         .total-points {
             font-weight: 700;
-            color: #e8e8e8;
+            color: var(--accent-silver);
             font-size: 1rem;
         }
         
         /* Captain & Chip */
         .captain {
-            color: #fbbf24;
+            color: var(--cutoff);
             font-size: 0.85rem;
         }
         
         .chip {
             font-size: 0.8rem;
-            color: #888;
+            color: var(--text-muted);
         }
         
         .chip.active {
-            color: #a78bfa;
+            color: var(--mine);
         }
         
         /* Zone indicator */
@@ -207,33 +207,33 @@
         }
         
         .zone-indicator.safe {
-            background: rgba(74, 222, 128, 0.2);
-            color: #4ade80;
+            background: rgba(47, 214, 165, 0.2);
+            color: var(--safe);
         }
         
         .zone-indicator.winner {
-            background: rgba(251, 191, 36, 0.2);
-            color: #fbbf24;
+            background: rgba(245, 181, 61, 0.2);
+            color: var(--cutoff);
         }
         
         .zone-indicator.danger {
-            background: rgba(248, 113, 113, 0.2);
-            color: #f87171;
+            background: rgba(255, 39, 64, 0.2);
+            color: var(--danger);
         }
         
         .zone-indicator.elimination {
-            background: rgba(248, 113, 113, 0.3);
-            color: #f87171;
-            border: 1px solid #f87171;
+            background: rgba(255, 39, 64, 0.3);
+            color: var(--danger);
+            border: 1px solid var(--danger);
         }
         
         /* Search box */
         .search-box {
             padding: 0.75rem 1rem;
-            background: #141414;
-            border: 1px solid #333;
+            background: var(--dark-bg-lighter);
+            border: 1px solid var(--border-mid);
             border-radius: 8px;
-            color: #fff;
+            color: var(--text-light);
             font-size: 0.9rem;
             width: 100%;
             max-width: 300px;
@@ -246,21 +246,21 @@
         }
         
         .search-box::placeholder {
-            color: #666;
+            color: var(--text-dim);
         }
         
         /* Loading */
         .loading {
             text-align: center;
             padding: 3rem;
-            color: #888;
+            color: var(--text-muted);
         }
         
         .loading-spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid #333;
-            border-top-color: #c0c0c0;
+            border: 3px solid var(--border-mid);
+            border-top-color: var(--metallic-silver);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 1rem;
@@ -275,7 +275,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(255, 39, 64, 0.2);
             color: #ef4444;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
@@ -299,9 +299,9 @@
         
         /* Refresh and Stats buttons */
         .refresh-btn {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
+            background: var(--border-dark);
+            border: 1px solid var(--border-mid);
+            color: var(--text-light);
             padding: 0.4rem 0.6rem;
             border-radius: 6px;
             cursor: pointer;
@@ -319,8 +319,8 @@
         }
         
         .stats-btn {
-            background: #2a2a2a;
-            border: 1px solid #444;
+            background: var(--border-dark);
+            border: 1px solid var(--border-mid);
             padding: 0.4rem 0.6rem;
             border-radius: 6px;
             font-size: 1rem;
@@ -336,8 +336,8 @@
         /* Qualification rank badge */
         .qual-rank {
             font-size: 0.7rem;
-            color: #666;
-            background: #222;
+            color: var(--text-dim);
+            background: var(--dark-card-hover);
             padding: 0.1rem 0.4rem;
             border-radius: 4px;
             margin-right: 0.25rem;
@@ -350,9 +350,9 @@
         }
         
         .dropdown-toggle {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
+            background: var(--border-dark);
+            border: 1px solid var(--border-mid);
+            color: var(--text-light);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
             cursor: pointer;
@@ -370,8 +370,8 @@
             position: absolute;
             left: 0;
             top: 100%;
-            background: #1a1a1a;
-            border: 1px solid #333;
+            background: var(--dark-card);
+            border: 1px solid var(--border-mid);
             border-radius: 8px;
             min-width: 280px;
             z-index: 100;
@@ -400,7 +400,7 @@
         }
         
         .player-item:hover {
-            background: #2a2a2a;
+            background: var(--border-dark);
         }
         
         .player-name {
@@ -429,9 +429,9 @@
         
         .player-played {
             background: rgba(156, 163, 175, 0.1);
-            border-right: 3px solid #9ca3af;
+            border-right: 3px solid var(--text-muted);
         }
-        .player-played .player-points { color: #9ca3af; }
+        .player-played .player-points { color: var(--text-muted); }
         
         .player-pending {
             background: rgba(168, 85, 247, 0.1);
@@ -440,10 +440,10 @@
         .player-pending .player-points { color: #a855f7; }
         
         .player-benched {
-            background: rgba(248, 113, 113, 0.1);
-            border-right: 3px solid #f87171;
+            background: rgba(255, 39, 64, 0.1);
+            border-right: 3px solid var(--danger);
         }
-        .player-benched .player-points { color: #f87171; }
+        .player-benched .player-points { color: var(--danger); }
         
         .player-bench-unused {
             background: rgba(75, 85, 99, 0.2);
@@ -459,12 +459,12 @@
         .player-auto-sub .player-points { color: #22c55e; }
         
         .captain-badge {
-            background: #fbbf24;
+            background: var(--cutoff);
             color: #000;
         }
         
         .vice-badge {
-            background: #60a5fa;
+            background: var(--info);
             color: #000;
         }
         
@@ -475,18 +475,18 @@
         
         .sub-out-badge {
             background: #ef4444;
-            color: #fff;
+            color: var(--text-light);
         }
         
         .separator {
-            border-top: 1px dashed #444;
+            border-top: 1px dashed var(--border-mid);
             margin: 0.5rem 0;
             padding-top: 0.25rem;
         }
         
         .separator-label {
             font-size: 0.7rem;
-            color: #666;
+            color: var(--text-dim);
             text-align: center;
             margin-bottom: 0.25rem;
         }
@@ -497,7 +497,7 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             padding: 0.5rem;
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--border-mid);
             margin-top: 0.5rem;
             font-size: 0.65rem;
         }
@@ -521,7 +521,7 @@
         }
         
         .clickable-row:hover {
-            background: #333 !important;
+            background: var(--border-mid) !important;
         }
         
         /* Expandable player details row */
@@ -539,8 +539,8 @@
         
         .player-details-content {
             padding: 1rem;
-            border-top: 1px solid #333;
-            border-bottom: 2px solid #444;
+            border-top: 1px solid var(--border-mid);
+            border-bottom: 2px solid var(--border-mid);
         }
         
         .players-grid {
@@ -550,7 +550,7 @@
         }
         
         .players-section {
-            background: #1a1a1a;
+            background: var(--dark-card);
             border-radius: 8px;
             padding: 0.75rem;
         }
@@ -558,10 +558,10 @@
         .players-section-title {
             font-size: 0.75rem;
             font-weight: 600;
-            color: #888;
+            color: var(--text-muted);
             margin-bottom: 0.5rem;
             padding-bottom: 0.25rem;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border-mid);
         }
         
         .bench-section {
@@ -597,9 +597,9 @@
         
         .player-row.player-played {
             background: rgba(156, 163, 175, 0.1);
-            border-right: 3px solid #9ca3af;
+            border-right: 3px solid var(--text-muted);
         }
-        .player-row.player-played .player-points { color: #9ca3af; }
+        .player-row.player-played .player-points { color: var(--text-muted); }
         
         .player-row.player-pending {
             background: rgba(168, 85, 247, 0.1);
@@ -608,10 +608,10 @@
         .player-row.player-pending .player-points { color: #a855f7; }
         
         .player-row.player-benched {
-            background: rgba(248, 113, 113, 0.1);
-            border-right: 3px solid #f87171;
+            background: rgba(255, 39, 64, 0.1);
+            border-right: 3px solid var(--danger);
         }
-        .player-row.player-benched .player-points { color: #f87171; }
+        .player-row.player-benched .player-points { color: var(--danger); }
         
         .player-row.player-bench-unused {
             background: rgba(75, 85, 99, 0.2);
@@ -633,9 +633,9 @@
             gap: 0.75rem;
             margin-top: 0.75rem;
             padding-top: 0.75rem;
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--border-mid);
             font-size: 0.7rem;
-            color: #888;
+            color: var(--text-muted);
         }
         
         .players-legend .legend-item {
@@ -651,14 +651,14 @@
         }
         
         .legend-dot.playing { background: #3b82f6; }
-        .legend-dot.played { background: #9ca3af; }
+        .legend-dot.played { background: var(--text-muted); }
         .legend-dot.pending { background: #a855f7; }
         .legend-dot.sub-in { background: #22c55e; }
-        .legend-dot.benched { background: #f87171; }
+        .legend-dot.benched { background: var(--danger); }
         
         .no-players {
             text-align: center;
-            color: #666;
+            color: var(--text-dim);
             padding: 1rem;
         }
         
@@ -703,8 +703,8 @@
         /* Championship bracket                         */
         /* ============================================ */
         .champion-banner {
-            background: linear-gradient(90deg, #fbbf24, #f59e0b);
-            color: #1a1a1a;
+            background: linear-gradient(90deg, var(--cutoff), #f59e0b);
+            color: var(--dark-card);
             padding: 0.9rem 1rem;
             border-radius: 10px;
             font-weight: 700;
@@ -740,8 +740,8 @@
         }
 
         .round-header {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            background: var(--dark-card);
+            border: 1px solid var(--border-dark);
             border-radius: 8px;
             padding: 0.4rem 0.6rem;
             margin-bottom: 0.5rem;
@@ -751,20 +751,20 @@
             font-size: 0.8rem;
         }
 
-        .round-title { font-weight: 700; color: #fff; }
-        .round-gw { color: #888; font-size: 0.7rem; }
+        .round-title { font-weight: 700; color: var(--text-light); }
+        .round-gw { color: var(--text-muted); font-size: 0.7rem; }
 
         .match-card {
-            background: #141414;
-            border: 1px solid #2a2a2a;
+            background: var(--dark-bg-lighter);
+            border: 1px solid var(--border-dark);
             border-radius: 8px;
             overflow: hidden;
             transition: border-color 0.15s;
         }
 
         .match-card.current {
-            border-color: #4ade80;
-            box-shadow: 0 0 0 1px #4ade80 inset;
+            border-color: var(--safe);
+            box-shadow: 0 0 0 1px var(--safe) inset;
         }
 
         .match-card.complete { border-color: #3a3a3a; }
@@ -789,7 +789,7 @@
             height: 1.55rem;
             border-radius: 50%;
             background: #1f2937;
-            color: #9ca3af;
+            color: var(--text-muted);
             font-size: 0.7rem;
             font-weight: 700;
             flex-shrink: 0;
@@ -806,40 +806,40 @@
         }
         .match-row .team-name {
             font-size: 0.7rem;
-            color: #888;
+            color: var(--text-muted);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         .match-row .pts {
             font-weight: 700;
-            color: #4ade80;
+            color: var(--safe);
             min-width: 2rem;
             text-align: center;
             font-size: 0.95rem;
         }
 
-        .match-row.winner { background: rgba(74, 222, 128, 0.08); }
+        .match-row.winner { background: rgba(47, 214, 165, 0.08); }
         .match-row.winner .mgr-name,
-        .match-row.winner .seed { color: #4ade80; }
-        .match-row.winner .seed { background: rgba(74, 222, 128, 0.2); }
+        .match-row.winner .seed { color: var(--safe); }
+        .match-row.winner .seed { background: rgba(47, 214, 165, 0.2); }
         .match-row.loser { opacity: 0.5; }
-        .match-row.loser .pts { color: #888; }
+        .match-row.loser .pts { color: var(--text-muted); }
 
         .placeholder-text {
-            color: #666;
+            color: var(--text-dim);
             font-style: italic;
             font-size: 0.8rem;
         }
 
-        .match-row.leading { background: rgba(74, 222, 128, 0.12); }
-        .match-row.leading .mgr-name { color: #fff; font-weight: 700; }
+        .match-row.leading { background: rgba(47, 214, 165, 0.12); }
+        .match-row.leading .mgr-name { color: var(--text-light); font-weight: 700; }
 
         /* H2H expandable detail */
         .match-detail {
-            border-top: 1px solid #2a2a2a;
+            border-top: 1px solid var(--border-dark);
             padding: 0.6rem;
-            background: #0f0f0f;
+            background: var(--dark-bg);
         }
 
         .detail-header {
@@ -865,11 +865,11 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .detail-vs { color: #888; font-size: 0.75rem; padding: 0 0.25rem; }
+        .detail-vs { color: var(--text-muted); font-size: 0.75rem; padding: 0 0.25rem; }
 
         .chip-badge {
             background: #1d4ed8;
-            color: #fff;
+            color: var(--text-light);
             padding: 0.08rem 0.4rem;
             border-radius: 999px;
             font-size: 0.65rem;
@@ -878,7 +878,7 @@
         }
         .hit-badge {
             background: #dc2626;
-            color: #fff;
+            color: var(--text-light);
             padding: 0.08rem 0.4rem;
             border-radius: 999px;
             font-size: 0.65rem;
@@ -926,19 +926,19 @@
         }
 
         .p-row.diff { border-right-color: #f59e0b; background: rgba(245, 158, 11, 0.08); }
-        .p-row.cap { border-right-color: #fbbf24; }
-        .p-row.cap .p-name { color: #fbbf24; font-weight: 600; }
+        .p-row.cap { border-right-color: var(--cutoff); }
+        .p-row.cap .p-name { color: var(--cutoff); font-weight: 600; }
         .p-row.bench { opacity: 0.55; font-size: 0.72rem; }
-        .p-row.bench .p-pts { color: #888; }
+        .p-row.bench .p-pts { color: var(--text-muted); }
 
         .bench-label {
             margin-top: 0.35rem;
             padding: 0.15rem 0.4rem;
             font-size: 0.65rem;
-            color: #666;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            border-top: 1px dashed #2a2a2a;
+            border-top: 1px dashed var(--border-dark);
             padding-top: 0.3rem;
         }
 
@@ -1038,9 +1038,16 @@
                     </div>
                 </div>
                 <div class="section-content">
+                    {# Survival panel: answers "am I still in?" before the table.
+                       Built client-side from the same index the search uses, so it
+                       needs no extra request and no backend change. #}
+                    {% if data.phase == 'qualification' and data.standings %}
+                    <div class="survival-panel" id="survivalPanel"></div>
+                    {% endif %}
+
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                         <input type="text" class="search-box" id="searchBoxQual" placeholder="🔍 ابحث عن مدرب أو فريق..." oninput="filterTable('qualification')">
-                        <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
+                        <span style="color: var(--text-muted); font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
                     </div>
                     
                     {% if data.phase == 'qualification' and data.standings %}
@@ -1049,7 +1056,10 @@
                        503px scroll box holding 36,000px of content — 72 screens of
                        nested scrolling on a phone. Search still covers everyone via
                        the compact index below, so nobody becomes unreachable. #}
-                    {% set visible_count = 100 %}
+                    {# 150 rather than 100: showing 51 places past the cutoff puts the
+                       qualification line inside the view, so the people closest to
+                       missing out can see where they stand against it. #}
+                    {% set visible_count = 150 %}
                     <div class="standings-container">
                         <table class="standings-table" id="standingsTableQual">
                             <thead>
@@ -1494,20 +1504,201 @@
         function qualRowHtml(r) {
             const [rank, manager, team, gw, total, winner] = r;
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-            const cls = winner ? 'winner-zone' : (rank <= 99 ? 'safe-zone' : 'danger-zone');
-            const esc = s => String(s).replace(/[&<>"]/g, c =>
-                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            const me = loadMe();
+            const isMine = me && String(manager) === me.manager && String(team) === me.team;
+
+            let cls = winner ? 'winner-zone' : (rank <= CUTOFF_RANK ? 'safe-zone' : 'danger-zone');
+            if (rank === CUTOFF_RANK && !winner) cls += ' cutoff-row';
+            if (isMine) cls += ' row-mine';
+
+            // In identify mode every row is a target, so picking yourself is a
+            // single tap on the row you already searched for.
+            const pick = IDENTIFY_MODE
+                ? ` style="cursor:pointer" onclick="pickMe(${JSON.stringify(String(manager))
+                      .replace(/"/g,'&quot;')}, ${JSON.stringify(String(team)).replace(/"/g,'&quot;')})"`
+                : '';
+
             return `<tr class="${cls}" data-manager="${esc(String(manager).toLowerCase())}" ` +
-                   `data-team="${esc(String(team).toLowerCase())}">` +
+                   `data-team="${esc(String(team).toLowerCase())}"${pick}>` +
                    `<td class="rank">${medal}</td>` +
-                   `<td class="manager-cell">${esc(manager)}${winner ? ' 🏆' : ''}</td>` +
+                   `<td class="manager-cell">${esc(manager)}${winner ? ' 🏆' : ''}` +
+                   `${isMine ? '<span class="you-tag">أنت</span>' : ''}</td>` +
                    `<td class="team-name-cell">${esc(team)}</td>` +
                    `<td class="gw-points">${gw}</td>` +
                    `<td class="total-points">${total}</td></tr>`;
         }
 
-        // Rows rendered by the server, kept so clearing the box restores them.
-        let QUAL_DEFAULT_HTML = null;
+        // A labelled divider after the last qualifying place, so the line the
+        // whole competition turns on is visible rather than implied by colour.
+        function cutoffMarkerHtml() {
+            return `<tr class="cutoff-marker"><td colspan="5">` +
+                   `▲ حد التأهل — المراكز 1-${CUTOFF_RANK} تتأهل ▲</td></tr>`;
+        }
+
+        const QUAL_VISIBLE = {{ 150 if data.phase == 'qualification' else 0 }};
+        const QUAL_NOTE_DEFAULT = QUAL_INDEX
+            ? `عرض أفضل ${Math.min(QUAL_VISIBLE, QUAL_INDEX.length)} من ${QUAL_INDEX.length} — استخدم البحث للعثور على أي مدرب`
+            : '';
+
+        /* The default table view. Built client-side from the same index the
+           search uses, so one code path produces the marking, the cutoff
+           divider and your pinned row in every state. The server-rendered rows
+           remain the no-JS fallback. */
+        function defaultQualRowsHtml() {
+            if (!QUAL_INDEX) return '';
+            const top = QUAL_INDEX.slice(0, QUAL_VISIBLE);
+            let html = '';
+
+            // If you sit outside the rendered range, pin your row above the
+            // table — otherwise the page cannot answer "where am I" without
+            // a search, which defeats the point of remembering you.
+            const mine = findMyRow();
+            if (mine && mine[0] > QUAL_VISIBLE) {
+                html += qualRowHtml(mine) +
+                    `<tr class="cutoff-marker"><td colspan="5">` +
+                    `صفك أعلاه — يليه أفضل ${QUAL_VISIBLE}</td></tr>`;
+            }
+
+            top.forEach(r => {
+                html += qualRowHtml(r);
+                if (r[0] === CUTOFF_RANK) html += cutoffMarkerHtml();
+            });
+            return html;
+        }
+
+        /* ==================================================================
+           "Find me" + survival status.
+
+           With 899 members the single most useful thing the page can do is
+           tell one person where they stand. The identity is stored in
+           localStorage only — no accounts, nothing sent anywhere — and every
+           read is wrapped, because storage throws outright in some privacy
+           modes rather than merely returning null.
+           ================================================================== */
+
+        const ME_KEY = 'the100.me.v1';
+        const CUTOFF_RANK = 99;   // top 99 qualify; the champion takes the 100th place
+
+        function loadMe() {
+            try {
+                const raw = localStorage.getItem(ME_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
+        function saveMe(entry) {
+            try { localStorage.setItem(ME_KEY, JSON.stringify(entry)); } catch (e) {}
+        }
+
+        function clearMe() {
+            try { localStorage.removeItem(ME_KEY); } catch (e) {}
+            renderSurvival();
+            filterTable('qualification');
+        }
+
+        // Identity is matched on manager+team text rather than a row index,
+        // because ranks move every week.
+        function findMyRow() {
+            const me = loadMe();
+            if (!me || !QUAL_INDEX) return null;
+            return QUAL_INDEX.find(r =>
+                String(r[1]) === me.manager && String(r[2]) === me.team) || null;
+        }
+
+        function esc(s) {
+            return String(s).replace(/[&<>"]/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        }
+
+        function renderSurvival() {
+            const panel = document.getElementById('survivalPanel');
+            if (!panel || !QUAL_INDEX || !QUAL_INDEX.length) return;
+
+            const mine = findMyRow();
+
+            if (!mine) {
+                panel.className = 'survival-panel';
+                panel.innerHTML =
+                    `<div class="survival-cta">
+                       <p>اعرف موقعك من حد التأهل مباشرة — اختر فريقك مرة واحدة وسيتذكره الموقع.</p>
+                       <button class="btn-identify" onclick="startIdentify()">حدّد فريقي</button>
+                     </div>`;
+                return;
+            }
+
+            const [rank, manager, team, gw, total] = mine;
+            const safe = rank <= CUTOFF_RANK;
+
+            // The cutoff row is the last qualifying place; the gap is measured
+            // against it in points, which is what people actually plan around.
+            const cutoffRow = QUAL_INDEX[CUTOFF_RANK - 1];
+            const cutoffTotal = cutoffRow ? cutoffRow[4] : null;
+            const gap = cutoffTotal === null ? null : Math.abs(total - cutoffTotal);
+
+            panel.className = 'survival-panel' + (safe ? ' is-safe' : '');
+            panel.innerHTML =
+                `<div class="survival-head">
+                   <div class="survival-who">
+                     <div class="survival-name">${esc(manager)}</div>
+                     <div class="survival-team">${esc(team)}</div>
+                   </div>
+                   <span class="survival-status ${safe ? 'safe' : 'danger'}">
+                     ${safe ? '✓ داخل التأهل' : '✕ خارج التأهل'}
+                   </span>
+                 </div>
+                 <div class="survival-metrics">
+                   <div class="survival-metric">
+                     <div class="survival-value ${safe ? 'accent-safe' : 'accent-danger'}">${rank}</div>
+                     <div class="survival-label">ترتيبك من ${QUAL_INDEX.length}</div>
+                   </div>
+                   <div class="survival-metric">
+                     <div class="survival-value ${safe ? '' : 'accent-danger'}">${gap === null ? '—' : gap}</div>
+                     <div class="survival-label">${safe ? 'نقطة فوق حد التأهل' : 'نقطة تحتاجها للتأهل'}</div>
+                   </div>
+                   <div class="survival-metric">
+                     <div class="survival-value accent-cutoff">${cutoffTotal === null ? '—' : cutoffTotal}</div>
+                     <div class="survival-label">حد التأهل (المركز ${CUTOFF_RANK})</div>
+                   </div>
+                 </div>
+                 <div style="margin-top:0.75rem; display:flex; justify-content:flex-end;">
+                   <button class="btn-clear-me" onclick="clearMe()">ليس أنا</button>
+                 </div>`;
+        }
+
+        // Identify by typing into the existing search box, then picking a row —
+        // reuses the search people already understand instead of adding a modal.
+        let IDENTIFY_MODE = false;
+
+        function startIdentify() {
+            IDENTIFY_MODE = true;
+            const box = document.getElementById('searchBoxQual');
+            const panel = document.getElementById('survivalPanel');
+            if (panel) {
+                panel.className = 'survival-panel';
+                panel.innerHTML =
+                    `<div class="survival-cta">
+                       <p><strong>ابحث باسمك أو اسم فريقك بالأسفل، ثم اضغط على صفك في الجدول.</strong></p>
+                       <button class="btn-clear-me" onclick="cancelIdentify()">إلغاء</button>
+                     </div>`;
+            }
+            if (box) { box.focus(); box.scrollIntoView({block: 'center'}); }
+        }
+
+        function cancelIdentify() {
+            IDENTIFY_MODE = false;
+            renderSurvival();
+        }
+
+        function pickMe(manager, team) {
+            saveMe({manager: manager, team: team});
+            IDENTIFY_MODE = false;
+            const box = document.getElementById('searchBoxQual');
+            if (box) box.value = '';
+            renderSurvival();
+            filterTable('qualification');
+            const panel = document.getElementById('survivalPanel');
+            if (panel) panel.scrollIntoView({block: 'center', behavior: 'smooth'});
+        }
 
         function filterTable(phase) {
             const targets = {
@@ -1527,11 +1718,13 @@
             if (phase === 'qualification' && QUAL_INDEX) {
                 const tbody = table.querySelector('tbody');
                 const note = document.getElementById('qualFootnote');
-                if (QUAL_DEFAULT_HTML === null) QUAL_DEFAULT_HTML = tbody.innerHTML;
 
                 if (!term) {
-                    tbody.innerHTML = QUAL_DEFAULT_HTML;
-                    if (note) note.style.display = '';
+                    tbody.innerHTML = defaultQualRowsHtml();
+                    if (note) {
+                        note.style.display = '';
+                        note.textContent = QUAL_NOTE_DEFAULT;
+                    }
                     return;
                 }
 
@@ -1543,10 +1736,12 @@
                     ? hits.map(qualRowHtml).join('')
                     : `<tr class="no-results-row"><td colspan="5" ` +
                       `style="text-align:center; padding:18px; opacity:0.7;">` +
-                      `لا توجد نتائج لـ "${box.value.trim().replace(/</g,'&lt;')}"</td></tr>`;
+                      `لا توجد نتائج لـ "${esc(box.value.trim())}"</td></tr>`;
                 if (note) {
                     note.style.display = '';
-                    note.textContent = `${hits.length} نتيجة من ${QUAL_INDEX.length}`;
+                    note.textContent = IDENTIFY_MODE
+                        ? `اضغط على صفك — ${hits.length} نتيجة`
+                        : `${hits.length} نتيجة من ${QUAL_INDEX.length}`;
                 }
                 return;
             }
@@ -1631,6 +1826,20 @@
             location.reload();
         }, 60000);
         {% endif %}
+
+        // Draw the survival panel and re-render the table through the client
+        // path, which adds the cutoff divider, your highlight and your pinned
+        // row. Guarded so a failure here can never blank the standings.
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                if (!QUAL_INDEX) return;
+                renderSurvival();
+                const box = document.getElementById('searchBoxQual');
+                if (box && !box.value) filterTable('qualification');
+            } catch (e) {
+                console.error('The 100 init failed; server-rendered rows kept', e);
+            }
+        });
     </script>
 </body>
 </html>

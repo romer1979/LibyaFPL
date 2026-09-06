@@ -1,19 +1,63 @@
-/* The 100 League - Dark Theme */
+/* The 100 — "The Survival Challenge"
+ *
+ * Deliberately harsher than the rest of the app. This is the one competition
+ * where people get knocked out, so elimination red is the signature colour and
+ * everything else is kept quiet enough for it to carry weight: surfaces are
+ * near-black, "safe" is a cool understated teal rather than a bright green
+ * competing for attention, and the qualification cutoff gets its own amber.
+ *
+ * These tokens are the single source of truth for all three The 100 pages.
+ */
 
 :root {
-    --dark-bg: #0a0a0a;
-    --dark-bg-lighter: #141414;
-    --dark-card: #1a1a1a;
-    --dark-card-hover: #222222;
-    --metallic-silver: #c0c0c0;
-    --metallic-dark: #3a3a3a;
-    --accent-silver: #e8e8e8;
-    --text-light: #ffffff;
-    --text-muted: #888888;
-    --success: #4ade80;
-    --danger: #f87171;
-    --warning: #fbbf24;
-    --border-dark: #2a2a2a;
+    /* Ground and surfaces — deeper and cooler than the app's other dark pages */
+    --dark-bg: #08080b;
+    --dark-bg-lighter: #0f0f14;
+    --dark-card: #14141a;
+    --dark-card-hover: #1c1c24;
+    --surface-raised: #1f1f28;
+    --border-dark: #24242e;
+    --border-mid: #33333f;
+
+    /* Type */
+    --text-light: #f4f4f7;
+    --text-muted: #8b8b98;
+    --text-dim: #61616e;
+    --metallic-silver: #c8c8d2;
+    --metallic-dark: #3a3a46;
+    --accent-silver: #e8e8ee;
+
+    /* Signature: elimination red. Reserved for danger and for the league's
+       own identity — headings, the active phase, the elimination zone. */
+    --signature: #ff2740;
+    --signature-soft: rgba(255, 39, 64, 0.14);
+    --signature-line: rgba(255, 39, 64, 0.45);
+    --danger: #ff2740;
+
+    /* Safe: intentionally recessive so red stays the loudest thing on screen */
+    --safe: #2fd6a5;
+    --safe-soft: rgba(47, 214, 165, 0.10);
+    --success: #2fd6a5;
+
+    /* The qualification line itself */
+    --cutoff: #f5b53d;
+    --cutoff-soft: rgba(245, 181, 61, 0.12);
+    --warning: #f5b53d;
+
+    --info: #5aa8ff;
+
+    /* Your own row */
+    --mine: #a78bfa;
+    --mine-soft: rgba(167, 139, 250, 0.14);
+}
+
+/* Tabular numerals everywhere numbers are compared down a column. */
+.standings-table td,
+.standings-table th,
+.stat-value,
+.survival-value {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
 }
 
 * {
@@ -281,11 +325,11 @@ body {
 
 /* Danger Zone */
 .danger-zone {
-    background: linear-gradient(90deg, rgba(248, 113, 113, 0.1) 0%, transparent 100%);
+    background: linear-gradient(90deg, rgba(255, 39, 64, 0.1) 0%, transparent 100%);
 }
 
 .danger-zone td {
-    border-color: rgba(248, 113, 113, 0.2);
+    border-color: rgba(255, 39, 64, 0.2);
 }
 
 /* Eliminated */
@@ -342,7 +386,7 @@ body {
 }
 
 .bracket-team.winner {
-    background: linear-gradient(90deg, rgba(74, 222, 128, 0.1) 0%, transparent 100%);
+    background: linear-gradient(90deg, rgba(47, 214, 165, 0.1) 0%, transparent 100%);
     color: var(--success);
 }
 
@@ -462,4 +506,199 @@ body {
         width: 100%;
         max-width: 300px;
     }
+}
+
+/* ==========================================================================
+   Survival panel — the lead element on the qualification page.
+   People open this page to answer one question: am I still in? Everything
+   here serves that, and the answer is stated before any table.
+   ========================================================================== */
+
+.survival-panel {
+    position: relative;
+    background:
+        linear-gradient(135deg, var(--signature-soft) 0%, transparent 55%),
+        var(--dark-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+/* A hairline in the signature colour, so the panel reads as part of this
+   competition's identity rather than a generic card. */
+.survival-panel::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--signature);
+}
+
+.survival-panel.is-safe::before { background: var(--safe); }
+.survival-panel.is-safe {
+    background: linear-gradient(135deg, var(--safe-soft) 0%, transparent 55%), var(--dark-card);
+}
+
+.survival-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.survival-who { min-width: 0; }
+
+.survival-name {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.survival-team {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.survival-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.survival-status.safe   { background: var(--safe-soft);      color: var(--safe);   border: 1px solid var(--safe); }
+.survival-status.danger { background: var(--signature-soft); color: var(--signature); border: 1px solid var(--signature); }
+
+.survival-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.survival-metric {
+    background: var(--dark-bg);
+    border: 1px solid var(--border-dark);
+    border-radius: 10px;
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+}
+
+.survival-value {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--text-light);
+}
+
+.survival-value.accent-danger { color: var(--signature); }
+.survival-value.accent-safe   { color: var(--safe); }
+.survival-value.accent-cutoff { color: var(--cutoff); }
+
+.survival-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+    line-height: 1.35;
+}
+
+/* Unidentified state: a single clear call to action rather than empty metrics */
+.survival-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.survival-cta p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.btn-identify,
+.btn-clear-me {
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-identify {
+    background: var(--signature);
+    color: #fff;
+    border: none;
+}
+
+.btn-identify:hover { filter: brightness(1.12); }
+
+.btn-clear-me {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-mid);
+}
+
+.btn-clear-me:hover { color: var(--text-light); border-color: var(--text-muted); }
+
+/* Your own row, wherever it appears in the table */
+.standings-table tr.row-mine > td {
+    background: var(--mine-soft);
+    box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.35);
+}
+
+.you-tag {
+    display: inline-block;
+    margin-inline-start: 0.35rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    background: var(--mine);
+    color: #14141a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.5;
+    vertical-align: middle;
+}
+
+/* The qualification line. The old 3px green underline read as decoration;
+   a labelled amber divider says what the line actually is. */
+.standings-table tr.cutoff-row > td {
+    border-bottom: 2px solid var(--cutoff) !important;
+    box-shadow: 0 1px 0 var(--cutoff-soft);
+}
+
+.cutoff-marker td {
+    padding: 0.3rem 0.5rem !important;
+    background: var(--cutoff-soft);
+    color: var(--cutoff);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.03em;
+}
+
+@media (max-width: 480px) {
+    .survival-metrics { grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
+    .survival-value { font-size: 1.2rem; }
+    .survival-label { font-size: 0.62rem; }
+    .survival-panel { padding: 1rem; }
 }
