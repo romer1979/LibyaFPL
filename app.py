@@ -7,6 +7,8 @@ from flask import Flask, render_template, jsonify, request
 import os
 import sys
 import threading
+import hmac
+from functools import wraps
 import requests as http_requests
 from datetime import datetime
 
@@ -49,6 +51,31 @@ with app.app_context():
 def home():
     """Home page showing all leagues - simple links only"""
     return render_template('home.html')
+
+
+def admin_required(view):
+    """Gate a state-changing admin route behind ADMIN_TOKEN.
+
+    These routes write permanent records — process-elimination in particular
+    stamps eliminated_gw onto manager rows, which cannot be undone from the
+    UI — so they must not be reachable by anyone who guesses the URL.
+
+    Fails closed: with ADMIN_TOKEN unset the route is disabled outright,
+    rather than silently open.
+    """
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        expected = os.environ.get('ADMIN_TOKEN', '')
+        if not expected:
+            return jsonify({
+                'status': 'disabled',
+                'message': 'ADMIN_TOKEN is not configured; admin routes are disabled.'
+            }), 503
+        supplied = request.args.get('token', '') or request.headers.get('X-Admin-Token', '')
+        if not hmac.compare_digest(supplied, expected):
+            return jsonify({'status': 'forbidden', 'message': 'Invalid or missing token.'}), 403
+        return view(*args, **kwargs)
+    return wrapped
 
 
 # Guard to prevent concurrent elite backfill.
@@ -489,6 +516,15 @@ def elite_stats():
 def the100_dashboard():
     """The 100 League dashboard"""
     data = get_the100_standings()
+    # Record any settled elimination GW that hasn't been processed yet, so the
+    # phase advances on its own rather than depending on someone remembering
+    # to hit an admin URL every week.
+    try:
+        gw = data.get('gameweek')
+        if gw:
+            auto_process_the100_eliminations(gw)
+    except Exception as e:
+        print(f"[the100] auto-elimination skipped: {e}")
     return render_template('the100_dashboard.html', data=data)
 
 
@@ -585,6 +621,7 @@ def server_error(e):
 
 
 @app.route('/admin/the100/init-qualified')
+@admin_required
 def init_the100_qualified():
     """Initialize the 100 qualified managers after GW19 - run once"""
     from models import The100QualifiedManager, save_the100_qualified_managers
@@ -670,42 +707,51 @@ def init_the100_qualified():
         return jsonify({'status': 'error', 'message': 'Failed to save to database'})
 
 
-@app.route('/admin/the100/process-elimination/<int:gameweek>')
-def process_the100_elimination(gameweek):
-    """Process elimination for a specific gameweek"""
+_the100_elim_lock = threading.Lock()
+
+
+def run_the100_elimination(gameweek, force=False):
+    """Eliminate the bottom N for one gameweek. Returns a (payload, status) pair.
+
+    Elimination is irreversible — it stamps eliminated_gw onto manager rows —
+    so by default this refuses to run until the gameweek is genuinely settled.
+    get_elimination_standings() already reports that as gw_finished_for_save
+    (all fixtures done plus the post-finish buffer); it was previously computed
+    and ignored, which meant running this mid-gameweek would permanently
+    eliminate whoever happened to be bottom at that moment.
+
+    force=True overrides the settled check, for the rare case where the buffer
+    logic is wrong and the organiser has confirmed the result by hand.
+    """
     from models import (
         The100QualifiedManager, The100EliminationResult,
         save_the100_elimination
     )
     from core.the100 import (
-        get_elimination_standings, ELIMINATION_START_GW, 
+        get_elimination_standings, ELIMINATION_START_GW,
         ELIMINATION_END_GW, ELIMINATIONS_PER_GW
     )
-    
-    # Validate gameweek
+
     if gameweek < ELIMINATION_START_GW or gameweek > ELIMINATION_END_GW:
-        return jsonify({
+        return {
             'status': 'error',
             'message': f'Invalid gameweek. Elimination phase is GW{ELIMINATION_START_GW}-{ELIMINATION_END_GW}'
-        })
-    
-    # Check if already processed
-    existing = The100EliminationResult.query.filter_by(gameweek=gameweek).first()
-    if existing:
-        count = The100EliminationResult.query.filter_by(gameweek=gameweek).count()
-        return jsonify({
+        }, 400
+
+    existing_count = The100EliminationResult.query.filter_by(gameweek=gameweek).count()
+    if existing_count:
+        return {
             'status': 'already_processed',
-            'message': f'GW{gameweek} elimination already processed ({count} eliminated)'
-        })
-    
-    # Get remaining qualified managers (not yet eliminated)
+            'message': f'GW{gameweek} elimination already processed ({existing_count} eliminated)'
+        }, 200
+
     remaining = The100QualifiedManager.query.filter(
         The100QualifiedManager.eliminated_gw.is_(None)
     ).order_by(The100QualifiedManager.qualification_rank).all()
-    
+
     if not remaining:
-        return jsonify({'status': 'error', 'message': 'No remaining managers found'})
-    
+        return {'status': 'error', 'message': 'No remaining managers found'}, 400
+
     qualified = [{
         'entry_id': m.entry_id,
         'manager_name': m.manager_name,
@@ -714,18 +760,34 @@ def process_the100_elimination(gameweek):
         'qualification_total': m.qualification_total,
         'is_winner': m.is_winner
     } for m in remaining]
-    
-    # Get standings for this gameweek
+
     elim_data = get_elimination_standings(gameweek, qualified)
-    
+
     if not elim_data or not elim_data.get('standings'):
-        return jsonify({'status': 'error', 'message': 'Could not fetch elimination standings'})
-    
+        return {'status': 'error', 'message': 'Could not fetch elimination standings'}, 502
+
+    if not force and not elim_data.get('gw_finished_for_save'):
+        return {
+            'status': 'not_finished',
+            'message': (f'GW{gameweek} is not settled yet (fixtures still running, or '
+                        f'inside the post-finish buffer). Refusing to eliminate on '
+                        f'provisional scores. Re-run once it settles, or pass force=1 '
+                        f'if you have verified the result.')
+        }, 409
+
     standings = elim_data['standings']
-    
-    # Get bottom 6 (to be eliminated)
+
+    if len(standings) <= ELIMINATIONS_PER_GW:
+        return {
+            'status': 'error',
+            'message': (f'Only {len(standings)} manager(s) remain; refusing to '
+                        f'eliminate {ELIMINATIONS_PER_GW}.')
+        }, 400
+
+    # Bottom N. standings is sorted by (-gw_points, qualification_rank), so a
+    # tie on points at the cut line is broken by the better qualification rank.
     eliminated = standings[-ELIMINATIONS_PER_GW:]
-    
+
     eliminated_list = [{
         'entry_id': m['entry_id'],
         'manager_name': m['manager_name'],
@@ -733,19 +795,56 @@ def process_the100_elimination(gameweek):
         'gw_points': m['live_gw_points'],
         'gw_rank': m['live_rank']
     } for m in eliminated]
-    
-    # Save eliminations
-    success = save_the100_elimination(gameweek, eliminated_list)
-    
-    if success:
-        return jsonify({
-            'status': 'success',
-            'message': f'Processed GW{gameweek} elimination',
-            'eliminated': [m['manager_name'] for m in eliminated_list],
-            'remaining_count': len(qualified) - ELIMINATIONS_PER_GW
-        })
-    else:
-        return jsonify({'status': 'error', 'message': 'Failed to save eliminations'})
+
+    if not save_the100_elimination(gameweek, eliminated_list):
+        return {'status': 'error', 'message': 'Failed to save eliminations'}, 500
+
+    print(f"[the100] GW{gameweek} elimination processed: "
+          f"{[m['manager_name'] for m in eliminated_list]}")
+    return {
+        'status': 'success',
+        'message': f'Processed GW{gameweek} elimination',
+        'eliminated': [m['manager_name'] for m in eliminated_list],
+        'remaining_count': len(qualified) - ELIMINATIONS_PER_GW
+    }, 200
+
+
+@app.route('/admin/the100/process-elimination/<int:gameweek>')
+@admin_required
+def process_the100_elimination(gameweek):
+    """Manually process elimination for a specific gameweek."""
+    force = request.args.get('force', '') in ('1', 'true', 'yes')
+    payload, status = run_the100_elimination(gameweek, force=force)
+    return jsonify(payload), status
+
+
+def auto_process_the100_eliminations(current_gw):
+    """Process any settled elimination gameweek that hasn't been recorded yet.
+
+    Called on The 100 page loads so the organiser doesn't have to remember to
+    hit an admin URL fourteen weeks running. Missing even one week breaks the
+    arithmetic the bracket depends on: 14 gameweeks x 6 leaves exactly 16, and
+    generate_the100_bracket() requires exactly 16.
+
+    Never forces — a gameweek that isn't settled is simply left for later.
+    """
+    from core.the100 import ELIMINATION_START_GW, ELIMINATION_END_GW
+
+    if current_gw < ELIMINATION_START_GW:
+        return
+    if not _the100_elim_lock.acquire(blocking=False):
+        return
+    try:
+        last = min(current_gw, ELIMINATION_END_GW)
+        for gw in range(ELIMINATION_START_GW, last + 1):
+            payload, _ = run_the100_elimination(gw)
+            if payload.get('status') == 'not_finished':
+                break  # later gameweeks can't be settled either
+    except Exception as e:
+        print(f"[the100] auto-elimination error: {e}")
+        db.session.rollback()
+    finally:
+        _the100_elim_lock.release()
 
 
 @app.route('/api/the100')
