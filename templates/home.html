@@ -3,359 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دوريات قروب عشاق الفانتازي في ليبيا</title>
+    <meta name="theme-color" content="#101310">
+    <meta name="description" content="دوريات عشاق الفانتازي في ليبيا. تابع المباريات والترتيب ومنافسات دورياتك المفضلة في مكان واحد.">
+    <title>عشاق الفانتازي في ليبيا | الدوريات</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent-gold: #d4af37;
-            --accent-gold-light: #f4d03f;
+            color-scheme: dark;
+            --bg: #101310;
+            --surface: #191c18;
+            --ink: #f3f2e9;
+            --muted: #b0b5a8;
+            --line: #343a30;
+            --lime: #d6f578;
         }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { box-sizing: border-box; }
         body {
+            margin: 0;
+            background: radial-gradient(ellipse at 85% 0%, #293322 0, transparent 48%), var(--bg);
+            color: var(--ink);
             font-family: 'Cairo', sans-serif;
-            background: #0a0a0a;
+            line-height: 1.65;
             min-height: 100vh;
-            overflow-x: hidden;
         }
-        
-        /* Hero Section */
-        .hero {
-            position: relative;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: linear-gradient(180deg, 
-                #1a0a1f 0%, 
-                #0f0512 50%,
-                #0a0a0a 100%
-            );
+        a { color: inherit; }
+        a:focus-visible { outline: 3px solid var(--lime); outline-offset: 6px; }
+        .shell { width: min(1400px, calc(100% - 96px)); margin-inline: auto; }
+        .skip-link { position: absolute; top: -100px; right: 24px; padding: 12px 20px; background: var(--lime); color: var(--bg); z-index: 3; }
+        .skip-link:focus { top: 12px; }
+        .masthead { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-block: 27px; border-bottom: 1px solid var(--line); }
+        .brand { display: flex; gap: 12px; align-items: center; }
+        .brand-mark { display: grid; place-items: center; width: 42px; height: 46px; background: var(--lime); color: var(--bg); clip-path: polygon(0 0,100% 0,100% 74%,50% 100%,0 74%); font-size: 21px; font-weight: 900; }
+        .brand strong { display: block; font-size: 16px; }
+        .brand small { color: var(--muted); font-size: 11px; letter-spacing: 2px; }
+        .masthead-note { font-size: 12px; color: var(--muted); }
+        .intro { position: relative; padding-block: 64px 52px; }
+        .eyebrow { margin: 0 0 13px; color: var(--lime); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+        h1 { margin: 0; font-size: clamp(36px, 4.5vw, 66px); line-height: 1.4; font-weight: 900; letter-spacing: -2px; }
+        h1 span { color: var(--lime); }
+        .intro-copy { margin: 17px 0 0; max-width: 580px; color: var(--muted); font-size: 15px; }
+        .intro-art { position: absolute; left: 25px; top: 52px; width: 260px; height: 166px; border: 1px solid #556447; border-radius: 90px 0 0 90px; opacity: .45; pointer-events: none; }
+        .intro-art::before { content: ''; position: absolute; left: 44px; top: 30px; width: 102px; height: 102px; border: 1px solid #556447; border-radius: 50%; }
+        .intro-art::after { content: ''; position: absolute; right: 38px; top: 0; height: 100%; border-right: 1px solid #556447; }
+        .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+        h2 { margin: 0; font-size: 19px; font-weight: 800; }
+        .section-heading span { color: var(--muted); font-size: 12px; }
+        .leagues-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+        .league-card { --accent: var(--lime); position: relative; min-width: 0; display: flex; flex-direction: column; text-decoration: none; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transition: transform .22s ease, border-color .22s ease; animation: enter .5s ease both; animation-delay: calc(var(--order) * 65ms); }
+        .league-card:hover { transform: translateY(-6px); border-color: var(--accent); }
+        .league-art { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; background: #111; border-bottom: 1px solid var(--line); }
+        .league-logo { display: block; width: 100%; height: 100%; object-fit: contain; }
+        .card-number { position: absolute; top: 12px; right: 14px; color: #a1a597; font-size: 10px; font-weight: 600; }
+        .card-body { display: flex; flex: 1; flex-direction: column; padding: 20px 17px 16px; }
+        .league-english { margin: 0 0 7px; font-size: 9px; font-weight: 600; letter-spacing: 1.6px; color: var(--accent); text-align: right; }
+        h3 { font-size: clamp(16px, 1.45vw, 21px); line-height: 1.5; margin: 0 0 10px; font-weight: 800; }
+        .league-description { margin: 0 0 22px; font-size: 12px; color: var(--muted); }
+        .card-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; font-size: 12px; font-weight: 700; }
+        .arrow { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #2b3126; color: var(--accent); font-size: 18px; }
+        .league-card:hover .arrow { background: var(--accent); color: #101310; }
+        .closing-note { display: flex; align-items: center; gap: 10px; margin: 26px 0 48px; color: var(--muted); font-size: 12px; }
+        .closing-note::before { content: ''; width: 18px; height: 2px; background: var(--lime); }
+        footer { display: flex; justify-content: space-between; gap: 15px; padding-block: 23px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+        footer p { margin: 0; }
+        @keyframes enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 1100px) {
+            .shell { width: calc(100% - 48px); }
+            .intro-art { width: 180px; left: 0; opacity: .25; }
+            .leagues-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+            .league-card { grid-column: span 2; }
+            .league-card:nth-last-child(-n+2) { grid-column: span 3; }
+            .league-art { height: 210px; aspect-ratio: auto; }
+            h3 { font-size: 20px; }
         }
-        
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(ellipse at 20% 20%, rgba(74, 18, 89, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(74, 18, 89, 0.2) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
-            pointer-events: none;
+        @media (max-width: 640px) {
+            .shell { width: calc(100% - 32px); }
+            .masthead { padding-block: 18px; }
+            .masthead-note, .intro-art { display: none; }
+            .brand strong { font-size: 14px; }
+            .intro { padding-block: 35px 30px; }
+            h1 { font-size: 38px; letter-spacing: -1px; }
+            .intro-copy { font-size: 13px; max-width: 330px; }
+            .section-heading { margin-bottom: 16px; }
+            .section-heading span { font-size: 10px; }
+            .leagues-grid { display: flex; flex-direction: column; gap: 12px; }
+            .league-card { display: grid; grid-template-columns: 112px minmax(0, 1fr); border-radius: 12px; }
+            .league-card:hover { transform: none; }
+            .league-art { height: 100%; min-height: 158px; border-bottom: 0; border-left: 1px solid var(--line); }
+            .league-logo { width: 100%; height: auto; }
+            .card-number { top: 7px; right: 9px; font-size: 9px; }
+            .card-body { padding: 15px 14px 12px; }
+            .league-english { font-size: 8px; letter-spacing: 1px; margin-bottom: 4px; }
+            h3 { font-size: 18px; margin-bottom: 5px; }
+            .league-description { font-size: 11px; margin-bottom: 12px; }
+            .card-action { padding-top: 9px; font-size: 11px; }
+            .arrow { width: 24px; height: 24px; }
+            .closing-note { margin-block: 23px 30px; font-size: 11px; }
+            footer { flex-direction: column; gap: 6px; font-size: 10px; }
         }
-        
-        /* Animated particles */
-        .particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            pointer-events: none;
-        }
-        
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: var(--accent-gold);
-            border-radius: 50%;
-            opacity: 0.3;
-            animation: float 15s infinite;
-        }
-        
-        .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 20s; }
-        .particle:nth-child(2) { left: 20%; animation-delay: 2s; animation-duration: 18s; }
-        .particle:nth-child(3) { left: 30%; animation-delay: 4s; animation-duration: 22s; }
-        .particle:nth-child(4) { left: 40%; animation-delay: 1s; animation-duration: 19s; }
-        .particle:nth-child(5) { left: 50%; animation-delay: 3s; animation-duration: 21s; }
-        .particle:nth-child(6) { left: 60%; animation-delay: 5s; animation-duration: 17s; }
-        .particle:nth-child(7) { left: 70%; animation-delay: 2s; animation-duration: 23s; }
-        .particle:nth-child(8) { left: 80%; animation-delay: 4s; animation-duration: 16s; }
-        .particle:nth-child(9) { left: 90%; animation-delay: 1s; animation-duration: 20s; }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
-            10% { opacity: 0.3; }
-            50% { transform: translateY(50vh) scale(1); opacity: 0.5; }
-            90% { opacity: 0.3; }
-            100% { transform: translateY(-10vh) scale(0); opacity: 0; }
-        }
-        
-        /* Header */
-        .header {
-            position: relative;
-            z-index: 10;
-            padding: 2.5rem 1rem 1.5rem;
-            text-align: center;
-        }
-        
-        .site-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 0.3rem;
-        }
-        
-        .site-subtitle {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.95rem;
-            font-weight: 400;
-        }
-        
-        /* Main Content */
-        .main-content {
-            position: relative;
-            z-index: 10;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem 1rem 3rem;
-        }
-        
-        .leagues-container {
-            width: 100%;
-            max-width: 1000px;
-        }
-        
-        /* League Cards Grid */
-        .leagues-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1.2rem;
-        }
-        
-        /* League Card */
-        .league-card {
-            position: relative;
-            text-decoration: none;
-            display: block;
-            border-radius: 20px;
-            overflow: visible;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            aspect-ratio: 1;
-        }
-        
-        .league-card:hover {
-            transform: translateY(-8px) scale(1.03);
-        }
-        
-        .card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 15%;
-            background: linear-gradient(145deg, #1e1e1e 0%, #141414 100%);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .league-card:hover .card-inner {
-            border-color: rgba(212, 175, 55, 0.4);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(212, 175, 55, 0.1);
-        }
-        
-        .league-logo {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
-            transition: transform 0.4s ease, filter 0.4s ease;
-        }
-        
-        .league-card:hover .league-logo {
-            transform: scale(1.08);
-            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
-        }
-        
-        /* League Name - appears on hover below card */
-        .league-name {
-            position: absolute;
-            bottom: -45px;
-            left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 8px 20px;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            white-space: nowrap;
-            opacity: 0;
-            transition: all 0.3s ease;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        .league-card:hover .league-name {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        
-        /* Footer */
-        .footer {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            padding: 2rem;
-            color: rgba(255, 255, 255, 0.25);
-            font-size: 0.75rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 900px) {
-            .leagues-grid {
-                grid-template-columns: repeat(3, 1fr);
-                max-width: 500px;
-                margin: 0 auto;
-                gap: 1.5rem;
-            }
-            
-            .league-name {
-                bottom: -40px;
-                font-size: 0.85rem;
-                padding: 6px 16px;
-            }
-        }
-        
-        @media (max-width: 550px) {
-            .leagues-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1.2rem;
-                max-width: 320px;
-            }
-            
-            .site-title {
-                font-size: 1.4rem;
-            }
-            
-            .site-subtitle {
-                font-size: 0.85rem;
-            }
-            
-            .league-card {
-                border-radius: 16px;
-            }
-            
-            .card-inner {
-                border-radius: 16px;
-                padding: 18%;
-            }
-            
-            .league-name {
-                bottom: -38px;
-                font-size: 0.8rem;
-                padding: 6px 14px;
-            }
-        }
-        
-        @media (max-width: 380px) {
-            .leagues-grid {
-                gap: 1rem;
-                max-width: 280px;
-            }
-            
-            .card-inner {
-                padding: 20%;
-            }
-            
-            .league-name {
-                bottom: -35px;
-                font-size: 0.75rem;
-                padding: 5px 12px;
-            }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
         }
     </style>
 </head>
 <body>
-    <div class="hero">
-        <!-- Animated particles -->
-        <div class="particles">
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-            <div class="particle"></div>
-        </div>
-        
-        <!-- Header -->
-        <header class="header">
-            <h1 class="site-title">دوريات قروب عشاق الفانتازي في ليبيا</h1>
-            <p class="site-subtitle">اختر الدوري</p>
-        </header>
-        
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="leagues-container">
-                <div class="leagues-grid">
-                    <!-- Elite League -->
-                    <a href="/league/elite" class="league-card">
-                        <div class="card-inner">
-                            <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="دوري النخبة" class="league-logo">
-                        </div>
-                        <span class="league-name">دوري النخبة</span>
-                    </a>
-                    
-                    <!-- The 100 -->
-                    <a href="/league/the100" class="league-card">
-                        <div class="card-inner">
-                            <img src="{{ url_for('static', filename='the100_logo.png') }}" alt="The 100" class="league-logo">
-                        </div>
-                        <span class="league-name">The 100</span>
-                    </a>
-                    
-                    <!-- Cities League -->
-                    <a href="/league/cities" class="league-card">
-                        <div class="card-inner">
-                            <img src="{{ url_for('static', filename='cities_logo.png') }}" alt="دوري المدن" class="league-logo">
-                        </div>
-                        <span class="league-name">دوري المدن</span>
-                    </a>
-                    
-                    <!-- Libyan League -->
-                    <a href="/league/libyan" class="league-card">
-                        <div class="card-inner">
-                            <img src="{{ url_for('static', filename='libyan_logo.png') }}" alt="الدوري الليبي" class="league-logo">
-                        </div>
-                        <span class="league-name">الدوري الليبي</span>
-                    </a>
-                    
-                    <!-- Arab Championship -->
-                    <a href="/league/arab" class="league-card">
-                        <div class="card-inner">
-                            <img src="{{ url_for('static', filename='arab_logo.png') }}" alt="البطولة العربية" class="league-logo">
-                        </div>
-                        <span class="league-name">البطولة العربية</span>
-                    </a>
-                </div>
+    <a class="skip-link" href="#leagues">انتقل إلى الدوريات</a>
+    <div class="shell">
+        <header class="masthead">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">ع</span>
+                <div><strong>عشاق الفانتازي في ليبيا</strong><small lang="en" dir="ltr">LIBYA FANTASY COMMUNITY</small></div>
             </div>
+            <span class="masthead-note">المباريات · الترتيب · المنافسة</span>
+        </header>
+        <main>
+            <section class="intro" aria-labelledby="page-title">
+                <p class="eyebrow">كل الدوريات. في مكان واحد.</p>
+                <h1 id="page-title">شغف واحد.<br><span>خمس منافسات.</span></h1>
+                <p class="intro-copy">اختر دوريك، تابع النتائج والترتيب، وعش تفاصيل المنافسة مع قروب عشاق الفانتازي في ليبيا.</p>
+                <div class="intro-art" aria-hidden="true"></div>
+            </section>
+            <section id="leagues" aria-labelledby="leagues-title">
+                <div class="section-heading"><h2 id="leagues-title">اختر منافستك</h2><span>5 دوريات · شغف بلا حدود</span></div>
+                {% set leagues = [
+                    ('elite', 'دوري النخبة', 'ELITE LEAGUE', 'كل مواجهة تصنع الفارق.', 'elite_league_logo_restored.png', '#dfc28e', true),
+                    ('the100', 'The 100', 'THE SURVIVAL CHALLENGE', 'التأهل. الإقصاء. ثم اللقب.', 'the100_logo_restored.png', '#cbd3db', true),
+                    ('cities', 'دوري المدن', 'CITIES LEAGUE', 'مدينتك في قلب المنافسة.', 'cities_logo_restored.png', '#c6e4a4', false),
+                    ('libyan', 'الدوري الليبي', 'LIBYAN LEAGUE', 'منافسة بطابع ليبي.', 'libyan_logo_restored.png', '#e6cb85', false),
+                    ('arab', 'البطولة العربية', 'ARAB CHAMPIONSHIP', 'شغف يجمعنا على المنافسة.', 'arab_logo_restored.png', '#83d8cb', false)
+                ] %}
+                <div class="leagues-grid">
+                    {% for slug, name, english, description, logo, accent, legacy in leagues %}
+                    <a class="league-card" href="/league/{{ slug }}" aria-labelledby="league-{{ slug }}" style="--accent: {{ accent }}; --order: {{ loop.index0 }};">
+                        <div class="league-art">
+                            <span class="card-number" aria-hidden="true">0{{ loop.index }}</span>
+                            <img class="league-logo" src="{{ url_for('static', filename=logo) }}" alt="" width="256" height="256" decoding="async">
+                        </div>
+                        <div class="card-body">
+                            <p class="league-english" lang="en" dir="ltr">{{ english }}</p>
+                            <h3 id="league-{{ slug }}"{% if slug == 'the100' %} dir="ltr" style="text-align: right;"{% endif %}>{{ name }}</h3>
+                            <p class="league-description">{{ description }}</p>
+                            <span class="card-action">استكشف الدوري <span class="arrow" aria-hidden="true">←</span></span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </section>
+            <p class="closing-note">من أول صافرة إلى آخر نقطة، المنافسة مستمرة.</p>
         </main>
-        
-        <!-- Footer -->
-        <footer class="footer">
-            <p>© 2026 قروب عشاق الفانتازي في ليبيا</p>
-        </footer>
+        <footer><p>© 2026 قروب عشاق الفانتازي في ليبيا</p><p>من المجتمع، للمجتمع.</p></footer>
     </div>
 </body>
 </html>
