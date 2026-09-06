@@ -6,6 +6,7 @@ Fantasy Premier League Multi-League App
 from flask import Flask, render_template, jsonify, request
 import os
 import sys
+import threading
 import requests as http_requests
 from datetime import datetime
 
@@ -50,8 +51,11 @@ def home():
     return render_template('home.html')
 
 
-# Guard to prevent concurrent elite backfill
-_elite_backfill_in_progress = False
+# Guard to prevent concurrent elite backfill.
+# A lock rather than a bool flag: gunicorn runs with --threads, so a plain
+# "if flag: return / flag = True" is a check-then-set race two threads can
+# both pass, producing duplicate FPL fetches and duplicate DB writes.
+_elite_backfill_lock = threading.Lock()
 
 
 def backfill_elite_standings(current_gw):
@@ -59,10 +63,10 @@ def backfill_elite_standings(current_gw):
     Backfill missing elite league standings and fixture results for previous GWs.
     Fetches data from the FPL API for any GW not yet saved in the database.
     """
-    global _elite_backfill_in_progress
-    if _elite_backfill_in_progress:
+    # Non-blocking: if another thread is already backfilling, this request just
+    # skips it rather than queueing behind a job that may take ~30s.
+    if not _elite_backfill_lock.acquire(blocking=False):
         return
-    _elite_backfill_in_progress = True
 
     try:
         from core.fpl_api import (
@@ -394,7 +398,7 @@ def backfill_elite_standings(current_gw):
     except Exception as e:
         print(f"[elite] Backfill error: {e}")
     finally:
-        _elite_backfill_in_progress = False
+        _elite_backfill_lock.release()
 
 
 @app.route('/league/elite')

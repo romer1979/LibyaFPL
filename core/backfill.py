@@ -8,6 +8,7 @@ the FPL API historical data, then saves them to the database.
 """
 
 import requests
+import threading
 import time
 from models import (
     get_team_league_standings_full,
@@ -19,8 +20,10 @@ TIMEOUT = 15
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 
-# Concurrency guard: prevents duplicate backfill from concurrent requests
-_backfill_in_progress = {}
+# Concurrency guard: prevents duplicate backfill from concurrent requests.
+# setdefault() on a plain dict is atomic under the GIL, so building the
+# per-league lock lazily is itself safe without an outer lock.
+_backfill_locks = {}
 
 
 def detect_missing_gameweeks(league_type, current_gw, standings_by_gw):
@@ -63,15 +66,18 @@ def backfill_missing_gameweeks(league_type, missing_gws, teams_fpl_ids, h2h_leag
     if not missing_gws:
         return
 
-    if _backfill_in_progress.get(league_type):
+    # Non-blocking per-league lock. gunicorn runs with --threads, so the old
+    # "if flag: return / flag = True" was a check-then-set race two threads
+    # could both pass, duplicating the FPL fetches and the DB writes.
+    lock = _backfill_locks.setdefault(league_type, threading.Lock())
+    if not lock.acquire(blocking=False):
         print(f"[{league_type}] Backfill already in progress, skipping")
         return
 
-    _backfill_in_progress[league_type] = True
     try:
         _do_backfill(league_type, missing_gws, teams_fpl_ids, h2h_league_id, standings_by_gw)
     finally:
-        _backfill_in_progress[league_type] = False
+        lock.release()
 
 
 def _do_backfill(league_type, missing_gws, teams_fpl_ids, h2h_league_id, standings_by_gw):

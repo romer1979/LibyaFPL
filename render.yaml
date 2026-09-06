@@ -13,7 +13,13 @@ services:
     env: python
     plan: free  # Change to 'starter' for paid tier
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    # Must match Procfile. These pages are I/O-bound — a cold request spends
+    # ~85% of its time waiting on the FPL API, not on CPU — so threads buy
+    # concurrency almost for free on a single core. Without --threads, two
+    # sync workers means only two requests in flight, each parked ~5s.
+    # The longer timeout covers a cold request that also triggers a backfill,
+    # which measured ~30s locally and would lose against gunicorn's 30s default.
+    startCommand: gunicorn app:app --timeout 120 --workers 2 --threads 4
     envVars:
       - key: DATABASE_URL
         fromDatabase:
