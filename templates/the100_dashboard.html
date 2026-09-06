@@ -1023,7 +1023,7 @@
                 </div>
                 <div class="section-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                        <input type="text" class="search-box" id="searchBoxQual" placeholder="🔍 ابحث عن مدرب..." oninput="filterTable('qualification')">
+                        <input type="text" class="search-box" id="searchBoxQual" placeholder="🔍 ابحث عن مدرب أو فريق..." oninput="filterTable('qualification')">
                         <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
                     </div>
                     
@@ -1130,7 +1130,7 @@
                 <div class="section-content">
                     {% if data.phase == 'elimination' and data.standings %}
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                        <input type="text" class="search-box" id="searchBoxElim" placeholder="🔍 ابحث عن مدير..." oninput="filterTable('elimination')">
+                        <input type="text" class="search-box" id="searchBoxElim" placeholder="🔍 ابحث عن مدرب أو فريق..." oninput="filterTable('elimination')">
                         <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
                     </div>
                     
@@ -1450,35 +1450,59 @@
         }
         
         function filterTable(phase) {
-            let searchBoxId, tableId;
-            if (phase === 'qualification') {
-                searchBoxId = 'searchBoxQual';
-                tableId = 'standingsTableQual';
-            } else if (phase === 'elimination') {
-                searchBoxId = 'searchBoxElim';
-                tableId = 'standingsTableElim';
-            }
-            
-            const searchTerm = document.getElementById(searchBoxId).value.toLowerCase();
-            const rows = document.querySelectorAll('#' + tableId + ' tbody tr.clickable-row');
-            
+            const targets = {
+                qualification: ['searchBoxQual', 'standingsTableQual'],
+                elimination:   ['searchBoxElim', 'standingsTableElim']
+            }[phase];
+            if (!targets) return;
+
+            const box = document.getElementById(targets[0]);
+            const table = document.getElementById(targets[1]);
+            if (!box || !table) return;
+
+            const term = box.value.trim().toLowerCase();
+
+            // Select on the data attribute rather than .clickable-row: only the
+            // elimination table's rows carry that class, so the qualification
+            // search matched nothing at all.
+            const rows = table.querySelectorAll('tbody tr[data-manager]');
+            let shown = 0;
+
             rows.forEach(row => {
                 const manager = row.getAttribute('data-manager') || '';
                 const team = row.getAttribute('data-team') || '';
-                
-                // Get the next row (player details)
-                const nextRow = row.nextElementSibling;
-                
-                if (manager.includes(searchTerm) || team.includes(searchTerm)) {
-                    row.style.display = '';
-                    // Keep details row hidden unless it was expanded
-                } else {
-                    row.style.display = 'none';
-                    if (nextRow && nextRow.classList.contains('player-details-row')) {
-                        nextRow.style.display = 'none';
-                    }
+                const match = !term || manager.includes(term) || team.includes(term);
+
+                row.style.display = match ? '' : 'none';
+                if (match) shown++;
+
+                // Collapse an expanded detail row when its parent is filtered
+                // out, so it can't be left stranded under an unrelated manager.
+                const next = row.nextElementSibling;
+                if (next && next.classList.contains('player-details-row') && !match) {
+                    next.style.display = 'none';
                 }
             });
+
+            // Tell the user when a search matches nobody, rather than showing
+            // an empty table with no explanation.
+            const tbody = table.querySelector('tbody');
+            let empty = table.querySelector('tr.no-results-row');
+            if (shown === 0 && term) {
+                if (!empty) {
+                    empty = document.createElement('tr');
+                    empty.className = 'no-results-row';
+                    const cell = document.createElement('td');
+                    cell.colSpan = table.querySelectorAll('thead th').length || 5;
+                    cell.style.cssText = 'text-align:center; padding:18px; opacity:0.7;';
+                    empty.appendChild(cell);
+                    tbody.appendChild(empty);
+                }
+                empty.firstChild.textContent = 'لا توجد نتائج لـ "' + box.value.trim() + '"';
+                empty.style.display = '';
+            } else if (empty) {
+                empty.style.display = 'none';
+            }
         }
         
         function togglePlayerRow(index) {
