@@ -749,15 +749,18 @@ body {
     box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 12px 30px rgba(0, 0, 0, 0.3);
 }
 
+/* No plate. The crest's background is keyed out to transparency, so the chrome
+   shield sits directly on the hero the way it is drawn; a bordered box around
+   it read as a sticker stuck onto the panel. */
 .hero-mark-wrap {
     display: grid;
     place-items: center;
     width: 96px;
     height: 96px;
-    border: 1px solid var(--border-mid);
-    border-radius: 14px;
-    background: var(--dark-bg);
-    overflow: hidden;
+    background: transparent;
+    /* The shield is nearly monochrome against a near-black hero, so it gets a
+       soft halo to lift it off the ground rather than a hard border. */
+    filter: drop-shadow(0 0 14px rgba(200, 200, 210, 0.16));
 }
 
 .hero-mark { width: 88px; height: 88px; object-fit: contain; }
@@ -917,8 +920,8 @@ body {
         padding: 0.85rem;
     }
 
-    .hero-mark-wrap { width: 64px; height: 64px; border-radius: 10px; }
-    .hero-mark { width: 60px; height: 60px; }
+    .hero-mark-wrap { width: 64px; height: 64px; }
+    .hero-mark { width: 64px; height: 64px; }
     .hero-kicker { font-size: 0.52rem; letter-spacing: 1.2px; }
     .hero-copy h1 { font-size: 1.35rem; }
     .hero-copy p { font-size: 0.68rem; }
