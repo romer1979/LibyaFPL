@@ -43,6 +43,7 @@ class DashboardData:
         self.team_fixture_started = {}
         self.is_live = False
         self.gw_finished = False
+        self.gw_settled = False
         self.showing_previous_gw = False
         self.fixtures_started = False
         # {entry_id: league_points} from prev GW's StandingsHistory; populated
@@ -84,7 +85,25 @@ class DashboardData:
                 self.gw_finished = False
                 self.fixtures_started = True
                 self.buffer_mode = True
-    
+
+        # FPL's own verdict on the gameweek we ended up displaying, taken raw
+        # from bootstrap and NOT touched by the buffer logic above.
+        #
+        # `gw_finished` is a DISPLAY flag: the buffer deliberately forces it
+        # back to False so the page keeps showing live scores while bonus is
+        # being confirmed. `gw_settled` is the PERSISTENCE flag — it is True
+        # only once FPL says the gameweek is finished AND that it has checked
+        # the data, which is the point after which the numbers stop moving.
+        #
+        # Nothing may be written to StandingsHistory unless this is True. The
+        # two must stay separate: saving on the display flag is what froze
+        # provisional mid-match scores into the DB permanently.
+        self.gw_settled = False
+        for ev in (self.bootstrap_data.get('events') or []):
+            if ev.get('id') == self.current_gameweek:
+                self.gw_settled = bool(ev.get('finished')) and bool(ev.get('data_checked'))
+                break
+
     def _is_within_post_finish_buffer(self, gw, buffer_hours=12):
         """Check if less than buffer_hours have passed since the last game in a GW finished"""
         try:
@@ -708,6 +727,79 @@ class DashboardData:
         
         return fixtures
     
+    def _cumulative_league_points(self, entry, info, delta):
+        """
+        (base, projected) cumulative league points for one manager.
+
+        Base normally comes from our own StandingsHistory row for the previous
+        gameweek. When that is missing — GW1, a fresh deploy, a rebuilt DB —
+        we fall back to FPL's `total`, and the fallback has to know where FPL
+        has got to: `total` is cumulative through the last FINISHED gameweek.
+
+        So once the gameweek we are displaying is settled, FPL's total already
+        contains this week's three points, and treating it as the previous
+        week's figure and adding the delta counted the week twice. On a fresh
+        database that put the top of the table on 12 when FPL said 9.
+        """
+        prev_lp = self.prev_db_lp.get(entry)
+        if prev_lp is not None:
+            return prev_lp, prev_lp + delta
+
+        fpl_total = int(info.get('total', 0) or 0)
+        if self.gw_settled:
+            # FPL has already counted this gameweek: its total IS the answer.
+            return fpl_total - delta, fpl_total
+        return fpl_total, fpl_total + delta
+
+    def _build_standings_from_fixtures(self, fixtures, teams_league, standings_dict):
+        """
+        Populate standings_dict from already-built fixture rows.
+
+        Used by the finished-gameweek branch. The live branch builds the same
+        shape inline as it walks the live match data; this does it from the
+        final fixtures, which carry the same fields under team_N_* names.
+
+        Each manager's cumulative total is `previous GW from our DB + this
+        week's H2H delta`, the same rule the live branch applies, so a
+        gameweek reads identically before and after the display buffer expires.
+        """
+        for fx in fixtures:
+            for name, entry, pts, captain, chip, chip_active, result, opponent in (
+                (fx['team_1_name'], fx['entry_1'], fx['team_1_points'],
+                 fx['team_1_captain'], fx['team_1_chip'], fx['team_1_chip_active'],
+                 'W' if fx['winner'] == 1 else ('D' if fx['winner'] == 0 else 'L'),
+                 fx['team_2_name']),
+                (fx['team_2_name'], fx['entry_2'], fx['team_2_points'],
+                 fx['team_2_captain'], fx['team_2_chip'], fx['team_2_chip_active'],
+                 'W' if fx['winner'] == 2 else ('D' if fx['winner'] == 0 else 'L'),
+                 fx['team_1_name']),
+            ):
+                if name in standings_dict:
+                    continue
+
+                info = next((t for t in teams_league if t['entry'] == entry), {})
+                # Knockout rounds don't move the round-robin total; FPL freezes
+                # it there, so the delta is suppressed exactly as it is live.
+                if self.current_gameweek >= KNOCKOUT_START_GW:
+                    delta = 0
+                else:
+                    delta = 3 if result == 'W' else 1 if result == 'D' else 0
+                base_lp, proj_lp = self._cumulative_league_points(entry, info, delta)
+
+                standings_dict[name] = {
+                    'entry_id': entry,
+                    'player_name': name,
+                    'team_name': info.get('entry_name', ''),
+                    'base_league_points': base_lp,
+                    'projected_league_points': proj_lp,
+                    'current_gw_points': pts,
+                    'captain': captain,
+                    'chip': chip,
+                    'chip_active': chip_active,
+                    'result': result,
+                    'opponent': opponent,
+                }
+
     def get_dashboard_data(self):
         """Get all dashboard data - fixtures and standings"""
         try:
@@ -746,7 +838,19 @@ class DashboardData:
                 self.fixtures_gameweek = self.current_gameweek
                 self.showing_previous_gw = False
                 self.is_live = False
-                
+
+                # Build standings from those final fixtures.
+                #
+                # This branch used to build no standings at all, so every
+                # manager fell through to the fallback further down, which sets
+                # result '-' and projected_league_points = base with no delta.
+                # The effect was that the moment the 12h buffer expired, the
+                # table silently dropped the gameweek that had just finished:
+                # everyone reverted to their previous cumulative total and sat
+                # there until FPL advanced to the next gameweek — about five
+                # days a week — and the save path wrote those numbers to the DB.
+                self._build_standings_from_fixtures(fixtures, teams_league, standings_dict)
+
             elif self.fixtures_started and not gw_not_started_flag:
                 # STATE 2: Gameweek is LIVE - show live scores
                 self._initialize_live_data()
@@ -813,10 +917,6 @@ class DashboardData:
                     ]:
                         if name not in standings_dict:
                             info = next((t for t in teams_league if t['entry'] == entry), {})
-                            # Prior cumulative comes from our DB (StandingsHistory).
-                            # Falls back to FPL's `total` only if no DB row exists
-                            # (e.g. GW1 or fresh deploy before backfill).
-                            prev_lp = self.prev_db_lp.get(entry, int(info.get('total', 0) or 0))
                             # During the FPL-managed knockout phase the
                             # round-robin league total is frozen — knockout
                             # match results (W/L) are still recorded for
@@ -825,12 +925,16 @@ class DashboardData:
                                 delta = 0
                             else:
                                 delta = 3 if result == 'W' else 1 if result == 'D' else 0
+                            # Prior cumulative comes from our DB; see
+                            # _cumulative_league_points for the fallback rule
+                            # when no row exists yet.
+                            base_lp, proj_lp = self._cumulative_league_points(entry, info, delta)
                             standings_dict[name] = {
                                 'entry_id': entry,
                                 'player_name': name,
                                 'team_name': info.get('entry_name', ''),
-                                'base_league_points': prev_lp,
-                                'projected_league_points': prev_lp + delta,
+                                'base_league_points': base_lp,
+                                'projected_league_points': proj_lp,
                                 'current_gw_points': data['total_points'],
                                 'captain': data['captain'],
                                 'chip': data['chip_ar'],
@@ -920,14 +1024,17 @@ class DashboardData:
                     standings_dict[name]['overall_rank'] = overall_rank
                     standings_dict[name]['total_points'] = entry.get('points_for')
                 else:
-                    # Prior cumulative from our DB; FPL's `total` is fallback only.
-                    prev_lp = self.prev_db_lp.get(entry_id, int(entry.get('total', 0) or 0))
+                    # No fixture was found for this manager (a bye, or a
+                    # gameweek with no matches drawn yet), so there is no delta
+                    # to add — but the fallback still has to respect where FPL
+                    # has got to. See _cumulative_league_points.
+                    base_lp, proj_lp = self._cumulative_league_points(entry_id, entry, 0)
                     standings_dict[name] = {
                         'entry_id': entry_id,
                         'player_name': name,
                         'team_name': entry.get('entry_name', ''),
-                        'base_league_points': prev_lp,
-                        'projected_league_points': prev_lp,
+                        'base_league_points': base_lp,
+                        'projected_league_points': proj_lp,
                         'current_gw_points': gw_points or 0,
                         'total_points': entry.get('points_for'),
                         'overall_rank': overall_rank,
@@ -966,6 +1073,7 @@ class DashboardData:
                 'league_name': league_name,
                 'is_live': self.is_live,
                 'gw_finished': self.gw_finished,
+                'gw_settled': self.gw_settled,
                 'gw_not_started': not self.fixtures_started and not self.gw_finished,
                 'showing_previous_gw': self.showing_previous_gw,
                 'is_knockout': self.current_gameweek >= KNOCKOUT_START_GW,

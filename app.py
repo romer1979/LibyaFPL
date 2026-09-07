@@ -152,12 +152,20 @@ def backfill_elite_standings(current_gw):
         # them.
         #
         # FPL's own `total` is the cumulative league points after the last
-        # finished GW, so it is a free cross-check — but only while the current
-        # GW is unfinished, otherwise `total` includes a GW we have not settled
-        # yet. get_league_standings is cached, so this costs no extra request.
+        # finished GW, so it is a free cross-check. get_league_standings is
+        # cached, so this costs no extra request.
+        #
+        # The comparison has to be made against the last FINISHED gameweek, not
+        # the last one before `current_gw`. FPL leaves a gameweek marked current
+        # after it finishes — GW3 was finished, data_checked AND is_current at
+        # the same time — so keying off `gw < current_gw` compared GW2's rows to
+        # a total that already included GW3, and the old `current_gw not in
+        # finished_gws` guard existed to suppress the false alarm that caused.
+        # It also switched the whole safety net off for exactly the stretch when
+        # a freshly settled gameweek most needs checking.
         stale_lp_gws = []
-        settled_gws = [gw for gw in finished_gws if gw < current_gw and gw in saved_standings_set]
-        if settled_gws and current_gw not in finished_gws:
+        settled_gws = [gw for gw in finished_gws if gw in saved_standings_set]
+        if settled_gws:
             last_settled = max(settled_gws)
             try:
                 fpl_totals = {
@@ -450,8 +458,27 @@ def elite_dashboard():
         # Previously this block overrode it with `prev_saved_rank - current_rank`
         # which broke arrows whenever the saved rank lagged the actual standings.
 
-        # Save current standings to database (if gameweek is finished or live)
-        if data.get('gw_finished') or data.get('is_live'):
+        # Persist only once FPL has settled the gameweek.
+        #
+        # This used to be `gw_finished or is_live`, which wrote on EVERY page
+        # view from the first Saturday kickoff onwards — provisional bonus and
+        # all. Whatever the last visitor happened to load during that window
+        # was then frozen forever, because once FPL advances the gameweek
+        # nothing ever re-saves the old one. That is what put GW2 out by
+        # 18 rows, and because the dashboard builds each week as
+        # `previous GW from the DB + this week's delta`, one frozen week
+        # shifted every week after it.
+        #
+        # `gw_settled` is FPL's finished + data_checked for this gameweek,
+        # unaffected by the 12h display buffer. Waiting for it means the app
+        # is immune to how long FPL takes: if their H2H job runs three days
+        # late, the row is simply written three days late — it is never
+        # written wrong. Live scores keep displaying throughout, they just
+        # aren't recorded until they stop moving.
+        #
+        # Settled data doesn't change, so re-saving on later views is a no-op
+        # and the upsert needs no first-write-wins guard.
+        if data.get('gw_settled'):
             save_standings(gameweek, data['standings'])
 
             # Also save fixture results for current GW
