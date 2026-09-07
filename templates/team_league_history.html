@@ -8,11 +8,6 @@
     <title>{{ league_name }} - سجل الجولات</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {# Per-league theme, loaded after the shared sheet so its overrides win.
-       Only Cities has one so far; Arab and Libyan keep the white theme. #}
-    {% if league_type in ('cities', 'libyan') %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ league_type ~ '.css') }}">
-    {% endif %}
     <style>
         /* GW Selector */
         .gw-selector-container {
@@ -301,6 +296,10 @@
             }
         }
     </style>
+    {# After the inline <style>, so theme rules win on source order. #}
+    {% if league_type in ('cities', 'libyan') %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ league_type ~ '.css') }}">
+    {% endif %}
 </head>
 <body>
     <!-- Header -->

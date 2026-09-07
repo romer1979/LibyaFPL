@@ -11,14 +11,22 @@
  *   #f0f0f0  white         — the ball and the lettering, 8% of the image
  *   #101010  ground        — 77% of the image
  *
- * So this league reads as monochrome-plus-gold, which is a more formal,
- * restrained identity than the Cities crest with its flag colours — the two
- * should not look alike, and they do not.
+ * So this league reads as monochrome-plus-gold: 3.9% chromatic across a single
+ * hue, where the Cities crest is 11.8% across three.
  *
- * The crest carries no green or red, but a twenty-row results table is much
- * faster to scan when wins and losses differ by hue rather than by weight.
- * Both are therefore desaturated and warmed so they sit beneath the gold
- * rather than competing with it.
+ * That difference is expressed in FORM, not only in colour. Recolouring a
+ * shared layout produced two pages that looked like the same template twice.
+ * So Cities keeps the rounded, filled, bordered cards it already had, and this
+ * league is built as a ledger instead: no card fills, square corners, content
+ * separated by gold hairlines rather than boxes, and section headings set in
+ * letterspaced small caps. Side by side the two are not mistakable.
+ *
+ * The crest carries no green and no red, and this theme does not invent them.
+ * An earlier version added a muted green/red pair "for scannability", which
+ * made this league look like a slightly duller copy of Cities — whose crest
+ * genuinely is 18% green and 13% red. Here a win is gold and a loss recedes
+ * into grey, which is both truer to the crest and, on a page where gold is
+ * otherwise reserved for headings, a perfectly legible signal.
  */
 
 :root {
@@ -27,10 +35,12 @@
     --libyan-gold-bright: #dfc07a;     /* for small text, where the base gold dims */
     --libyan-gold-soft: rgba(200, 168, 88, 0.14);
     --libyan-gold-line: rgba(200, 168, 88, 0.42);
-    --libyan-win: #5cab74;             /* muted, warmed to sit under the gold */
-    --libyan-win-soft: rgba(92, 171, 116, 0.13);
-    --libyan-loss: #c9605c;
-    --libyan-loss-soft: rgba(201, 96, 92, 0.14);
+    /* Win and loss are value, not hue: the winner is lit in gold, the loser
+       recedes. No green or red — the crest has neither. */
+    --libyan-win: #dfc07a;
+    --libyan-win-soft: rgba(200, 168, 88, 0.16);
+    --libyan-loss: #7e7a70;
+    --libyan-loss-soft: rgba(126, 122, 112, 0.12);
 
     /* Shared theme names, repointed. --primary-purple is set to the dark
        surface so backgrounds are right; the rules that used it for TYPE are
@@ -52,9 +62,9 @@
     --text-secondary: #98958a;
     --text-dark: #f0efe9;
 
-    --success: #5cab74;
+    --success: #dfc07a;
     --warning: #c8a858;
-    --danger: #c9605c;
+    --danger: #a8574f;   /* status pills only, never the results table */
 
     --border-color: #262319;
     --shadow: 0 2px 15px rgba(0, 0, 0, 0.45);
@@ -109,17 +119,40 @@ body .fixture-card,
 body .ms-detail { border: 1px solid var(--border-color); }
 
 body .highlight-card.team-of-week { border-inline-start: 3px solid var(--libyan-gold); }
-body .highlight-card.star-of-week { border-inline-start: 3px solid var(--libyan-win); }
+body .highlight-card.star-of-week { border-inline-start: 3px solid #f0efe9; }
 
-/* Results */
+/* Results — gold for the winner, grey for the loser. */
 body .winner,
 body .team-winner,
-body .result-win { color: var(--libyan-win); }
+body .result-win {
+    color: var(--libyan-win);
+    font-weight: 700;
+}
 
 body .result-loss { color: var(--libyan-loss); }
 
+/* Score chips follow the same logic: the winning score is lit, the losing one
+   is a plain outline rather than a second colour. */
+body .fixtures-table .score-pts.winning {
+    background: var(--libyan-win-soft);
+    color: var(--libyan-win);
+    border: 1px solid var(--libyan-gold-line);
+}
+
+body .fixtures-table .score-pts.losing {
+    background: transparent;
+    color: var(--libyan-loss);
+    border: 1px solid var(--border-color);
+}
+
+body .fixtures-table .score-pts.draw {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
 body .team-name:not(.winner),
-body .fixture-team:not(.winner) { color: var(--text-secondary); }
+body .fixture-team:not(.winner) { color: var(--libyan-loss); }
 
 .status-badge.live {
     background: var(--libyan-loss-soft);
@@ -128,9 +161,9 @@ body .fixture-team:not(.winner) { color: var(--text-secondary); }
 }
 
 .status-badge.finished {
-    background: var(--libyan-win-soft);
-    color: var(--libyan-win);
-    border: 1px solid var(--libyan-win);
+    background: var(--libyan-gold-soft);
+    color: var(--libyan-gold-bright);
+    border: 1px solid var(--libyan-gold-line);
 }
 
 .status-badge.not-started {
@@ -139,9 +172,8 @@ body .fixture-team:not(.winner) { color: var(--text-secondary); }
     border: 1px solid var(--libyan-gold-line);
 }
 
-/* Tables */
+/* Tables — see the ledger block below for the ruled treatment. */
 table thead th {
-    background: var(--bg-gray);
     color: var(--text-secondary);
     position: sticky;
     top: 0;
@@ -211,7 +243,7 @@ body .rank-badge {
 }
 
 body .fixtures-table th,
-body .standings-table th { background: var(--bg-gray); }
+body .standings-table th { background: var(--bg-white); }
 
 body .fixtures-table .diff-badge {
     background: var(--libyan-gold-soft);
@@ -229,3 +261,157 @@ body .gw-btn.active {
     color: #17150f;
     border-color: var(--libyan-gold);
 }
+
+/* The history page scopes these under a table, which outranks a bare
+   `body .class` selector, so these are matched at the same depth. */
+body .fixtures-table .team-name.winner {
+    color: var(--libyan-win);
+    font-weight: 700;
+}
+
+body .standings-table .league-points-cell {
+    color: var(--libyan-gold-bright);
+}
+
+
+/* ==========================================================================
+   Ledger form.
+
+   The visual difference between the leagues lives here. Cities is a stack of
+   rounded, filled cards; this is a printed results sheet — flat, square, ruled.
+   ========================================================================== */
+
+/* Nothing is a floating card: panels sit on the page, divided by rules. */
+body .highlight-card,
+body .card,
+body .section,
+body .fixture-card,
+body .fixture-card-main,
+body .fixture-card-expand,
+body .fixture-card-unique,
+body .fixture-row,
+body .ms-detail,
+body .mobile-standing-details,
+body .mobile-standing-row,
+body .gw-selector-container,
+body .standings-container {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* A single hairline between entries, and a heavier gold rule above each block. */
+body .fixture-card,
+body .ms-detail,
+body .highlight-card {
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    padding-block: 0.85rem;
+}
+
+body .section {
+    border-top: 2px solid var(--libyan-gold);
+    margin-top: 1.75rem;
+    padding-top: 0.25rem;
+}
+
+/* Headings as small caps with a rule, not as a filled bar. */
+body .section-title,
+body .gw-selector-title {
+    border-bottom: 0;
+    border-image: none;
+    padding: 0.6rem 0 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--libyan-gold-bright);
+}
+
+body .section-header {
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding-inline: 0;
+}
+
+body .section-content { padding-inline: 0; }
+
+/* Square everything the shared sheet rounds. */
+body .status-badge,
+body .header-action,
+body .gw-btn,
+body .diff-badge,
+body .captain-badge,
+body .score-pts,
+body .zone-indicator {
+    border-radius: 2px;
+}
+
+/* The crest gets a plaque rather than sitting loose in the header. */
+body .logo-img {
+    border-radius: 0;
+    border: 1px solid var(--libyan-gold-line);
+    padding: 2px;
+}
+
+body .logo-title {
+    letter-spacing: 0.04em;
+    font-weight: 800;
+}
+
+body .logo-subtitle { letter-spacing: 0.22em; }
+
+/* Table: ruled rows, no zebra fill, headings in small caps. */
+body table thead th {
+    background: transparent;
+    border-bottom: 2px solid var(--libyan-gold);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+body table tbody tr:hover { background: rgba(200, 168, 88, 0.06); }
+
+
+/* Compound selectors from the page's own CSS outrank a bare `body .class`, so
+   these are matched at the same depth. Source order now favours this file, so
+   matching specificity is enough — no need to exceed it. */
+.highlight-card.team-of-week,
+.highlight-card.star-of-week,
+.highlight-card.update-info {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+}
+
+/* The gold rule marks the week's team; the star gets a plain one. */
+.highlight-card.team-of-week { border-inline-start: 3px solid var(--libyan-gold); }
+.highlight-card.star-of-week { border-inline-start: 3px solid var(--text-secondary); }
+.highlight-card.update-info  { border-inline-start: 3px solid var(--border-color); }
+
+/* Winner on the dashboard is .team-cell.winner and .score.score-win. */
+.team-cell.winner,
+.team-cell.winner .team-name,
+.winner-icon {
+    color: var(--libyan-win);
+    font-weight: 700;
+}
+
+.score.score-win {
+    color: var(--libyan-win);
+    background: var(--libyan-win-soft);
+    border: 1px solid var(--libyan-gold-line);
+    border-radius: 2px;
+}
+
+.team-cell:not(.winner) .team-name { color: var(--libyan-loss); }
+
+
+/* Remaining green from the shared sheet: points totals and rank arrows. Gold
+   for a gain, grey for a drop — the crest has no green to borrow. */
+.highlight-points { color: var(--libyan-gold-bright); }
+.rank-up   { color: var(--libyan-gold-bright); }
+.rank-down { color: var(--libyan-loss); }
+.rank-same { color: var(--text-secondary); }

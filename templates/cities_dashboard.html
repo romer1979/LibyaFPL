@@ -7,9 +7,6 @@
     <title>دوري المدن - Libya FPL</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {# Cities-only theme, derived from the league crest. Loaded after the shared
-       sheet so its token overrides win; Arab and Libyan keep the white theme. #}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities.css') }}">
     <style>
         /* Cities League specific overrides */
         
@@ -242,6 +239,10 @@
             }
         }
     </style>
+    {# Loaded after the inline <style> below so its rules win on source order —
+       placing it with the other <link>s meant every override needed a `body`
+       prefix or a deeper selector to beat the page's own CSS. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities.css') }}">
 </head>
 <body>
     <!-- Header -->

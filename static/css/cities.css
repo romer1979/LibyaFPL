@@ -17,6 +17,11 @@
  * The flag pair carries win and loss, which is what the eye is looking for in
  * a results table, and gold carries identity — headings, the crest, the
  * league's own furniture.
+ *
+ * This crest is 11.8% chromatic across three real hues. The Libyan crest is
+ * 3.9% across one. That difference is the point: this theme leans into its
+ * colour, and libyan.css deliberately stays monochrome, so the two leagues do
+ * not read as the same dark-page-with-gold template twice.
  */
 
 :root {
@@ -250,4 +255,48 @@ body .gw-btn.active {
     background: var(--cities-gold);
     color: #16160f;
     border-color: var(--cities-gold);
+}
+
+
+/* The flag, used as a rule.
+   The crest's most recognisable feature is its red/black/green banding, so the
+   section headings carry it as a three-stop underline. Nothing in the Libyan
+   theme can look like this, which is the intent. */
+body .section-title {
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg,
+        var(--cities-red) 0 33.3%,
+        #2a2a22 33.3% 66.6%,
+        var(--cities-green) 66.6% 100%) 1;
+}
+
+/* Winners and losers lean on the flag pair rather than on weight alone. */
+body .fixtures-table .score-pts.winning {
+    background: var(--cities-green-soft);
+    color: var(--cities-green);
+    border: 1px solid var(--cities-green);
+}
+
+body .fixtures-table .score-pts.losing {
+    background: var(--cities-red-soft);
+    color: var(--cities-red);
+    border: 1px solid var(--cities-red);
+}
+
+body .fixtures-table .score-pts.draw {
+    background: var(--cities-gold-soft);
+    color: var(--cities-gold);
+    border: 1px solid var(--cities-gold-line);
+}
+
+/* The history page scopes these under a table, which outranks a bare
+   `body .class` selector, so these are matched at the same depth. */
+body .fixtures-table .team-name.winner {
+    color: var(--cities-green);
+    font-weight: 700;
+}
+
+body .standings-table .league-points-cell {
+    color: var(--cities-gold);
 }
