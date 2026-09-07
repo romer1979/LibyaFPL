@@ -1471,6 +1471,25 @@ def get_the100_stats():
             for name, count in captain_counts.most_common()
         ]
 
+        # Group chips by type rather than listing every use. A flat list runs to
+        # one row per manager — 130 rows at GW3 — which buries the thing people
+        # actually want to know: how many played each chip. The managers travel
+        # with each group so the page can reveal them on demand.
+        chip_groups_map = {}
+        for c in chips_used:
+            key = c['chip']
+            g = chip_groups_map.setdefault(key, {
+                'chip': key,
+                'chip_ar': c['chip_ar'],
+                'count': 0,
+                'managers': [],
+            })
+            g['count'] += 1
+            g['managers'].append(c['manager'])
+        chip_groups = sorted(chip_groups_map.values(), key=lambda g: -g['count'])
+        for g in chip_groups:
+            g['managers'].sort()
+
         # Calculate points stats
         if gw_points:
             n = len(gw_points)
@@ -1548,6 +1567,8 @@ def get_the100_stats():
             'is_live': is_live,
             'captain_stats': captain_stats,
             'chips_used': chips_used,
+            'chip_groups': chip_groups,
+            'chips_total': len(chips_used),
             'points_stats': points_stats,
             'effective_ownership': effective_ownership,
             'total_managers': total_managers,

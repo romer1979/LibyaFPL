@@ -954,3 +954,253 @@ body {
     .tab-copy small { display: none; }
     .tab-icon { width: 30px; height: 30px; font-size: 0.9rem !important; }
 }
+
+/* Hero actions — the nav that used to live in the sticky header. Placed with
+   the title so the page has one identity block instead of two competing ones. */
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
+.hero-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--border-mid);
+    border-radius: 8px;
+    background: var(--dark-bg);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    /* These are now the only navigation on the page, so they get a proper
+       target size rather than the 36px a secondary control would take. */
+    min-height: 40px;
+}
+
+.hero-action:hover,
+.hero-action:focus-visible {
+    color: var(--text-light);
+    border-color: var(--signature);
+}
+
+.hero-action.loading { opacity: 0.6; pointer-events: none; }
+
+@media (max-width: 768px) {
+    /* Labels drop away and the icons become a compact row of tap targets. */
+    .hero-actions { margin-top: 0.6rem; gap: 0.35rem; }
+    .hero-action { padding: 0.4rem 0.6rem; min-width: 44px; justify-content: center; }
+    .hero-action-label { display: none; }
+}
+
+/* ==========================================================================
+   Stats page
+   ========================================================================== */
+
+.stats-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.cohort-note {
+    margin: -0.35rem 0 1.25rem;
+    padding: 0.6rem 0.85rem;
+    border-inline-start: 3px solid var(--cutoff);
+    border-radius: 8px;
+    background: var(--cutoff-soft);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    line-height: 1.6;
+}
+
+/* Cards were a fixed 300px minimum, which forced one column from 300 to 640px
+   even where two would fit. 260px lets narrow phones breathe and tablets pair. */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.stats-section {
+    background: var(--dark-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 14px;
+    padding: 1.15rem;
+}
+
+.stats-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border-dark);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-light);
+}
+
+.section-count {
+    margin-inline-start: auto;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--signature-soft);
+    color: var(--signature);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+/* Points cards: the number is the content, so it leads and the label follows. */
+.points-cards { gap: 0.6rem; }
+
+.point-card {
+    padding: 0.9rem 0.6rem;
+    border: 1px solid var(--border-dark);
+    background: var(--dark-bg);
+}
+
+.point-card .emoji { font-size: 1.15rem; margin-bottom: 0.15rem; }
+.point-card .label { font-size: 0.7rem; letter-spacing: 0.01em; }
+
+.point-card .value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.point-card .managers {
+    font-size: 0.7rem;
+    line-height: 1.45;
+    margin-top: 0.3rem;
+    overflow-wrap: anywhere;
+}
+
+/* Chip groups: count first, names on demand. */
+.chip-groups { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.chip-group {
+    border: 1px solid var(--border-dark);
+    border-radius: 10px;
+    background: var(--dark-bg);
+    overflow: hidden;
+}
+
+.chip-group > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    cursor: pointer;
+    list-style: none;
+    min-height: 44px;               /* comfortable tap target */
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.chip-group > summary::-webkit-details-marker { display: none; }
+.chip-group > summary:hover { background: var(--dark-card-hover); }
+.chip-group[open] > summary { border-bottom: 1px solid var(--border-dark); }
+
+.chip-group-meta { display: inline-flex; align-items: center; gap: 0.5rem; }
+
+.chip-group-count {
+    min-width: 2rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--signature-soft);
+    color: var(--signature);
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.chip-group-chevron {
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    transition: transform 0.15s ease;
+}
+
+.chip-group[open] .chip-group-chevron { transform: rotate(180deg); }
+
+.chip-managers {
+    margin: 0;
+    padding: 0.6rem 0.85rem 0.75rem;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.3rem 0.75rem;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.chip-managers li {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* Captain and ownership rows */
+.captain-item,
+.ownership-item,
+.chip-item {
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border-dark);
+    background: var(--dark-bg);
+    min-height: 40px;
+}
+
+.captain-name,
+.ownership-name { font-size: 0.87rem; }
+
+.captain-count,
+.ownership-percentage {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.78rem;
+}
+
+.stats-updated {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    .stats-container { padding: 1rem 0.75rem; }
+    .stats-grid { gap: 0.75rem; }
+    .stats-section { padding: 0.95rem; border-radius: 12px; }
+    .stats-section .section-title { font-size: 0.95rem; }
+
+    /* Three across was cramping the numbers on a phone; the value is what
+       matters, so give each card the full width and let them stack. */
+    .points-cards { grid-template-columns: 1fr; gap: 0.5rem; }
+
+    .point-card {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 0.6rem;
+        text-align: right;
+        padding: 0.7rem 0.85rem;
+    }
+
+    .point-card .emoji { margin: 0; font-size: 1.2rem; }
+    .point-card .label { margin: 0; font-size: 0.78rem; }
+    .point-card .value { font-size: 1.4rem; }
+    .point-card .managers { grid-column: 2 / -1; margin-top: 0; }
+
+    .chip-managers { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}

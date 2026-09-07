@@ -361,38 +361,18 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <a href="/league/the100" class="logo">
-                <img src="{{ url_for('static', filename='the100_logo.png') }}" alt="The 100" class="logo-img">
-                <div class="logo-text">
-                    <span class="logo-title">The 100</span>
-                    <span class="logo-subtitle">FANTASY PREMIER LEAGUE</span>
-                </div>
-            </a>
-            <div class="header-nav">
-                <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
-                {% if data.is_live %}
-                <span class="live-badge">مباشر</span>
-                {% endif %}
-                <a href="/league/the100" class="nav-link back-btn">← العودة</a>
-                <a href="/" class="nav-link home-btn">🏠</a>
-            </div>
-        </div>
-    </header>
-
     <!-- Main Content -->
     <main class="stats-container">
-        {% if not data.success %}
-            <div class="error-box">
-                <h2>⚠️ خطأ</h2>
-                <p>{{ data.error }}</p>
+        {# Same single identity block as the dashboard: the crest, name and
+           gameweek were previously stated once in the sticky header and again
+           in the page title directly beneath it. #}
+        <section class="tournament-hero" aria-labelledby="stats-title">
+            <div class="hero-mark-wrap">
+                <img src="{{ url_for('static', filename='the100_mark_192.png') }}"
+                     alt="" class="hero-mark" width="192" height="192" decoding="async">
             </div>
-        {% else %}
-            <!-- Page Title -->
-            <div class="page-title">
-                <h1>📊 إحصائيات The 100</h1>
+            <div class="hero-copy">
+                <h1 id="stats-title">الإحصائيات</h1>
                 <p>
                     <span class="phase-badge {{ data.phase }}">
                         {% if data.phase == 'qualification' %}مرحلة التأهل
@@ -400,20 +380,42 @@
                         {% elif data.phase == 'championship' %}مرحلة البطولة
                         {% endif %}
                     </span>
-                    الجولة {{ data.gameweek }} - {{ data.total_managers }} مدرب
-                    {% if data.is_live %}<span class="live-badge">مباشر</span>{% endif %}
                 </p>
-                {% if data.cohort_is_partial %}
-                {# During a live GW only the top N are recalculated from picks;
-                   the rest carry FPL's lagging figures. Say which set these
-                   numbers describe rather than implying all {{ data.league_size }}. #}
-                <p class="cohort-note">
-                    الإحصائيات محسوبة على أفضل {{ data.cohort_size }} مدرب من أصل {{ data.league_size }}
-                    خلال الجولة المباشرة
-                </p>
-                {% endif %}
+                <div class="hero-actions">
+                    <a href="/league/the100" class="hero-action">
+                        <span aria-hidden="true">←</span><span class="hero-action-label">الترتيب</span>
+                    </a>
+                    <a href="/league/the100/history" class="hero-action">
+                        <span aria-hidden="true">⚔️</span><span class="hero-action-label">السجل</span>
+                    </a>
+                    <a href="/" class="hero-action">
+                        <span aria-hidden="true">🏠</span><span class="hero-action-label">الرئيسية</span>
+                    </a>
+                </div>
             </div>
-            
+            <div class="hero-status">
+                <span class="hero-status-label">الجولة الحالية</span>
+                <strong>{{ data.gameweek or '-' }}</strong>
+                {% if data.is_live %}<span class="hero-live">مباشر</span>{% endif %}
+            </div>
+        </section>
+
+        {% if not data.success %}
+            <div class="error-box">
+                <h2>⚠️ خطأ</h2>
+                <p>{{ data.error }}</p>
+            </div>
+        {% else %}
+            {% if data.cohort_is_partial %}
+            {# During a live GW only the top N are recalculated from picks; the
+               rest carry FPL's lagging figures. Say which set these numbers
+               describe rather than implying all {{ data.league_size }}. #}
+            <p class="cohort-note">
+                الإحصائيات محسوبة على أفضل {{ data.cohort_size }} مدرب من أصل {{ data.league_size }}
+                خلال الجولة المباشرة
+            </p>
+            {% endif %}
+
             <div class="stats-grid">
                 <!-- Points Stats -->
                 <div class="stats-section">
@@ -519,26 +521,42 @@
                 
                 <!-- Chips Used -->
                 <div class="stats-section">
-                    <h2 class="section-title">🎯 الخواص المستخدمة</h2>
-                    {% if data.chips_used %}
-                    <div class="chips-list">
-                        {% for chip in data.chips_used %}
-                        <div class="chip-item">
-                            <span class="manager-name">{{ chip.manager }}</span>
-                            <span class="chip-badge">{{ chip.chip_ar }}</span>
-                        </div>
+                    <h2 class="section-title">
+                        🎯 الخواص المستخدمة
+                        {% if data.chips_total %}<span class="section-count">{{ data.chips_total }}</span>{% endif %}
+                    </h2>
+                    {% if data.chip_groups %}
+                    {# One row per chip type with its count, and the managers
+                       behind a disclosure. The flat list ran to one row per
+                       manager — 130 at GW3 — which buried the counts. <details>
+                       gives the open/close behaviour natively, so it works
+                       without JS and is keyboard accessible for free. #}
+                    <div class="chip-groups">
+                        {% for g in data.chip_groups %}
+                        <details class="chip-group">
+                            <summary>
+                                <span class="chip-group-name">{{ g.chip_ar }}</span>
+                                <span class="chip-group-meta">
+                                    <span class="chip-group-count">{{ g.count }}</span>
+                                    <span class="chip-group-chevron" aria-hidden="true">▾</span>
+                                </span>
+                            </summary>
+                            <ul class="chip-managers">
+                                {% for m in g.managers %}
+                                <li>{{ m }}</li>
+                                {% endfor %}
+                            </ul>
+                        </details>
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="no-data">لا توجد خواص مستخدمة هذه الجولة</div>
+                    <div class="no-data">لم يستخدم أحد خاصية هذه الجولة</div>
                     {% endif %}
                 </div>
             </div>
-            
+
             {% if data.last_updated %}
-            <p style="text-align: center; color: #666; font-size: 0.8rem; margin-top: 2rem;">
-                آخر تحديث: {{ data.last_updated }}
-            </p>
+            <p class="stats-updated">آخر تحديث: {{ data.last_updated }}</p>
             {% endif %}
         {% endif %}
     </main>
