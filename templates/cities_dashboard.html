@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0d0d0f">
     <title>دوري المدن - Libya FPL</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {# Cities-only theme, derived from the league crest. Loaded after the shared
+       sheet so its token overrides win; Arab and Libyan keep the white theme. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities.css') }}">
     <style>
         /* Cities League specific overrides */
         
@@ -244,7 +248,8 @@
     <header class="header">
         <div class="header-content">
             <a href="/" class="logo">
-                <img src="{{ url_for('static', filename='cities_logo.png') }}" alt="دوري المدن" class="logo-img">
+                <img src="{{ url_for('static', filename='cities_mark_192.png') }}" alt="دوري المدن"
+                     class="logo-img" width="192" height="192" decoding="async">
                 <div class="logo-text">
                     <span class="logo-title">دوري المدن</span>
                     <span class="logo-subtitle">CITIES LEAGUE</span>
@@ -260,9 +265,20 @@
                 {% else %}
                     <span class="status-badge not-started">⏳ لم تبدأ</span>
                 {% endif %}
-                <button class="refresh-btn" onclick="location.reload()">🔄</button>
-                <a href="/league/cities/history" class="stats-link" title="سجل الجولات">📜</a>
-                <a href="/" class="stats-link">🏠</a>
+                <div class="header-actions">
+                    <button class="header-action" onclick="location.reload()">
+                        <span class="header-action-icon" aria-hidden="true">🔄</span>
+                        <span>تحديث</span>
+                    </button>
+                    <a href="/league/cities/history" class="header-action">
+                        <span class="header-action-icon" aria-hidden="true">📜</span>
+                        <span>سجل الجولات</span>
+                    </a>
+                    <a href="/" class="header-action">
+                        <span class="header-action-icon" aria-hidden="true">🏠</span>
+                        <span>الرئيسية</span>
+                    </a>
+                </div>
             </div>
         </div>
     </header>

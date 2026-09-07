@@ -1,0 +1,244 @@
+/* دوري المدن — theme derived from the league crest.
+ *
+ * Loaded after style.css and only by the Cities page, so Arab and Libyan keep
+ * the shared white theme. Everything here is a token override plus the few
+ * components the dark ground needs; no structural CSS is duplicated.
+ *
+ * Colours sampled from static/cities_logo_restored.png:
+ *   #e6be50  sand gold   — the old-city walls, minaret and tower. This is the
+ *                          league's own colour: the architecture is what
+ *                          "دوري المدن" refers to, and unlike the flag's red
+ *                          and green it belongs to this crest alone.
+ *   #1e8c3c  flag green  — 25% of the crest's chromatic pixels
+ *   #c81414  flag red    — 15%
+ *   #00325a  palm blue   — used sparingly, for informational accents
+ *   #101010  ground      — the crest sits on near-black, so the page does too
+ *
+ * The flag pair carries win and loss, which is what the eye is looking for in
+ * a results table, and gold carries identity — headings, the crest, the
+ * league's own furniture.
+ */
+
+:root {
+    /* Brand */
+    --cities-gold: #e6be50;
+    --cities-gold-soft: rgba(230, 190, 80, 0.14);
+    --cities-gold-line: rgba(230, 190, 80, 0.42);
+    --cities-green: #2fb85a;          /* lifted from #1e8c3c for contrast on black */
+    --cities-green-soft: rgba(47, 184, 90, 0.13);
+    --cities-red: #e8323a;            /* lifted from #c81414 for the same reason */
+    --cities-red-soft: rgba(232, 50, 58, 0.14);
+    --cities-blue: #4d9fd6;
+
+    /* The shared theme's own names, repointed. Overriding these rather than
+       rewriting rules means most existing components follow automatically.
+       --primary-purple is the exception: style.css uses it for surfaces AND
+       for text, which on a dark ground need opposite values. It is set to the
+       dark surface here so backgrounds are right, and the text rules that
+       relied on it are listed explicitly below. */
+    --primary-purple: #16160f;
+    --primary-purple-dark: #0d0d09;
+    --primary-purple-light: #24241a;
+    --accent-yellow: #e6be50;
+    --accent-yellow-light: #f2d488;
+    --accent-yellow-dark: #b8933a;
+
+    --bg-white: #0d0d0f;
+    --bg-light: #131317;
+    --bg-gray: #1a1a1f;
+    --bg-card: #131317;
+
+    --text-primary: #f2f1ea;
+    --text-secondary: #9a988c;
+    --text-dark: #f2f1ea;
+
+    --success: #2fb85a;
+    --warning: #e6be50;
+    --danger: #e8323a;
+
+    --border-color: #26261e;
+    --shadow: 0 2px 15px rgba(0, 0, 0, 0.45);
+    --shadow-hover: 0 4px 20px rgba(230, 190, 80, 0.14);
+}
+
+body {
+    background: var(--bg-white);
+    color: var(--text-primary);
+}
+
+/* Surfaces the shared sheet paints white explicitly rather than via a token. */
+.header {
+    background: linear-gradient(180deg, #16160f 0%, var(--bg-white) 100%);
+    border-bottom: 1px solid var(--cities-gold-line);
+}
+
+.logo-title { color: var(--cities-gold); }
+.logo-subtitle { color: var(--text-secondary); }
+
+/* Labelled navigation — the icons alone (🔄 📜 🏠) gave no clue what they did. */
+.header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-gray);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.header-action:hover,
+.header-action:focus-visible {
+    background: #20201a;
+    border-color: var(--cities-gold);
+}
+
+.header-action:focus-visible {
+    outline: 2px solid var(--cities-gold);
+    outline-offset: 2px;
+}
+
+.header-action-icon { font-size: 0.95rem; line-height: 1; }
+
+/* Cards and panels. The class names come from the shared template — the
+   fixture list uses .fixture-*, and the mobile standings use .ms-*; both
+   painted white explicitly rather than through a token. */
+body .highlight-card,
+body .card,
+body .section,
+body .fixture-card,
+body .fixture-card-main,
+body .fixture-card-expand,
+body .fixture-card-unique,
+body .fixture-row,
+body .ms-detail,
+body .mobile-standing-details,
+body .mobile-standing-row {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body .fixture-card,
+body .ms-detail {
+    border: 1px solid var(--border-color);
+}
+
+.highlight-card.team-of-week { border-inline-start: 3px solid var(--cities-gold); }
+.highlight-card.star-of-week { border-inline-start: 3px solid var(--cities-green); }
+
+/* Results: the flag pair does the work a results table needs. */
+.winner,
+.team-winner,
+.result-win { color: var(--cities-green); }
+
+.result-loss { color: var(--cities-red); }
+
+.status-badge.live {
+    background: var(--cities-red-soft);
+    color: var(--cities-red);
+    border: 1px solid var(--cities-red);
+}
+
+.status-badge.finished {
+    background: var(--cities-green-soft);
+    color: var(--cities-green);
+    border: 1px solid var(--cities-green);
+}
+
+.status-badge.not-started {
+    background: var(--cities-gold-soft);
+    color: var(--cities-gold);
+    border: 1px solid var(--cities-gold-line);
+}
+
+/* Tables */
+table thead th {
+    background: var(--bg-gray);
+    color: var(--text-secondary);
+    /* Headers stay put while a twenty-row table scrolls. */
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+table tbody tr { border-bottom: 1px solid var(--border-color); }
+table tbody tr:hover { background: #1c1c16; }
+
+td, th { font-variant-numeric: tabular-nums; }
+
+.captain-badge {
+    background: var(--cities-gold-soft);
+    color: var(--cities-gold);
+    border: 1px solid var(--cities-gold-line);
+}
+
+.footer {
+    background: var(--bg-light);
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .header-action { padding: 0.45rem 0.65rem; font-size: 0.78rem; }
+}
+
+
+/* --primary-purple was the shared theme's text colour as well as its surface
+   colour. On white both readings worked; on black a dark value makes the text
+   vanish, so every rule that used it for type is repointed to gold — the
+   league's identity colour — or to plain light text where gold would be noise.
+
+   Prefixed with `body` deliberately: several of these rules live in the page's
+   own inline <style>, which the browser applies after this file, so a bare
+   class selector here loses the tie and the text stays invisible. */
+body .section-title,
+body .page-title h1,
+body .unique-header,
+body .unique-label,
+body .stat-value,
+body .stat-players-big,
+body .count-badge,
+body .expand-hint,
+body .stats-table .rank-cell,
+body .loading-indicator,
+body .ms-lp,
+body .msi-value,
+body .col-points.highlight,
+body .league-points-cell,
+body .bottom-nav-item.active,
+body .toggle-unique-btn.active,
+body .manager-link:hover,
+body .stats-link:hover,
+body .back-link:hover {
+    color: var(--cities-gold);
+}
+
+/* Names read as content, not as accent — gold everywhere would flatten the
+   hierarchy the accent is there to create. */
+body .highlight-name { color: var(--text-primary); }
+
+/* Badges that put dark text on a gold fill keep doing so. */
+body .diff-badge,
+body .percentage-badge {
+    background: var(--cities-gold);
+    color: #16160f;
+}
+
+/* The losing side of a fixture was mid-grey on white; on black it needs to be
+   dimmed rather than darkened. */
+body .team-name:not(.winner),
+body .fixture-team:not(.winner) { color: var(--text-secondary); }
