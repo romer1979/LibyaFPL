@@ -18,7 +18,7 @@ LEAGUE_CONFIGS = {
     'arab': {
         'name': 'البطولة العربية',
         'h2h_id': ARAB_H2H_LEAGUE_ID,
-        'logo': 'arab_logo.png',
+        'logo': 'arab_mark_192.png',
         'back_url': '/league/arab',
     },
     'libyan': {

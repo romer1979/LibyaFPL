@@ -1,0 +1,297 @@
+/* البطولة العربية — theme derived from the league emblem.
+ *
+ * Loaded after the page's inline <style> so ordinary rules win on source order.
+ *
+ * Colours sampled from static/arab_logo_restored.png:
+ *   #101040  deep navy   — 15% of the emblem's chromatic pixels; the Kufic
+ *                          calligraphy and every ribbon outline
+ *   #00a080  jade        — 10%
+ *   #d00030  crimson     —  9.6%
+ *   #f0f0f0  white       — the sphere the ribbons are woven across
+ *
+ * This is the one emblem of the three that is predominantly LIGHT: 45% of the
+ * pixels inside it are brighter than 170 luminance, where the Cities and
+ * Libyan crests are dark plates with a bright mark on them. So this league
+ * stays light while those two went dark — three leagues, three grounds, and
+ * no chance of mistaking one page for another.
+ *
+ * Form follows suit. Cities is rounded filled cards on black; Libyan is a flat
+ * ruled ledger on black; this is a tournament programme — white cards under
+ * solid navy header bands, with the ribbons' jade and crimson carrying results.
+ */
+
+:root {
+    /* Brand */
+    --arab-navy: #101040;
+    --arab-navy-light: #23236b;
+    --arab-navy-soft: rgba(16, 16, 64, 0.08);
+    --arab-jade: #00806a;          /* darkened from #00a080 for text on white */
+    --arab-jade-soft: rgba(0, 160, 128, 0.12);
+    --arab-crimson: #c2002c;       /* darkened from #d00030 for the same reason */
+    --arab-crimson-soft: rgba(208, 0, 48, 0.10);
+
+    /* Shared theme names, repointed. Unlike the two dark themes there is no
+       surface/text conflict here: the page stays light, so --primary-purple
+       can simply become the navy it replaces, in both roles. */
+    --primary-purple: #101040;
+    --primary-purple-dark: #0a0a2a;
+    --primary-purple-light: #23236b;
+    --accent-yellow: #c2002c;
+    --accent-yellow-light: #e63a5c;
+    --accent-yellow-dark: #8e0020;
+
+    --bg-white: #f7f7fa;
+    --bg-light: #ffffff;
+    --bg-gray: #ececf3;
+    --bg-card: #ffffff;
+
+    --text-primary: #14142e;
+    --text-secondary: #5c5c73;
+    --text-dark: #14142e;
+
+    --success: #00806a;
+    --warning: #b8860b;
+    --danger: #c2002c;
+
+    --border-color: #dcdce7;
+    --shadow: 0 1px 3px rgba(16, 16, 64, 0.08);
+    --shadow-hover: 0 6px 18px rgba(16, 16, 64, 0.14);
+}
+
+body {
+    background: var(--bg-white);
+    color: var(--text-primary);
+}
+
+/* Header: solid navy, the way a tournament programme puts its title block. */
+.header {
+    background: linear-gradient(135deg, var(--arab-navy) 0%, var(--primary-purple-dark) 100%);
+    border-bottom: 3px solid var(--arab-crimson);
+}
+
+.logo-title { color: #ffffff; }
+.logo-subtitle { color: rgba(255, 255, 255, 0.62); letter-spacing: 0.2em; }
+
+.logo-img {
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 2px;
+}
+
+/* Labelled navigation — base component is in style.css; these are the colours
+   it needs against the navy header. */
+.header-action {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+}
+
+.header-action:hover,
+.header-action:focus-visible {
+    background: rgba(255, 255, 255, 0.20);
+    border-color: #ffffff;
+}
+
+.header-action:focus-visible { outline-color: #ffffff; }
+
+/* ==========================================================================
+   Programme form: white cards under solid navy header bands.
+   Cities uses tinted cards on black, Libyan uses no cards at all.
+   ========================================================================== */
+
+.section,
+.highlight-card,
+.fixture-card,
+.ms-detail {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.section { overflow: hidden; }
+
+/* The team-league dashboards have no .section-header wrapper — the title sits
+   directly inside the section — so the navy band is the title itself. The
+   history page does use .section-header, so both are covered. */
+.section-header {
+    background: var(--arab-navy);
+    border-bottom: 0;
+    padding: 0.85rem 1.15rem;
+}
+
+.section-header .section-title { background: transparent; padding: 0; }
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--arab-navy);
+    color: #ffffff;
+    border: 0;
+    border-bottom: 0;
+    border-image: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+}
+
+.section-badge {
+    background: rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* The emblem's ribbons, as a rule above the week's highlight cards. The shared
+   sheet fills these with its own tinted gradients, which have to go first. */
+.highlight-card.team-of-week,
+.highlight-card.star-of-week,
+.highlight-card.update-info {
+    background: var(--bg-card);
+    background-image: none;
+}
+
+.highlight-card.team-of-week { border-top: 3px solid var(--arab-jade); }
+.highlight-card.star-of-week { border-top: 3px solid var(--arab-crimson); }
+.highlight-card.update-info  { border-top: 3px solid var(--arab-navy-light); }
+
+.highlight-name { color: var(--arab-navy); }
+.highlight-points { color: var(--arab-jade); font-weight: 700; }
+
+/* The shared sheet leaves this as the old gold, which lands at 1.6:1 on white. */
+.highlight-team { color: var(--text-secondary); }
+
+/* Results: jade takes the win, crimson the loss — the emblem's own pair. */
+.team-cell.winner,
+.team-cell.winner .team-name,
+.winner-icon,
+.winner,
+.team-winner,
+.result-win {
+    color: var(--arab-jade);
+    font-weight: 700;
+}
+
+.team-cell:not(.winner) .team-name { color: var(--text-secondary); }
+.result-loss { color: var(--arab-crimson); }
+
+.score.score-win {
+    background: var(--arab-jade-soft);
+    color: var(--arab-jade);
+    border: 1px solid var(--arab-jade);
+    border-radius: 6px;
+}
+
+.fixtures-table .score-pts.winning {
+    background: var(--arab-jade-soft);
+    color: var(--arab-jade);
+    border: 1px solid var(--arab-jade);
+}
+
+.fixtures-table .score-pts.losing {
+    background: var(--arab-crimson-soft);
+    color: var(--arab-crimson);
+    border: 1px solid var(--arab-crimson);
+}
+
+.fixtures-table .score-pts.draw {
+    background: var(--arab-navy-soft);
+    color: var(--arab-navy);
+    border: 1px solid var(--border-color);
+}
+
+.fixtures-table .team-name.winner { color: var(--arab-jade); font-weight: 700; }
+.standings-table .league-points-cell { color: var(--arab-navy); font-weight: 700; }
+
+.rank-up { color: var(--arab-jade); }
+.rank-down { color: var(--arab-crimson); }
+.rank-same { color: var(--text-secondary); }
+
+/* Status */
+.status-badge.live {
+    background: var(--arab-crimson-soft);
+    color: var(--arab-crimson);
+    border: 1px solid var(--arab-crimson);
+}
+
+.status-badge.finished {
+    background: var(--arab-jade-soft);
+    color: var(--arab-jade);
+    border: 1px solid var(--arab-jade);
+}
+
+.status-badge.not-started {
+    background: var(--arab-navy-soft);
+    color: var(--arab-navy);
+    border: 1px solid var(--border-color);
+}
+
+/* Tables: navy heading row, hairline rows. */
+table thead th {
+    background: var(--arab-navy);
+    color: #ffffff;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.fixtures-table th,
+.standings-table th {
+    background: var(--arab-navy);
+    color: #ffffff;
+}
+
+table tbody tr { border-bottom: 1px solid var(--border-color); }
+table tbody tr:hover { background: var(--arab-navy-soft); }
+
+td, th { font-variant-numeric: tabular-nums; }
+
+.diff-badge,
+.percentage-badge {
+    background: var(--arab-navy);
+    color: #ffffff;
+}
+
+.captain-badge {
+    background: var(--arab-navy-soft);
+    color: var(--arab-navy);
+    border: 1px solid var(--border-color);
+}
+
+/* History page */
+.gw-selector-title { color: var(--arab-navy); }
+
+.gw-btn {
+    background: #ffffff;
+    color: var(--arab-navy);
+    border: 1px solid var(--border-color);
+}
+
+.gw-btn.active {
+    background: var(--arab-navy);
+    color: #ffffff;
+    border-color: var(--arab-navy);
+}
+
+.rank-badge,
+.standings-table .rank-cell { color: var(--arab-navy); }
+
+.footer {
+    background: var(--arab-navy);
+    color: rgba(255, 255, 255, 0.75);
+    border-top: 3px solid var(--arab-crimson);
+}
+
+
+/* Contrast corrections against the shared sheet's defaults.
+   These inherit --accent-yellow, which is crimson here; crimson on the navy
+   header and gold-on-white both fall under 3:1. */
+.gw-number { color: #ffffff; }
+.gw-label { color: rgba(255, 255, 255, 0.75); }
+.fixture-separator { color: var(--text-secondary); }
+.captain-row,
+.captain-badge,
+.mobile-captain { color: var(--text-secondary); }

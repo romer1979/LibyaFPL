@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     {% if league_type == 'cities' %}<meta name="theme-color" content="#0d0d0f">
-    {% elif league_type == 'libyan' %}<meta name="theme-color" content="#0c0c0c">{% endif %}
+    {% elif league_type == 'libyan' %}<meta name="theme-color" content="#0c0c0c">
+    {% elif league_type == 'arab' %}<meta name="theme-color" content="#101040">{% endif %}
     <title>{{ league_name }} - سجل الجولات</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -297,7 +298,7 @@
         }
     </style>
     {# After the inline <style>, so theme rules win on source order. #}
-    {% if league_type in ('cities', 'libyan') %}
+    {% if league_type in ('cities', 'libyan', 'arab') %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ league_type ~ '.css') }}">
     {% endif %}
 </head>
