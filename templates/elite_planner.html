@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>خطط للمواجهة | دوري النخبة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/elite_planner.css') }}">
+    <script src="{{ url_for('static', filename='js/elite_planner_model.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/elite_planner.js') }}" defer></script>
+</head>
+<body>
+    <header><a class="brand" href="/league/elite"><img src="{{ url_for('static', filename='elite_league_logo_restored.png') }}" alt=""><span>دوري النخبة<small lang="en">ELITE LEAGUE</small></span></a><a href="/league/elite">العودة إلى الدوري ←</a></header>
+    <main>
+        <div class="intro"><div><p class="eyebrow">الجولة القادمة · مساحة التخطيط</p><h1>خطط للمواجهة</h1><p>تشكيلتك، خصمك، واللاعبون الذين يصنعون الفارق.</p></div><span id="gameweek" class="gw">—</span></div>
+        <section class="toolbar"><label for="manager">اختر مديرك<select id="manager" disabled><option value="">تحميل المديرين…</option></select></label><p id="deadline"></p><button id="retry" type="button">تحديث البيانات</button></section>
+        <p id="message" role="status" aria-live="polite">جاري تحميل الجولة القادمة…</p>
+        <div id="matchup" hidden>
+            <aside class="notice">محاكاة فقط: لا تُرسل التغييرات إلى FPL. تشكيلتا البداية من آخر جولة منشورة <strong id="published"></strong>؛ انتقالات الخصم وتشكيلته القادمة غير معلنة. المقارنة تفترض مشاركة جميع الأساسيين؛ نائب الكابتن لا يضاعف النقاط إلا عند غياب الكابتن، ولا نحاكي الغياب أو التبديلات التلقائية.</aside>
+            <div class="legend"><span><i class="unique-dot"></i>مساهمة مختلفة في النقاط</span><span><i class="shared-dot"></i>لاعب مشترك</span><span>تُحسب الدكة فقط مع Bench Boost</span></div>
+            <div class="pitches">
+                <section class="team-panel"><div class="team-heading"><div><small>خطتك للجولة القادمة</small><h2 id="my-name"></h2></div><button id="reset" type="button">إعادة الضبط</button></div><p class="hint">اضغط الأساسي ثم البديل المضيء للتبديل. يمكنك أيضاً ترتيب البدلاء.</p><div id="my-controls" class="plan-controls"></div><div id="my-selection" class="selection-bar" role="status" aria-live="polite"></div><div id="my-pitch" class="pitch"></div><div class="bench-title">دكة البدلاء · حسب الأولوية</div><div id="my-bench" class="bench"></div></section>
+                <section class="team-panel"><div class="team-heading"><div><small>خصمك حسب جدول الجولة</small><h2 id="opponent-name"></h2></div><button id="opponent-reset" type="button">إعادة الضبط</button></div><p class="hint">جرّب خطة خصمك: اضغط الأساسي ثم البديل. هذه توقعات وليست تشكيلته المؤكدة.</p><div id="opponent-controls" class="plan-controls"></div><div id="opponent-selection" class="selection-bar" role="status" aria-live="polite"></div><div id="opponent-pitch" class="pitch"></div><div class="bench-title">دكة البدلاء · حسب الأولوية</div><div id="opponent-bench" class="bench"></div></section>
+            </div>
+            <p class="hint">الشرائح حسب سجل الاستخدام المنشور لكل نصف موسم؛ تفعيل الجولة القادمة غير معلن. Wildcard و Free Hit يلغيان خصم الانتقالات، مع الالتزام بالميزانية. يُسمح بشريحة واحدة لكل فريق.</p><section class="summary"><div class="summary-heading"><h2>اللاعبون المختلفون</h2><span id="shared-count"></span></div><div class="summary-grid"><div><h3>أفضلية خطتك</h3><div id="my-diffs" class="diff-list"></div></div><div><h3>أفضلية خطة الخصم</h3><div id="opponent-diffs" class="diff-list"></div></div></div></section>
+        </div>
+    </main>
+    <dialog id="editor" aria-labelledby="edit-title"><form method="dialog"><button class="close" aria-label="إغلاق">×</button></form><h2 id="edit-title"></h2><p id="editor-finance" role="status"></p><label for="search">تجربة انتقال إلى لاعب بنفس المركز</label><input id="search" type="search" placeholder="ابحث بالاسم أو النادي" autocomplete="off"><p class="hint">تُراجع الميزانية وفق أسعار البيع والرصيد المفترضين. الانتقالات مسودة صافية وليست عمليات بيع وشراء منفذة.</p><div id="transfer-options"></div></dialog>
+</body>
+</html>
