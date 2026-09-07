@@ -190,7 +190,7 @@ body {
 }
 
 .phase-tab.active {
-    background: linear-gradient(135deg, var(--metallic-dark) 0%, #4a4a4a 100%);
+    background: linear-gradient(135deg, var(--metallic-dark) 0%, var(--border-mid) 100%);
     color: var(--text-light);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
@@ -722,4 +722,235 @@ body {
     .survival-value { font-size: 1.2rem; }
     .survival-label { font-size: 0.62rem; }
     .survival-panel { padding: 1rem; }
+}
+
+/* ==========================================================================
+   Tournament hero + phase tabs.
+
+   Design carried over from the standalone refresh, with the greys mapped onto
+   the palette tokens: the original used neutral #101010/#1b1b1b, which reads
+   warm against these cool blue-black surfaces. The accent is the signature
+   red rather than metallic silver, so the hero belongs to this competition
+   rather than looking like the app's other dark pages.
+   ========================================================================== */
+
+.tournament-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    background:
+        radial-gradient(circle at 86% 50%, var(--signature-soft), transparent 30%),
+        linear-gradient(115deg, var(--dark-bg-lighter) 0%, var(--surface-raised) 58%, var(--dark-bg-lighter) 100%);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hero-mark-wrap {
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    border: 1px solid var(--border-mid);
+    border-radius: 14px;
+    background: var(--dark-bg);
+    overflow: hidden;
+}
+
+.hero-mark { width: 88px; height: 88px; object-fit: contain; }
+.hero-copy { min-width: 0; }
+
+.hero-kicker {
+    color: var(--signature);
+    font-size: 0.67rem;
+    letter-spacing: 2.2px;
+    font-weight: 700;
+}
+
+.hero-copy h1 {
+    margin: 0.25rem 0 0.1rem;
+    color: var(--text-light);
+    font-size: clamp(1.35rem, 2.4vw, 2.15rem);
+    line-height: 1.35;
+}
+
+.hero-copy p { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+
+.hero-status {
+    min-width: 118px;
+    padding-inline-start: 1.25rem;
+    border-inline-start: 1px solid var(--border-dark);
+    text-align: center;
+}
+
+.hero-status-label { display: block; color: var(--text-muted); font-size: 0.7rem; }
+
+.hero-status strong {
+    display: block;
+    margin-top: 0.1rem;
+    color: var(--text-light);
+    font-size: 2rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.hero-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--signature);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.hero-live::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+}
+
+/* Phase tabs: numbered stages with their gameweek range, so the sequence and
+   the schedule are both readable without opening anything. */
+.phase-tabs {
+    gap: 0.35rem;
+    padding: 0.35rem;
+    background: var(--dark-bg-lighter);
+    border-color: var(--border-mid);
+}
+
+.phase-tab {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    text-align: right;
+    border: 1px solid transparent;
+}
+
+.phase-tab::after {
+    content: '';
+    position: absolute;
+    inset-inline: 1rem;
+    bottom: 0.35rem;
+    height: 2px;
+    background: transparent;
+}
+
+.phase-tab.active::after { background: var(--signature); }
+
+.tab-index {
+    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.66rem;
+    letter-spacing: 1px;
+}
+
+.tab-icon {
+    display: grid !important;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin: 0 !important;
+    border: 1px solid var(--border-mid);
+    border-radius: 50%;
+    background: var(--dark-bg);
+    font-size: 1rem !important;
+}
+
+.tab-copy { display: flex; flex-direction: column; gap: 0.05rem; }
+.tab-copy strong { font-size: 0.9rem; color: var(--text-light); }
+.tab-copy small { color: var(--text-muted); font-size: 0.64rem; font-weight: 400; }
+
+.phase-tab.active {
+    border-color: var(--signature-line);
+    background: linear-gradient(135deg, var(--surface-raised), var(--dark-card));
+}
+
+.phase-tab.active .tab-icon {
+    border-color: var(--signature);
+    box-shadow: 0 0 12px var(--signature-soft);
+}
+
+.section { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2); }
+
+.section-header {
+    padding: 0.9rem 1.25rem;
+    background: linear-gradient(90deg, var(--signature-soft), transparent 64%);
+}
+
+.section-content { padding: 1.1rem; }
+.zone-indicator { border: 1px solid currentColor; background: transparent; }
+
+/* Hover only where a pointer can actually hover. On touch the state sticks
+   after a tap, and a transform on 150 rows repaints more than it earns. */
+@media (hover: hover) and (pointer: fine) {
+    .standings-table tbody tr { transition: background 0.2s; }
+}
+
+.stat-card { position: relative; overflow: hidden; }
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    bottom: 0;
+    width: 34%;
+    height: 2px;
+    background: var(--signature);
+    opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+    .main-container { padding: 1rem 0.75rem; }
+
+    .tournament-hero {
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 0.85rem;
+        padding: 0.85rem;
+    }
+
+    .hero-mark-wrap { width: 64px; height: 64px; border-radius: 10px; }
+    .hero-mark { width: 60px; height: 60px; }
+    .hero-kicker { font-size: 0.52rem; letter-spacing: 1.2px; }
+    .hero-copy h1 { font-size: 1.35rem; }
+    .hero-copy p { font-size: 0.68rem; }
+
+    .hero-status {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.55rem 0.25rem 0;
+        border-inline-start: 0;
+        border-top: 1px solid var(--border-dark);
+        text-align: right;
+    }
+
+    .hero-status strong { margin: 0; font-size: 1.25rem; }
+
+    /* Three across rather than stacked: the old column ate ~180px of the
+       first screen before any content. */
+    .phase-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .phase-tab {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 0.25rem;
+        padding: 0.65rem 0.25rem 0.85rem;
+        text-align: center;
+    }
+
+    .phase-tab::after { inset-inline: 0.3rem; }
+    .tab-index { display: none; }
+    .tab-copy strong { font-size: 0.68rem; }
+    .tab-copy small { display: none; }
+    .tab-icon { width: 30px; height: 30px; font-size: 0.9rem !important; }
 }

@@ -975,26 +975,55 @@
 
     <!-- Main Content -->
     <main class="main-container">
-        <!-- Phase Tabs -->
-        <div class="phase-tabs">
-            <button class="phase-tab {% if data.phase == 'qualification' %}active{% endif %}" onclick="showPhase('qualification')">
-                <span class="tab-icon">🏃</span>
-                مرحلة التأهل
+        <section class="tournament-hero" aria-labelledby="tournament-title">
+            <div class="hero-mark-wrap">
+                {# A 192px copy of the crest rather than the 1254px original:
+                   the hero shows it at 88px (64px on mobile), so the full-size
+                   file was 1,563KB to render a thumbnail. This is 51KB.
+                   Explicit width/height so the hero doesn't reflow on load. #}
+                <img src="{{ url_for('static', filename='the100_mark_192.png') }}"
+                     alt="" class="hero-mark" width="192" height="192"
+                     decoding="async" fetchpriority="high">
+            </div>
+            <div class="hero-copy">
+                <span class="hero-kicker">THE 100 · FANTASY PREMIER LEAGUE</span>
+                <h1 id="tournament-title">طريقك إلى المئة</h1>
+                <p>ثلاث مراحل، جولات حاسمة، وسباق واحد نحو لقب البطولة.</p>
+            </div>
+            <div class="hero-status">
+                <span class="hero-status-label">الجولة الحالية</span>
+                <strong>{{ data.gameweek or '-' }}</strong>
+                {% if data.is_live %}<span class="hero-live">مباشر</span>{% endif %}
+            </div>
+        </section>
+
+        {# Phase Tabs. role="tablist" only works if the children are real tabs:
+           each needs role="tab", aria-selected and aria-controls, and each panel
+           needs role="tabpanel". A tablist with no tabs announces as empty, which
+           is worse for a screen reader than leaving the roles off entirely. #}
+        <div class="phase-tabs" role="tablist" aria-label="مراحل البطولة">
+            {% for slug, label, icon, idx, gws in [
+                ('qualification', 'مرحلة التأهل',  '🏃', '01', 'الجولات 1–19'),
+                ('elimination',   'مرحلة الإقصاء', '⚔️', '02', 'الجولات 20–33'),
+                ('championship',  'مرحلة البطولة', '🏆', '03', 'الجولات 34–37')
+            ] %}
+            <button class="phase-tab {% if data.phase == slug %}active{% endif %}"
+                    onclick="showPhase('{{ slug }}')"
+                    role="tab"
+                    id="tab-{{ slug }}"
+                    aria-controls="phase-{{ slug }}"
+                    aria-selected="{{ 'true' if data.phase == slug else 'false' }}">
+                <span class="tab-index">{{ idx }}</span>
+                <span class="tab-icon" aria-hidden="true">{{ icon }}</span>
+                <span class="tab-copy"><strong>{{ label }}</strong><small>{{ gws }}</small></span>
             </button>
-            <button class="phase-tab {% if data.phase == 'elimination' %}active{% endif %}" onclick="showPhase('elimination')">
-                <span class="tab-icon">⚔️</span>
-                مرحلة الإقصاء
-            </button>
-            <button class="phase-tab {% if data.phase == 'championship' %}active{% endif %}" onclick="showPhase('championship')">
-                <span class="tab-icon">🏆</span>
-                مرحلة البطولة
-            </button>
+            {% endfor %}
         </div>
 
         <!-- ============================================ -->
         <!-- QUALIFICATION PHASE -->
         <!-- ============================================ -->
-        <div id="phase-qualification" class="phase-content {% if data.phase == 'qualification' %}active{% endif %}">
+        <div id="phase-qualification" role="tabpanel" aria-labelledby="tab-qualification" class="phase-content {% if data.phase == 'qualification' %}active{% endif %}">
             <!-- Stats Overview -->
             <div class="section">
                 <div class="section-header">
@@ -1130,7 +1159,7 @@
         <!-- ============================================ -->
         <!-- ELIMINATION PHASE -->
         <!-- ============================================ -->
-        <div id="phase-elimination" class="phase-content {% if data.phase == 'elimination' %}active{% endif %}">
+        <div id="phase-elimination" role="tabpanel" aria-labelledby="tab-elimination" class="phase-content {% if data.phase == 'elimination' %}active{% endif %}">
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">⚔️ تفاصيل مرحلة الإقصاء</h2>
@@ -1294,7 +1323,7 @@
         <!-- ============================================ -->
         <!-- CHAMPIONSHIP PHASE -->
         <!-- ============================================ -->
-        <div id="phase-championship" class="phase-content {% if data.phase == 'championship' %}active{% endif %}">
+        <div id="phase-championship" role="tabpanel" aria-labelledby="tab-championship" class="phase-content {% if data.phase == 'championship' %}active{% endif %}">
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏆 تفاصيل مرحلة البطولة</h2>
@@ -1486,11 +1515,19 @@
             document.querySelectorAll('.phase-content').forEach(el => {
                 el.classList.remove('active');
             });
+            // aria-selected has to move with the class, otherwise a screen
+            // reader keeps announcing the original tab as the selected one.
             document.querySelectorAll('.phase-tab').forEach(el => {
                 el.classList.remove('active');
+                el.setAttribute('aria-selected', 'false');
             });
-            document.getElementById('phase-' + phase).classList.add('active');
-            event.target.closest('.phase-tab').classList.add('active');
+            const panel = document.getElementById('phase-' + phase);
+            if (panel) panel.classList.add('active');
+            const tab = document.getElementById('tab-' + phase);
+            if (tab) {
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+            }
         }
         
         // Every manager, for searching past the rows actually rendered.
