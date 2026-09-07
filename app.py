@@ -436,6 +436,67 @@ def backfill_elite_standings(current_gw):
         _elite_backfill_lock.release()
 
 
+def _standings_agree_with_fpl(gameweek, standings):
+    """
+    Acceptance test run immediately before persisting a settled gameweek:
+    do the cumulative totals we are about to write match FPL's own table?
+
+    `gw_settled` comes from bootstrap's finished + data_checked, which is FPL
+    saying the PLAYER scores are final. Their head-to-head job is a separate
+    piece of machinery, and the finished-gameweek branch reads its output
+    (`entry_1_points` / `entry_2_points`) to decide who won. Nothing promises
+    the two land in the same instant. If the H2H side were still empty when
+    data_checked flipped, every fixture would read 0-0, every match would look
+    like a draw, and a full set of plausible-but-wrong rows would be written.
+
+    So rather than assume an ordering, check the result. FPL's `total` is the
+    cumulative league points through the last finished gameweek, which is this
+    one; if what we computed disagrees with it, their H2H numbers and ours are
+    not describing the same gameweek yet, and we skip the write. The next page
+    view tries again. This is what keeps "FPL is late" from ever meaning
+    "the database is wrong" — it can only ever mean "the database is behind".
+
+    get_league_standings is cached, so this costs no extra request.
+    """
+    from config import LEAGUE_ID, EXCLUDED_PLAYERS, KNOCKOUT_START_GW
+    from core.fpl_api import get_league_standings
+
+    # During the FPL-run knockout phase the round-robin total is frozen on both
+    # sides and the comparison stops being meaningful, so it isn't made.
+    if gameweek >= KNOCKOUT_START_GW:
+        return True
+
+    try:
+        fpl_totals = {
+            e.get('entry'): int(e.get('total', 0) or 0)
+            for e in get_league_standings(LEAGUE_ID)['standings']['results']
+            if e.get('player_name') not in EXCLUDED_PLAYERS
+        }
+    except Exception as e:
+        # Can't verify, so don't write. Being a gameweek behind is recoverable;
+        # a corrupted base row silently shifts every gameweek after it.
+        print(f"[elite] GW{gameweek} not saved: could not reach FPL to verify ({e})")
+        return False
+
+    if not fpl_totals:
+        print(f"[elite] GW{gameweek} not saved: FPL returned no standings to verify against")
+        return False
+
+    for team in standings:
+        want = fpl_totals.get(team.get('entry_id'))
+        if want is None:
+            continue
+        got = team.get('projected_league_points', 0)
+        if got != want:
+            print(f"[elite] GW{gameweek} not saved: computed totals disagree with FPL "
+                  f"(e.g. {team.get('player_name')}: computed {got}, FPL {want}). "
+                  f"FPL's head-to-head data is probably still catching up; "
+                  f"will retry on the next request.")
+            return False
+
+    return True
+
+
 @app.route('/league/elite')
 def elite_dashboard():
     """Elite League dashboard page"""
@@ -478,7 +539,7 @@ def elite_dashboard():
         #
         # Settled data doesn't change, so re-saving on later views is a no-op
         # and the upsert needs no first-write-wins guard.
-        if data.get('gw_settled'):
+        if data.get('gw_settled') and _standings_agree_with_fpl(gameweek, data['standings']):
             save_standings(gameweek, data['standings'])
 
             # Also save fixture results for current GW
