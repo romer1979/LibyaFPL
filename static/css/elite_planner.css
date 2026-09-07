@@ -30,6 +30,11 @@
 
     --ink: var(--text-primary);
     --muted: var(--text-secondary);
+    /* --text-secondary is 4.13–4.26:1 on the tinted panels here, just under
+       AA, and every one of those panels carries 11–12px type. This is one
+       notch darker: still recessive, but it clears 4.5:1. Local to the
+       planner rather than a change to the token all five leagues share. */
+    --muted-strong: #646d75;
     --line: var(--border-color);
     --paper: var(--bg-light);
     --tint: rgba(74, 18, 89, 0.05);
@@ -312,11 +317,9 @@ button {
 .bench .player strong { background: transparent; color: var(--ink); }
 
 /* The bench is deliberately quieter than the pitch, but its fixture line and
-   multiplier are 9px, and --text-secondary on this panel lands at 4.13:1.
-   One notch darker clears 4.5:1 while keeping the bench recessive. Scoped
-   here rather than changing the shared token, which every league uses. */
+   multiplier are 9px, and --text-secondary on this panel lands at 4.13:1. */
 .bench .player small,
-.bench .player .weight { color: #646d75; }
+.bench .player .weight { color: var(--muted-strong); }
 /* On the white bench the accent has no contrast, so purple carries it. */
 .bench .player.unique strong { color: var(--purple); font-weight: 800; }
 
@@ -464,6 +467,94 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
     cursor: pointer;
 }
 
+/* ==========================================================================
+   Budget and sale prices
+   ========================================================================== */
+
+.finance-box {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: var(--tint);
+    border: 1px solid var(--tint-line);
+    border-inline-start: 3px solid var(--purple-light);
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.finance-box > strong { display: block; font-size: 14px; color: var(--purple); }
+.finance-box p { margin: 4px 0; color: var(--muted-strong); }
+
+/* The one place a warning colour is right: overspending is an error state,
+   not brand furniture, so it is red rather than the accent.
+   A shade darker than the shared --danger (#dc3545), which measured 4.06:1
+   on this tinted panel — under AA for the 12px line and for the 14px bold
+   balance, since bold only relaxes the threshold from 18.66px. Scoped here
+   rather than changing the token every league uses. */
+.budget-error { color: #c1121f !important; font-weight: 700; }
+
+.finance-box details { margin-top: 8px; }
+
+.finance-box summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--purple);
+    padding: 4px 0;
+    list-style-position: inside;
+}
+
+.finance-box summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.finance-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 8px 0;
+}
+
+/* Fifteen sale prices is a long list, so it scrolls inside the panel rather
+   than pushing the pitch off the screen. */
+.sale-prices {
+    display: grid;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-inline-end: 4px;
+}
+
+.finance-fields label,
+.sale-prices label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    min-width: 0;
+}
+
+.finance-fields input,
+.sale-prices input {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--purple);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-box .hint { color: var(--muted-strong); }
+.finance-box button { margin-top: 8px; }
+
+#editor-finance {
+    margin: 6px 0 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--purple);
+}
+
 .player { position: relative; }
 
 .player.selected {
@@ -510,6 +601,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
 }
 
 @media (max-width: 400px) {
+    .finance-fields { grid-template-columns: 1fr; }
     .plan-controls { padding-inline: 10px; }
     .chip-controls { gap: 5px; }
     .chip-controls .chip { font-size: 10px; }

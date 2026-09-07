@@ -17,3 +17,20 @@ other.chip='3xc';const weights=r.weights(other);assert.equal(weights[6],3);asser
 assert.notDeepEqual(p.ids,other.ids); // Independent lineups.
 assert.equal(r.create(ids,{captain:5,vice:5}).vice!==5,true);
 console.log('Planner rules: substitutions, formations, C/V, TC, BB and independent drafts passed.');
+const market=Object.fromEntries(ids.map((id,i)=>[id,{position:pos[i],club:id,cost:70,status:'a'}]));
+market[16]={position:3,club:16,cost:75,status:'a'};
+market[17]={position:3,club:17,cost:90,status:'a'};
+const f=r.create(ids,{captain:5,vice:6},{bank:10,sales:{5:{value:72}}},market);
+f.freeTransfers=0;
+assert.equal(r.transfer(f,4,16,market),true);
+assert.equal(r.balance(f,market),7);assert.equal(f.captain,16);assert.equal(r.hits(f),4);
+assert.equal(r.transfer(f,5,17,market),false); // Unaffordable.
+f.chip='wildcard';assert.equal(r.hits(f),0);
+f.chip='freehit';assert.equal(r.hits(f),0);
+f.chip=null;assert.equal(r.hits(f),4);
+assert.equal(r.transfer(f,4,5,market),true); // Revert a draft transfer, not a real repurchase.
+assert.equal(r.balance(f,market),10);assert.equal(r.hits(f),0);
+Object.assign(f,f.undo.pop());assert.equal(f.captain,16);assert.equal(r.balance(f,market),7);
+const unknown=r.create(ids,{}, {},market);assert.equal(r.transfer(unknown,4,16,market),false);
+f.bank=0;f.sales[5]=50;assert.equal(r.balance(f,market),-25);
+console.log('Finance rules: budgets, unknown funds, sale proceeds, net transfers, undo and WC/FH passed.');

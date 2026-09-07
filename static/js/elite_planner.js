@@ -4,6 +4,43 @@ let data = null, plans = {}, selected = null, requestNumber = 0;
 const positions = {1:'حارس',2:'دفاع',3:'وسط',4:'هجوم'};
 function text(tag,value,className='') { const e=document.createElement(tag); e.textContent=value; e.className=className; return e; }
 function button(label,action) { const b=text('button',label); b.type='button'; b.onclick=action; return b; }
+
+function money(value) { return value===null?'غير معروف':'£'+(value/10).toFixed(1)+'m'; }
+function numberField(label,value,step,max,change) {
+    const wrapper=text('label',label), input=document.createElement('input');
+    input.type='number'; input.min='0'; input.max=String(max); input.step=String(step); input.dir='ltr';
+    input.value=value===null?'':String(value); input.placeholder='غير معروف';
+    input.onchange=()=>{if(!input.validity.valid)return;change(input.value===''?null:Number(input.value));};
+    wrapper.append(input);return wrapper;
+}
+function renderFinance(side,area,expanded) {
+    const plan=plans[side], finance=(side==='my'?data.finances:data.opponent_finances)||{};
+    const box=text('div','','finance-box'), balance=PlannerRules.balance(plan,data.players), hits=PlannerRules.hits(plan);
+    const total=plan.ids.filter(id=>!plan.original.includes(id)).length;
+    box.append(text('strong','الرصيد المتبقي '+money(balance),balance!==null&&balance<0?'budget-error':''));
+    box.append(text('p',`${total} انتقالات صافية · خصم النقاط: ${hits===null?'حدد الانتقالات المجانية':hits}`));
+    if(balance!==null&&balance<0)box.append(text('p','الخطة تتجاوز الميزانية: تراجع عن انتقال أو صحح الافتراضات.','budget-error'));
+    if(plan.chip==='freehit')box.append(text('p','Free Hit: انتقالات لهذه الجولة فقط؛ التشكيلة الأصلية لا تتغير.'));
+    if(plan.chip==='wildcard')box.append(text('p','Wildcard: انتقالات بلا خصم. هذه الأداة تخطط لجولة واحدة ولا تحفظ جولات مستقبلية.'));
+    const detail=document.createElement('details');detail.open=Boolean(expanded);detail.append(text('summary','الميزانية وأسعار البيع · تعديل الافتراضات'));
+    detail.append(text('p',`الرصيد المنشور: ${money(finance.bank??null)} · GW ${finance.snapshot_gameweek??data.published_gameweek}. أسعار البيع تقديرية، وليست بيانات الحساب الخاصة.`, 'hint'));
+    const fields=text('div','','finance-fields');
+    fields.append(numberField('رصيد البداية (£m)',plan.bank===null?null:plan.bank/10,0.1,1000,v=>{plan.bank=v===null?null:Math.round(v*10);render();}),
+        numberField('انتقالات مجانية (افتراضك)',plan.freeTransfers,1,5,v=>{plan.freeTransfers=v;render();}));detail.append(fields);
+    detail.append(text('p','المصدر: سجل انتقالات منشور إن توفر؛ وإلا سعر السوق كتقدير. صحح سعر البيع الحقيقي قبل الاعتماد على الميزانية.','hint'));
+    const prices=text('div','','sale-prices');
+    plan.original.forEach(id=>{
+        const source=finance.sales?.[id]?.source==='transfer_history'?'سجل انتقالات':'تقدير سوق';
+        prices.append(numberField(`${data.players[id].name} · ${source} · شراء الآن ${money(data.players[id].cost)}`,plan.sales[id]/10,0.1,data.players[id].cost/10,v=>{
+            if(v===null)return;plan.sales[id]=Math.round(v*10);render();
+        }));
+    });detail.append(prices);box.append(detail);
+    const sold=plan.original.filter(id=>!plan.ids.includes(id)), bought=plan.ids.filter(id=>!plan.original.includes(id));
+    if(total)box.append(text('p','خروج: '+sold.map(id=>data.players[id].name+' '+money(plan.sales[id])).join('، ')),text('p','دخول: '+bought.map(id=>data.players[id].name+' '+money(data.players[id].cost)).join('، ')));
+    if(plan.undo.length)box.append(button('تراجع عن آخر انتقال',()=>{Object.assign(plan,plan.undo.pop());selected=null;render();}));
+    area.append(box);
+}
+
 function selectPlayer(side,index) {
     if(selected && selected.side===side) {
         if(selected.index===index) selected=null;
@@ -14,7 +51,7 @@ function selectPlayer(side,index) {
     render();
 }
 function renderControls(side) {
-    const p=plans[side], area=$(side+'-controls'); area.replaceChildren();
+    const p=plans[side], area=$(side+'-controls'), expanded=area.querySelector('details')?.open; area.replaceChildren();
     const leaders=text('div','','leaders');
     [['captain','الكابتن · C'],['vice','نائب الكابتن · V']].forEach(([role,label])=>{
         const wrapper=text('label',label), select=document.createElement('select');
@@ -29,14 +66,14 @@ function renderControls(side) {
     const chips=text('div','','chip-controls'), availability=(side==='my'?data.chips:data.opponent_chips)||{};
     const labels={available:'متاحة',used:'مستخدمة',unknown:'غير مؤكدة',blocked:'غير متاحة لهذه الجولة'};
     [['3xc','Triple Captain'],['bboost','Bench Boost'],['wildcard','Wildcard'],['freehit','Free Hit']].forEach(([id,label])=>{
-        const status=availability[id]||'unknown', locked=['wildcard','freehit'].includes(id);
+        const status=availability[id]||'unknown', locked=false;
         const b=button(label+' · '+(p.chip===id?'مفعّلة':labels[status])+(locked?' · عرض فقط':''),()=>{
             if(status!=='available'||locked)return;
             p.chip=p.chip===id?null:id; render();
         });
         b.disabled=status!=='available'||locked; b.className='chip'+(p.chip===id?' active':'');
         b.setAttribute('aria-pressed',String(p.chip===id)); chips.append(b);
-    }); area.append(chips);
+    }); area.append(chips); renderFinance(side,area,expanded);
     const bar=$(side+'-selection'); bar.replaceChildren();
     if(selected?.side===side) {
         bar.append(text('span',data.players[p.ids[selected.index]].name+' — اختر لاعباً مضيئاً للتبديل'),button('تجربة انتقال',openEditor),button('إلغاء',()=>{selected=null;render();}));
@@ -82,16 +119,22 @@ function transferOptions() {
     $('transfer-options').replaceChildren();if(!data||!selected)return;
     const query=$('search').value.trim().toLocaleLowerCase();
     const options=Object.values(data.players).filter(p=>canTransfer(p.id)&&`${p.name} ${p.clubName}`.toLocaleLowerCase().includes(query)).slice(0,40);
-    options.forEach(p=>$('transfer-options').append(button(`${p.name} · ${p.clubName} · £${(p.cost/10).toFixed(1)}`,()=>{
-        if(!canTransfer(p.id))return;
-        const plan=plans[selected.side], old=plan.ids[selected.index];plan.ids[selected.index]=p.id;
-        if(plan.captain===old)plan.captain=p.id;if(plan.vice===old)plan.vice=p.id;
-        selected=null;$('editor').close();render();
-    })));
+    const plan=plans[selected.side];
+    options.forEach(p=>{
+        const ids=[...plan.ids];ids[selected.index]=p.id;
+        const balance=PlannerRules.balance(plan,data.players,ids);
+        const btn=button(`${p.name} · ${p.clubName} · ${money(p.cost)} · ${balance===null?'حدد الميزانية أولاً':balance<0?'يتجاوز الميزانية':'المتبقي '+money(balance)}`,()=>{
+            if(!canTransfer(p.id)||!PlannerRules.transfer(plan,selected.index,p.id,data.players))return;
+            selected=null;$('editor').close();render();
+            $('message').textContent='تم الانتقال الافتراضي فقط — لم يتغير فريق FPL.';
+        });
+        btn.disabled=balance===null||balance<0;$('transfer-options').append(btn);
+    });
     if(!options.length)$('transfer-options').append(text('p','لا توجد نتائج متاحة بنفس المركز وحد 3 لاعبين من النادي.'));
 }
 function openEditor() {
     $('edit-title').textContent=data.players[plans[selected.side].ids[selected.index]].name;
+    $('editor-finance').textContent='الرصيد المتاح: '+money(PlannerRules.balance(plans[selected.side],data.players))+' · عدّل أسعار البيع والميزانية من إعدادات الفريق عند الحاجة.';
     $('search').value='';transferOptions();$('editor').showModal();
 }
 // A Free Hit squad reverts, so the server steps back to the last standing one.
@@ -99,7 +142,9 @@ function openEditor() {
 // behind the latest published week — both worth saying rather than showing a
 // single number that is no longer true for anyone.
 function publishedLabel(d) {
-    const mine=d.squad_gameweek, theirs=d.opponent_squad_gameweek, latest=d.published_gameweek;
+    const mine=d.settings?.snapshot_gameweek ?? d.published_gameweek;
+    const theirs=d.opponent_settings?.snapshot_gameweek ?? d.published_gameweek;
+    const latest=d.published_gameweek;
     if(mine===theirs) return 'GW '+mine+(mine===latest?'':' (تم تخطي Free Hit في GW '+latest+')');
     return 'خطتك من GW '+mine+' وخطة خصمك من GW '+theirs+' (تم تخطي Free Hit)';
 }
@@ -113,7 +158,7 @@ async function load(entry='') {
         $('gameweek').textContent='GW '+result.gameweek;
         $('deadline').textContent='الموعد النهائي: '+new Date(result.deadline).toLocaleString('en-GB');
         if(!entry){$('message').textContent='اختر مديرك لعرض المواجهة القادمة.';return;}
-        data=result; plans={my: PlannerRules.create(data.squad,data.settings), opponent: PlannerRules.create(data.opponent_squad,data.opponent_settings)}; $('published').textContent=publishedLabel(data);
+        data=result; plans={my: PlannerRules.create(data.squad,data.settings,data.finances,data.players), opponent: PlannerRules.create(data.opponent_squad,data.opponent_settings,data.opponent_finances,data.players)}; $('published').textContent=publishedLabel(data);
         $('my-name').textContent=data.managers.find(m=>String(m.id)===entry).name; $('opponent-name').textContent=data.opponent.name;
         render(); $('matchup').hidden=false; $('message').textContent='خطتك مؤقتة؛ تحديث الصفحة أو تغيير المدير يعيد التشكيلة المنشورة.';
     } catch(error) {if(sequence===requestNumber)$('message').textContent=error.message;}
@@ -122,7 +167,7 @@ async function load(entry='') {
 $('manager').addEventListener('change',()=>load($('manager').value));
 $('retry').addEventListener('click',()=>load($('manager').value));
 ['my','opponent'].forEach(side=>$(side==='my'?'reset':'opponent-reset').addEventListener('click',()=>{
-    plans[side]=PlannerRules.create(side==='my'?data.squad:data.opponent_squad,side==='my'?data.settings:data.opponent_settings);
+    plans[side]=PlannerRules.create(side==='my'?data.squad:data.opponent_squad,side==='my'?data.settings:data.opponent_settings,side==='my'?data.finances:data.opponent_finances,data.players);
     selected=null;render();$('message').textContent='تمت استعادة التشكيلة المنشورة وإلغاء الشريحة التجريبية لهذا الفريق.';
 }));
 $('search').addEventListener('input',transferOptions);

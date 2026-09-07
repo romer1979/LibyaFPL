@@ -52,34 +52,61 @@ FREE_HIT = 'freehit'
 def squad(entry, gw, players, earliest=1):
     """The latest published squad at or before `gw` that is not a Free Hit.
 
-    A Free Hit squad exists for its own gameweek and then reverts: the manager
-    goes back to the team they had the week before. Planning next week from it
-    would show fifteen players they will not actually own, so those gameweeks
-    are stepped over and the last standing squad is used instead.
+    A Free Hit squad expires at the next deadline and the manager reverts to
+    the team they had before it, so planning from one would show fifteen
+    players they will not own.
 
-    The walk back is a loop, not a single step, because the chip sets are split
-    at GW20 — Free Hit can be played in GW19 and again in GW20, and one step
-    would land on the second one.
+    The walk back is a loop rather than a single step because the chip sets
+    split at GW20: Free Hit can be played in GW19 and again in GW20, and one
+    step would land on the second one.
 
-    Wildcard is deliberately NOT skipped. That squad is permanent; it is the
-    manager's real team from then on.
-
-    Returns the picks plus the gameweek they actually came from, so the page
-    can say which week it is showing rather than claiming the latest one.
+    Wildcard is deliberately NOT skipped — that squad is permanent.
     """
     for source in range(gw, earliest - 1, -1):
         data = get_entry_picks(entry, source)
         if data.get('active_chip') == FREE_HIT:
             continue
-        picks = sorted(data.get('picks', []), key=lambda p: p['position'])
-        ids = [p['element'] for p in picks]
-        if len(ids) != 15 or len(set(ids)) != 15 or any(i not in players for i in ids):
-            raise ValueError('التشكيلة المنشورة غير مكتملة. أعد المحاولة بعد نشر بيانات الجولة.')
-        return {'ids': ids,
-                'captain': next((p['element'] for p in picks[:11] if p.get('is_captain')), ids[0]),
-                'vice': next((p['element'] for p in picks[:11] if p.get('is_vice_captain')), ids[1]),
-                'gameweek': source}
-    raise ValueError('لا توجد تشكيلة ثابتة لعرضها: كل الجولات المنشورة لعبت بشريحة Free Hit.')
+        gw = source
+        break
+    else:
+        raise ValueError('تعذر استعادة التشكيلة الأصلية قبل Free Hit.')
+    picks = sorted(data.get('picks', []), key=lambda p: p['position'])
+    ids = [p['element'] for p in picks]
+    if len(ids) != 15 or len(set(ids)) != 15 or any(i not in players for i in ids):
+        raise ValueError('التشكيلة المنشورة غير مكتملة. أعد المحاولة بعد نشر بيانات الجولة.')
+    return {'ids': ids,
+            'snapshot_gameweek': gw,
+            'bank': data.get('entry_history', {}).get('bank'),
+            'captain': next((p['element'] for p in picks[:11] if p.get('is_captain')), ids[0]),
+            'vice': next((p['element'] for p in picks[:11] if p.get('is_vice_captain')), ids[1])}
+
+
+def finances(entry, snapshot, players):
+    """Best-effort estimates in integer tenths; no authenticated endpoints."""
+    latest = {}
+    try:
+        chips = fetch_data(f'{FPL_BASE_URL}/entry/{entry}/history/')['chips']
+        temporary = {c['event'] for c in chips if c['name'] == 'freehit'}
+        transfers = fetch_data(f'{FPL_BASE_URL}/entry/{entry}/transfers/')
+        for t in sorted(transfers, key=lambda t: (t['event'], t['time'])):
+            if t['event'] <= snapshot['snapshot_gameweek'] and t['event'] not in temporary:
+                latest.pop(t['element_out'], None)
+                latest[t['element_in']] = t['element_in_cost']
+    except (FPLApiError, KeyError, TypeError, ValueError):
+        latest = {}
+    sales = {}
+    for pid in snapshot['ids']:
+        current = players[pid]['cost']
+        purchase = latest.get(pid)
+        if not isinstance(purchase, int) or purchase <= 0:
+            purchase = None
+        sales[pid] = {
+            'value': current if purchase is None else min(current, purchase + max(0, current - purchase) // 2),
+            'source': 'market_estimate' if purchase is None else 'transfer_history',
+            'purchase': purchase,
+        }
+    return {'bank': snapshot['bank'], 'sales': sales,
+            'snapshot_gameweek': snapshot['snapshot_gameweek']}
 
 
 def chip_availability(entry, gw):
@@ -137,13 +164,12 @@ def api():
                    for p in bootstrap['elements']}
         own = squad(entry, published['id'], players)
         other = squad(opponent['id'], published['id'], players)
-        # Each side reports its own source gameweek: a Free Hit is personal, so
-        # the two can legitimately come from different weeks.
+        own_finance = finances(entry, own, players)
+        other_finance = finances(opponent['id'], other, players)
         return jsonify(**base, published_gameweek=published['id'], opponent=opponent,
                        squad=own.pop('ids'), opponent_squad=other.pop('ids'), players=players,
-                       squad_gameweek=own.pop('gameweek'),
-                       opponent_squad_gameweek=other.pop('gameweek'),
                        settings=own, opponent_settings=other,
+                       finances=own_finance, opponent_finances=other_finance,
                        chips=chip_availability(entry, upcoming['id']),
                        opponent_chips=chip_availability(opponent['id'], upcoming['id']))
     except ValueError as exc:

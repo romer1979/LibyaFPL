@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
 from flask import Flask
-from core.elite_planner import planner, event_window, opponent_for, members, chip_availability, squad
+from core.elite_planner import planner, event_window, opponent_for, members, chip_availability, finances, squad
 
 
 class PlannerTests(unittest.TestCase):
@@ -30,6 +30,7 @@ class PlannerTests(unittest.TestCase):
         fetch.side_effect = [{'standings': {'results': [{'entry': 1, 'player_name': 'A'}], 'has_next': True}}, {'standings': {'results': [{'entry': 2, 'player_name': 'B'}], 'has_next': False}}]
         self.assertEqual([m['id'] for m in members()], [1, 2])
 
+    @patch('core.elite_planner.finances', return_value={})
     @patch('core.elite_planner.chip_availability', return_value={'3xc': 'available'})
     @patch('core.elite_planner.get_entry_picks')
     @patch('core.elite_planner.get_fixtures')
@@ -37,7 +38,7 @@ class PlannerTests(unittest.TestCase):
     @patch('core.elite_planner.members')
     @patch('core.elite_planner.get_bootstrap_data')
     @patch('core.elite_planner.event_window')
-    def test_api_squads_doubles_blanks_and_membership(self, window, bootstrap, roster, opponent, fixtures, picks, chips):
+    def test_api_squads_doubles_blanks_and_membership(self, window, bootstrap, roster, opponent, fixtures, picks, chips, finance):
         window.return_value = ({'id': 4, 'deadline_time': '2026-09-20T12:00:00Z'}, {'id': 3})
         bootstrap.return_value = {'events': [], 'teams': [{'id': i, 'short_name': str(i)} for i in range(1, 4)], 'elements': [{'id': i, 'web_name': str(i), 'element_type': 2, 'team': 1 if i < 15 else 3, 'now_cost': 50, 'status': 'a'} for i in range(1, 16)]}
         roster.return_value = [{'id': 11, 'name': 'Manager', 'team': 'Team'}]
@@ -56,68 +57,6 @@ class PlannerTests(unittest.TestCase):
         picks.return_value = {'picks': []}
         self.assertEqual(client.get('/api/elite/planner?entry=11').status_code, 409)
 
-    @patch('core.elite_planner.get_entry_picks')
-    def test_free_hit_weeks_are_stepped_over(self, picks):
-        players = {i: {} for i in range(1, 16)}
-        lineup = [{'element': i, 'position': i} for i in range(1, 16)]
-        older = [{'element': i, 'position': i} for i in range(1, 16)]
-        older[0] = {'element': 1, 'position': 1, 'is_captain': True}
-
-        # No chip: the latest published gameweek is used as-is.
-        picks.return_value = {'picks': lineup, 'active_chip': None}
-        self.assertEqual(squad(11, 5, players)['gameweek'], 5)
-
-        # Free Hit last week: step back one, and take that week's captain too.
-        picks.side_effect = [{'picks': lineup, 'active_chip': 'freehit'},
-                             {'picks': older, 'active_chip': None}]
-        result = squad(11, 5, players)
-        self.assertEqual((result['gameweek'], result['captain']), (4, 1))
-
-        # Wildcard is permanent, so it must NOT be stepped over.
-        picks.side_effect = None
-        picks.return_value = {'picks': lineup, 'active_chip': 'wildcard'}
-        self.assertEqual(squad(11, 5, players)['gameweek'], 5)
-
-        # GW19 and GW20 are different chip sets, so Free Hit can run twice in a
-        # row; a single step back would land on the second one.
-        picks.side_effect = [{'picks': lineup, 'active_chip': 'freehit'},
-                             {'picks': lineup, 'active_chip': 'freehit'},
-                             {'picks': older, 'active_chip': None}]
-        self.assertEqual(squad(11, 20, players)['gameweek'], 18)
-
-        # Nothing but Free Hits back to the start is an error, not a crash.
-        picks.side_effect = None
-        picks.return_value = {'picks': lineup, 'active_chip': 'freehit'}
-        with self.assertRaises(ValueError): squad(11, 3, players)
-
-    @patch('core.elite_planner.chip_availability', return_value={'3xc': 'available'})
-    @patch('core.elite_planner.get_entry_picks')
-    @patch('core.elite_planner.get_fixtures')
-    @patch('core.elite_planner.opponent_for')
-    @patch('core.elite_planner.members')
-    @patch('core.elite_planner.get_bootstrap_data')
-    @patch('core.elite_planner.event_window')
-    def test_api_reports_each_side_source_gameweek(self, window, bootstrap, roster, opponent, fixtures, picks, chips):
-        window.return_value = ({'id': 4, 'deadline_time': '2026-09-20T12:00:00Z'}, {'id': 3})
-        bootstrap.return_value = {'events': [], 'teams': [{'id': 1, 'short_name': '1'}],
-                                  'elements': [{'id': i, 'web_name': str(i), 'element_type': 2, 'team': 1,
-                                                'now_cost': 50, 'status': 'a'} for i in range(1, 16)]}
-        roster.return_value = [{'id': 11, 'name': 'Manager', 'team': 'Team'}]
-        opponent.return_value = {'id': 22, 'name': 'Opponent'}
-        fixtures.return_value = []
-        lineup = [{'element': i, 'position': i} for i in range(1, 16)]
-        # The manager played Free Hit in GW3; the opponent did not.
-        picks.side_effect = [{'picks': lineup, 'active_chip': 'freehit'},
-                             {'picks': lineup, 'active_chip': None},
-                             {'picks': lineup, 'active_chip': None}]
-        app = Flask(__name__); app.register_blueprint(planner)
-        body = app.test_client().get('/api/elite/planner?entry=11').json
-        self.assertEqual(body['squad_gameweek'], 2)
-        self.assertEqual(body['opponent_squad_gameweek'], 3)
-        self.assertEqual(body['published_gameweek'], 3)
-        # The source gameweek must not leak into the captain/vice settings.
-        self.assertEqual(set(body['settings']), {'captain', 'vice'})
-
     @patch('core.elite_planner.fetch_data')
     def test_chip_windows_and_unknown(self, fetch):
         fetch.return_value = {'chips': [{'name': '3xc', 'event': 5}, {'name': 'freehit', 'event': 19}]}
@@ -127,6 +66,50 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(chip_availability(11, 21)['freehit'], 'available')
         fetch.return_value = {}
         self.assertTrue(all(v == 'unknown' for v in chip_availability(11, 4).values()))
+
+    @patch('core.elite_planner.fetch_data')
+    def test_selling_prices_history_and_freehit(self, fetch):
+        fetch.side_effect = [{'chips': [{'name': 'freehit', 'event': 3}]}, [
+            {'event': 2, 'time': 'a', 'element_out': 9, 'element_in': 1, 'element_in_cost': 70},
+            {'event': 3, 'time': 'b', 'element_out': 1, 'element_in': 2, 'element_in_cost': 60},
+            {'event': 5, 'time': 'c', 'element_out': 1, 'element_in': 3, 'element_in_cost': 50}]]
+        result = finances(11, {'ids': [1, 2], 'bank': 12, 'snapshot_gameweek': 4}, {1: {'cost': 75}, 2: {'cost': 65}})
+        self.assertEqual(result['bank'], 12)
+        self.assertEqual(result['sales'][1]['value'], 72)
+        self.assertEqual(result['sales'][2]['source'], 'market_estimate')
+        fetch.return_value = {}; fetch.side_effect = None
+        result = finances(11, {'ids': [1], 'bank': None, 'snapshot_gameweek': 4}, {1: {'cost': 75}})
+        self.assertIsNone(result['bank'])
+        self.assertEqual(result['sales'][1]['source'], 'market_estimate')
+
+    @patch('core.elite_planner.get_entry_picks')
+    def test_restore_pre_freehit_squad_and_bank(self, picks):
+        picks.side_effect = [{'active_chip': 'freehit'}, {'picks': [
+            {'element': i, 'position': i} for i in range(1, 16)], 'entry_history': {'bank': 17}}]
+        result = squad(11, 4, {i: {} for i in range(1, 16)})
+        self.assertEqual(result['snapshot_gameweek'], 3)
+        self.assertEqual(result['bank'], 17)
+        self.assertEqual(picks.call_args.args, (11, 3))
+
+    @patch('core.elite_planner.get_entry_picks')
+    def test_freehit_walkback_edges(self, picks):
+        players = {i: {} for i in range(1, 16)}
+        lineup = [{'element': i, 'position': i} for i in range(1, 16)]
+
+        # Wildcard is permanent, so it must NOT be stepped over.
+        picks.return_value = {'picks': lineup, 'active_chip': 'wildcard'}
+        self.assertEqual(squad(11, 5, players)['snapshot_gameweek'], 5)
+
+        # GW19 and GW20 are different chip sets, so Free Hit can run twice in a
+        # row; a single step back would land on the second one.
+        picks.side_effect = [{'active_chip': 'freehit'}, {'active_chip': 'freehit'},
+                             {'picks': lineup, 'active_chip': None}]
+        self.assertEqual(squad(11, 20, players)['snapshot_gameweek'], 18)
+
+        # Nothing but Free Hits back to the start is a stated error, not a crash.
+        picks.side_effect = None
+        picks.return_value = {'active_chip': 'freehit'}
+        with self.assertRaises(ValueError): squad(11, 3, players)
 
 
 if __name__ == '__main__': unittest.main()

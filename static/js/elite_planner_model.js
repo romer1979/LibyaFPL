@@ -1,9 +1,35 @@
 /* Pure planning rules, shared by the UI and regression tests. */
 (function(root) {
     const rules = {
-        create(ids, settings = {}) {
-            const plan = {ids: [...ids], captain: settings.captain, vice: settings.vice, chip: null};
+        create(ids, settings = {}, finance = {}, players = {}) {
+            const plan = {ids: [...ids], original: [...ids], captain: settings.captain, vice: settings.vice, chip: null,
+                bank: Number.isInteger(finance.bank) && finance.bank >= 0 ? finance.bank : null,
+                freeTransfers: null, sales: {}, undo: []};
+            ids.forEach(id => { plan.sales[id] = finance.sales?.[id]?.value ?? players[id]?.cost ?? 0; });
             rules.normalize(plan); return plan;
+        },
+        balance(p, players, ids = p.ids) {
+            if (p.bank === null) return null;
+            return p.bank + p.original.filter(id => !ids.includes(id)).reduce((n,id) => n+p.sales[id],0)
+                - ids.filter(id => !p.original.includes(id)).reduce((n,id) => n+players[id].cost,0);
+        },
+        hits(p) {
+            if (['wildcard','freehit'].includes(p.chip)) return 0;
+            if (p.freeTransfers === null) return null;
+            return 4 * Math.max(0, p.ids.filter(id => !p.original.includes(id)).length - p.freeTransfers);
+        },
+        transfer(p, index, id, players) {
+            const incoming = players[id], outgoing = players[p.ids[index]];
+            if (!incoming || !outgoing || incoming.position !== outgoing.position || p.ids.includes(id) ||
+                ['u','n'].includes(incoming.status) || p.ids.filter((x,i) => i !== index && players[x].club === incoming.club).length >= 3) return false;
+            const ids = [...p.ids]; ids[index] = id;
+            const balance = rules.balance(p, players, ids);
+            if (balance === null || balance < 0) return false;
+            p.undo.push({ids:[...p.ids],captain:p.captain,vice:p.vice});
+            const old = p.ids[index]; p.ids = ids;
+            if (p.captain === old) p.captain = id;
+            if (p.vice === old) p.vice = id;
+            return true;
         },
         normalize(p) {
             const starters = p.ids.slice(0, 11);
