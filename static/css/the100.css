@@ -967,36 +967,42 @@ body {
 .hero-action {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.4rem 0.7rem;
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem;
     border: 1px solid var(--border-mid);
-    border-radius: 8px;
-    background: var(--dark-bg);
-    color: var(--text-muted);
+    border-radius: 10px;
+    background: var(--dark-card-hover);
+    /* Full-strength text, not muted grey: this is the page's only navigation,
+       so it should read as a control rather than as supporting detail. */
+    color: var(--text-light);
     font-family: inherit;
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 700;
     text-decoration: none;
     cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease;
-    /* These are now the only navigation on the page, so they get a proper
-       target size rather than the 36px a secondary control would take. */
-    min-height: 40px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    min-height: 44px;
 }
 
 .hero-action:hover,
 .hero-action:focus-visible {
-    color: var(--text-light);
+    background: var(--surface-raised);
     border-color: var(--signature);
 }
+
+.hero-action:focus-visible { outline: 2px solid var(--signature); outline-offset: 2px; }
+
+/* The glyph is a scanning aid beside the word, never the whole message. */
+.hero-action .hero-action-icon { font-size: 0.95rem; line-height: 1; }
 
 .hero-action.loading { opacity: 0.6; pointer-events: none; }
 
 @media (max-width: 768px) {
-    /* Labels drop away and the icons become a compact row of tap targets. */
-    .hero-actions { margin-top: 0.6rem; gap: 0.35rem; }
-    .hero-action { padding: 0.4rem 0.6rem; min-width: 44px; justify-content: center; }
-    .hero-action-label { display: none; }
+    /* The label stays. Hiding it left ⚔️ and 📊 to be guessed at, and an icon
+       nobody recognises is not a shortcut. Four short Arabic words wrap onto
+       two rows on a narrow phone, which costs one line and removes the guessing. */
+    .hero-actions { margin-top: 0.7rem; gap: 0.4rem; }
+    .hero-action { padding: 0.45rem 0.7rem; font-size: 0.8rem; }
 }
 
 /* ==========================================================================
@@ -1064,7 +1070,15 @@ body {
 .point-card {
     padding: 0.9rem 0.6rem;
     border: 1px solid var(--border-dark);
+    border-radius: 10px;
     background: var(--dark-bg);
+    text-align: center;
+}
+
+.points-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 1rem;
 }
 
 .point-card .emoji { font-size: 1.15rem; margin-bottom: 0.15rem; }
@@ -1156,8 +1170,16 @@ body {
 .captain-item,
 .ownership-item,
 .chip-item {
+    /* Layout lives here now: these rules used to be duplicated in the stats
+       template's inline <style>, which came after this file and silently won,
+       so the sizing set here had no effect. */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.55rem 0.8rem;
     border: 1px solid var(--border-dark);
+    border-radius: 8px;
     background: var(--dark-bg);
     min-height: 40px;
 }
