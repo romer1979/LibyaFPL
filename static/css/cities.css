@@ -75,43 +75,18 @@ body {
 .logo-title { color: var(--cities-gold); }
 .logo-subtitle { color: var(--text-secondary); }
 
-/* Labelled navigation — the icons alone (🔄 📜 🏠) gave no clue what they did. */
-.header-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-}
-
-.header-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
+/* Labelled navigation — base component is in style.css so all three leagues
+   share it; only the dark-ground colours differ here. */
+body .header-action {
     background: var(--bg-gray);
     color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.82rem;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    min-height: 44px;
-    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.header-action:hover,
-.header-action:focus-visible {
+body .header-action:hover,
+body .header-action:focus-visible {
     background: #20201a;
     border-color: var(--cities-gold);
 }
-
-.header-action:focus-visible {
-    outline: 2px solid var(--cities-gold);
-    outline-offset: 2px;
-}
-
-.header-action-icon { font-size: 0.95rem; line-height: 1; }
 
 /* Cards and panels. The class names come from the shared template — the
    fixture list uses .fixture-*, and the mobile standings use .ms-*; both
@@ -192,10 +167,6 @@ td, th { font-variant-numeric: tabular-nums; }
     color: var(--text-secondary);
 }
 
-@media (max-width: 768px) {
-    .header-action { padding: 0.45rem 0.65rem; font-size: 0.78rem; }
-}
-
 
 /* --primary-purple was the shared theme's text colour as well as its surface
    colour. On white both readings worked; on black a dark value makes the text
@@ -242,3 +213,41 @@ body .percentage-badge {
    dimmed rather than darkened. */
 body .team-name:not(.winner),
 body .fixture-team:not(.winner) { color: var(--text-secondary); }
+
+
+/* The league history page carries its own inline rules using the same
+   --primary-purple for type, so they need the same treatment as the
+   dashboard's. Same `body` prefix, for the same reason. */
+body .gw-selector-title,
+body .fixtures-table th,
+body .standings-table th,
+body .standings-table .rank-cell,
+body .fixtures-table .diff-badge,
+body .rank-badge {
+    color: var(--cities-gold);
+}
+
+/* Table headers on this page sit on the card, not on --bg-gray, so they need
+   their own ground to stay distinct from the rows beneath them. */
+body .fixtures-table th,
+body .standings-table th {
+    background: var(--bg-gray);
+}
+
+/* This page's difference badge is an outline, not the dashboard's gold fill. */
+body .fixtures-table .diff-badge {
+    background: var(--cities-gold-soft);
+    border: 1px solid var(--cities-gold-line);
+}
+
+body .gw-btn {
+    background: var(--bg-gray);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+body .gw-btn.active {
+    background: var(--cities-gold);
+    color: #16160f;
+    border-color: var(--cities-gold);
+}

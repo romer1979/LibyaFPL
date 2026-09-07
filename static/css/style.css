@@ -1806,3 +1806,47 @@ body {
         font-size: 0.8rem;
     }
 }
+
+
+/* Labelled header navigation.
+   Lives here rather than in a per-league theme because all three team-league
+   pages use the markup — Arab and Libyan were rendering these as bare blue
+   links when the styles sat in cities.css alone. Colours come from the shared
+   tokens, so a league theme that repoints them restyles this for free. */
+.header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.header-action:hover,
+.header-action:focus-visible { border-color: var(--accent-yellow); }
+
+.header-action:focus-visible {
+    outline: 2px solid var(--accent-yellow);
+    outline-offset: 2px;
+}
+
+.header-action-icon { font-size: 0.95rem; line-height: 1; }
+
+@media (max-width: 768px) {
+    .header-action { padding: 0.45rem 0.65rem; font-size: 0.78rem; }
+}

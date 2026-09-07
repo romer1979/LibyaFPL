@@ -30,7 +30,7 @@ LEAGUE_CONFIGS = {
     'cities': {
         'name': 'دوري المدن',
         'h2h_id': CITIES_H2H_LEAGUE_ID,
-        'logo': 'cities_logo.png',
+        'logo': 'cities_mark_192.png',
         'back_url': '/league/cities',
     }
 }
@@ -148,6 +148,7 @@ def get_league_history_data(league_type):
     if not history:
         # Return empty state if no data
         return {
+            'league_type': league_type,
             'league_name': config['name'],
             'logo_file': config['logo'],
             'back_url': config['back_url'],
@@ -159,6 +160,7 @@ def get_league_history_data(league_type):
     gameweeks = sorted(history.keys())
     
     return {
+        'league_type': league_type,
         'league_name': config['name'],
         'logo_file': config['logo'],
         'back_url': config['back_url'],

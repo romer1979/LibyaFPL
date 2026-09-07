@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    {% if league_type == 'cities' %}<meta name="theme-color" content="#0d0d0f">{% endif %}
     <title>{{ league_name }} - سجل الجولات</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {# Per-league theme, loaded after the shared sheet so its overrides win.
+       Only Cities has one so far; Arab and Libyan keep the white theme. #}
+    {% if league_type == 'cities' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities.css') }}">
+    {% endif %}
     <style>
         /* GW Selector */
         .gw-selector-container {
@@ -306,8 +312,15 @@
                     <span class="logo-subtitle">سجل الجولات</span>
                 </div>
             </a>
-            <div class="gameweek-info">
-                <a href="{{ back_url }}" class="back-btn">🔙 العودة</a>
+            <div class="header-actions">
+                <a href="{{ back_url }}" class="header-action">
+                    <span class="header-action-icon" aria-hidden="true">🔙</span>
+                    <span>ترتيب الدوري</span>
+                </a>
+                <a href="/" class="header-action">
+                    <span class="header-action-icon" aria-hidden="true">🏠</span>
+                    <span>الرئيسية</span>
+                </a>
             </div>
         </div>
     </header>
