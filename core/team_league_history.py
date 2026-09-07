@@ -24,7 +24,7 @@ LEAGUE_CONFIGS = {
     'libyan': {
         'name': 'الدوري الليبي',
         'h2h_id': LIBYAN_H2H_LEAGUE_ID,
-        'logo': 'libyan_logo.png',
+        'logo': 'libyan_mark_192.png',
         'back_url': '/league/libyan',
     },
     'cities': {

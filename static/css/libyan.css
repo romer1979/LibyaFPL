@@ -1,0 +1,231 @@
+/* الدوري الليبي الممتاز — theme derived from the league crest.
+ *
+ * Loaded after style.css and only by the Libyan pages, the same mechanism as
+ * cities.css. Arab keeps the shared white theme.
+ *
+ * Colours sampled from static/libyan_logo_restored.png:
+ *   #c8a858  antique gold  — the star and the crescent ring. It is effectively
+ *                            the crest's ONLY chromatic colour: every one of
+ *                            the six most common hues is this same gold at a
+ *                            slightly different value.
+ *   #f0f0f0  white         — the ball and the lettering, 8% of the image
+ *   #101010  ground        — 77% of the image
+ *
+ * So this league reads as monochrome-plus-gold, which is a more formal,
+ * restrained identity than the Cities crest with its flag colours — the two
+ * should not look alike, and they do not.
+ *
+ * The crest carries no green or red, but a twenty-row results table is much
+ * faster to scan when wins and losses differ by hue rather than by weight.
+ * Both are therefore desaturated and warmed so they sit beneath the gold
+ * rather than competing with it.
+ */
+
+:root {
+    /* Brand */
+    --libyan-gold: #c8a858;
+    --libyan-gold-bright: #dfc07a;     /* for small text, where the base gold dims */
+    --libyan-gold-soft: rgba(200, 168, 88, 0.14);
+    --libyan-gold-line: rgba(200, 168, 88, 0.42);
+    --libyan-win: #5cab74;             /* muted, warmed to sit under the gold */
+    --libyan-win-soft: rgba(92, 171, 116, 0.13);
+    --libyan-loss: #c9605c;
+    --libyan-loss-soft: rgba(201, 96, 92, 0.14);
+
+    /* Shared theme names, repointed. --primary-purple is set to the dark
+       surface so backgrounds are right; the rules that used it for TYPE are
+       listed explicitly further down, because on black those two needs are
+       opposites. */
+    --primary-purple: #17150f;
+    --primary-purple-dark: #0c0b08;
+    --primary-purple-light: #241f16;
+    --accent-yellow: #c8a858;
+    --accent-yellow-light: #dfc07a;
+    --accent-yellow-dark: #a08640;
+
+    --bg-white: #0c0c0c;
+    --bg-light: #121210;
+    --bg-gray: #1a1916;
+    --bg-card: #121210;
+
+    --text-primary: #f0efe9;
+    --text-secondary: #98958a;
+    --text-dark: #f0efe9;
+
+    --success: #5cab74;
+    --warning: #c8a858;
+    --danger: #c9605c;
+
+    --border-color: #262319;
+    --shadow: 0 2px 15px rgba(0, 0, 0, 0.45);
+    --shadow-hover: 0 4px 20px rgba(200, 168, 88, 0.14);
+}
+
+body {
+    background: var(--bg-white);
+    color: var(--text-primary);
+}
+
+.header {
+    background: linear-gradient(180deg, #17150f 0%, var(--bg-white) 100%);
+    border-bottom: 1px solid var(--libyan-gold-line);
+}
+
+.logo-title { color: var(--libyan-gold-bright); }
+.logo-subtitle { color: var(--text-secondary); }
+
+/* Labelled navigation — base component is in style.css so all leagues share
+   it; only the dark-ground colours differ here. */
+body .header-action {
+    background: var(--bg-gray);
+    color: var(--text-primary);
+}
+
+body .header-action:hover,
+body .header-action:focus-visible {
+    background: #221f16;
+    border-color: var(--libyan-gold);
+}
+
+/* Surfaces. The fixture list uses .fixture-*, the mobile standings .ms-*;
+   both paint white directly rather than through a token. */
+body .highlight-card,
+body .card,
+body .section,
+body .fixture-card,
+body .fixture-card-main,
+body .fixture-card-expand,
+body .fixture-card-unique,
+body .fixture-row,
+body .ms-detail,
+body .mobile-standing-details,
+body .mobile-standing-row {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body .fixture-card,
+body .ms-detail { border: 1px solid var(--border-color); }
+
+body .highlight-card.team-of-week { border-inline-start: 3px solid var(--libyan-gold); }
+body .highlight-card.star-of-week { border-inline-start: 3px solid var(--libyan-win); }
+
+/* Results */
+body .winner,
+body .team-winner,
+body .result-win { color: var(--libyan-win); }
+
+body .result-loss { color: var(--libyan-loss); }
+
+body .team-name:not(.winner),
+body .fixture-team:not(.winner) { color: var(--text-secondary); }
+
+.status-badge.live {
+    background: var(--libyan-loss-soft);
+    color: var(--libyan-loss);
+    border: 1px solid var(--libyan-loss);
+}
+
+.status-badge.finished {
+    background: var(--libyan-win-soft);
+    color: var(--libyan-win);
+    border: 1px solid var(--libyan-win);
+}
+
+.status-badge.not-started {
+    background: var(--libyan-gold-soft);
+    color: var(--libyan-gold-bright);
+    border: 1px solid var(--libyan-gold-line);
+}
+
+/* Tables */
+table thead th {
+    background: var(--bg-gray);
+    color: var(--text-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+table tbody tr { border-bottom: 1px solid var(--border-color); }
+table tbody tr:hover { background: #1c1a14; }
+
+td, th { font-variant-numeric: tabular-nums; }
+
+.captain-badge {
+    background: var(--libyan-gold-soft);
+    color: var(--libyan-gold-bright);
+    border: 1px solid var(--libyan-gold-line);
+}
+
+.footer {
+    background: var(--bg-light);
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* --primary-purple was the shared theme's text colour as well as its surface
+   colour. On white both readings worked; on black a dark value makes the text
+   vanish. Prefixed with `body` deliberately: the pages' inline <style> blocks
+   are applied after this file, so a bare class selector loses the tie and the
+   text stays invisible. */
+body .section-title,
+body .page-title h1,
+body .unique-header,
+body .unique-label,
+body .stat-value,
+body .stat-players-big,
+body .count-badge,
+body .expand-hint,
+body .stats-table .rank-cell,
+body .loading-indicator,
+body .ms-lp,
+body .msi-value,
+body .col-points.highlight,
+body .league-points-cell,
+body .bottom-nav-item.active,
+body .toggle-unique-btn.active,
+body .manager-link:hover,
+body .stats-link:hover,
+body .back-link:hover {
+    color: var(--libyan-gold-bright);
+}
+
+body .highlight-name { color: var(--text-primary); }
+
+body .diff-badge,
+body .percentage-badge {
+    background: var(--libyan-gold);
+    color: #17150f;
+}
+
+/* History page: its own inline rules use the same token for type. */
+body .gw-selector-title,
+body .fixtures-table th,
+body .standings-table th,
+body .standings-table .rank-cell,
+body .fixtures-table .diff-badge,
+body .rank-badge {
+    color: var(--libyan-gold-bright);
+}
+
+body .fixtures-table th,
+body .standings-table th { background: var(--bg-gray); }
+
+body .fixtures-table .diff-badge {
+    background: var(--libyan-gold-soft);
+    border: 1px solid var(--libyan-gold-line);
+}
+
+body .gw-btn {
+    background: var(--bg-gray);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+body .gw-btn.active {
+    background: var(--libyan-gold);
+    color: #17150f;
+    border-color: var(--libyan-gold);
+}
