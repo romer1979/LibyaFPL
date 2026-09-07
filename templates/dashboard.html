@@ -15,7 +15,10 @@
     <header class="header">
         <div class="header-content">
             <a href="/" class="logo">
-                <img src="{{ url_for('static', filename='elite_league_logo.png') }}" alt="Elite League" class="logo-img">
+                {# 192px copy of the redrawn crest: the original is 5,201KB to draw a
+                   60px mark, and it loaded on this page and the stats page both. #}
+                <img src="{{ url_for('static', filename='elite_mark_192.png') }}" alt="Elite League"
+                     class="logo-img" width="192" height="192" decoding="async">
                 <div class="logo-text">
                     <span class="logo-title">دوري النخبة</span>
                     <span class="logo-subtitle">ELITE LEAGUE</span>

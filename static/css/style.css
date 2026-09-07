@@ -2,13 +2,17 @@
 /* RTL Support for Arabic */
 
 :root {
-    /* Purple/Yellow theme matching the logo */
+    /* Purple/silver, taken from the Elite crest.
+       The purple was already right. The accent was #ffd700 gold, which appears
+       nowhere in that crest — sampling it returns 0.00% gold pixels against
+       15.7% silver: the crown, the mane, the blades and the lettering are all
+       chrome. The token names are kept so nothing downstream has to change. */
     --primary-purple: #4a1259;
     --primary-purple-dark: #2d0a38;
     --primary-purple-light: #6b2080;
-    --accent-yellow: #ffd700;
-    --accent-yellow-light: #ffe44d;
-    --accent-yellow-dark: #ccac00;
+    --accent-yellow: #b9b9c4;          /* platinum — the crest's mid silver */
+    --accent-yellow-light: #e8e8ee;    /* the crest's highlight silver */
+    --accent-yellow-dark: #8a8a96;
     
     /* Background colors - WHITE theme */
     --bg-white: #ffffff;
