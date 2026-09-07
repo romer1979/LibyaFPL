@@ -94,6 +94,15 @@ function openEditor() {
     $('edit-title').textContent=data.players[plans[selected.side].ids[selected.index]].name;
     $('search').value='';transferOptions();$('editor').showModal();
 }
+// A Free Hit squad reverts, so the server steps back to the last standing one.
+// That can leave the two sides on different gameweeks, and it can leave either
+// behind the latest published week — both worth saying rather than showing a
+// single number that is no longer true for anyone.
+function publishedLabel(d) {
+    const mine=d.squad_gameweek, theirs=d.opponent_squad_gameweek, latest=d.published_gameweek;
+    if(mine===theirs) return 'GW '+mine+(mine===latest?'':' (تم تخطي Free Hit في GW '+latest+')');
+    return 'خطتك من GW '+mine+' وخطة خصمك من GW '+theirs+' (تم تخطي Free Hit)';
+}
 async function load(entry='') {
     const sequence=++requestNumber; data=null; selected=null; $('matchup').hidden=true; $('message').textContent='جاري تحميل البيانات…'; $('retry').disabled=true;
     try {
@@ -104,7 +113,7 @@ async function load(entry='') {
         $('gameweek').textContent='GW '+result.gameweek;
         $('deadline').textContent='الموعد النهائي: '+new Date(result.deadline).toLocaleString('en-GB');
         if(!entry){$('message').textContent='اختر مديرك لعرض المواجهة القادمة.';return;}
-        data=result; plans={my: PlannerRules.create(data.squad,data.settings), opponent: PlannerRules.create(data.opponent_squad,data.opponent_settings)}; $('published').textContent='GW '+data.published_gameweek;
+        data=result; plans={my: PlannerRules.create(data.squad,data.settings), opponent: PlannerRules.create(data.opponent_squad,data.opponent_settings)}; $('published').textContent=publishedLabel(data);
         $('my-name').textContent=data.managers.find(m=>String(m.id)===entry).name; $('opponent-name').textContent=data.opponent.name;
         render(); $('matchup').hidden=false; $('message').textContent='خطتك مؤقتة؛ تحديث الصفحة أو تغيير المدير يعيد التشكيلة المنشورة.';
     } catch(error) {if(sequence===requestNumber)$('message').textContent=error.message;}

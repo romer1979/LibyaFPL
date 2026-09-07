@@ -46,15 +46,40 @@ def opponent_for(entry, gw):
     return {'id': opponent, 'name': m.get(f'entry_{side}_player_name') or m.get(f'entry_{side}_name') or str(opponent)}
 
 
-def squad(entry, gw, players):
-    data = get_entry_picks(entry, gw)
-    picks = sorted(data.get('picks', []), key=lambda p: p['position'])
-    ids = [p['element'] for p in picks]
-    if len(ids) != 15 or len(set(ids)) != 15 or any(i not in players for i in ids):
-        raise ValueError('التشكيلة المنشورة غير مكتملة. أعد المحاولة بعد نشر بيانات الجولة.')
-    return {'ids': ids,
-            'captain': next((p['element'] for p in picks[:11] if p.get('is_captain')), ids[0]),
-            'vice': next((p['element'] for p in picks[:11] if p.get('is_vice_captain')), ids[1])}
+FREE_HIT = 'freehit'
+
+
+def squad(entry, gw, players, earliest=1):
+    """The latest published squad at or before `gw` that is not a Free Hit.
+
+    A Free Hit squad exists for its own gameweek and then reverts: the manager
+    goes back to the team they had the week before. Planning next week from it
+    would show fifteen players they will not actually own, so those gameweeks
+    are stepped over and the last standing squad is used instead.
+
+    The walk back is a loop, not a single step, because the chip sets are split
+    at GW20 — Free Hit can be played in GW19 and again in GW20, and one step
+    would land on the second one.
+
+    Wildcard is deliberately NOT skipped. That squad is permanent; it is the
+    manager's real team from then on.
+
+    Returns the picks plus the gameweek they actually came from, so the page
+    can say which week it is showing rather than claiming the latest one.
+    """
+    for source in range(gw, earliest - 1, -1):
+        data = get_entry_picks(entry, source)
+        if data.get('active_chip') == FREE_HIT:
+            continue
+        picks = sorted(data.get('picks', []), key=lambda p: p['position'])
+        ids = [p['element'] for p in picks]
+        if len(ids) != 15 or len(set(ids)) != 15 or any(i not in players for i in ids):
+            raise ValueError('التشكيلة المنشورة غير مكتملة. أعد المحاولة بعد نشر بيانات الجولة.')
+        return {'ids': ids,
+                'captain': next((p['element'] for p in picks[:11] if p.get('is_captain')), ids[0]),
+                'vice': next((p['element'] for p in picks[:11] if p.get('is_vice_captain')), ids[1]),
+                'gameweek': source}
+    raise ValueError('لا توجد تشكيلة ثابتة لعرضها: كل الجولات المنشورة لعبت بشريحة Free Hit.')
 
 
 def chip_availability(entry, gw):
@@ -112,8 +137,12 @@ def api():
                    for p in bootstrap['elements']}
         own = squad(entry, published['id'], players)
         other = squad(opponent['id'], published['id'], players)
+        # Each side reports its own source gameweek: a Free Hit is personal, so
+        # the two can legitimately come from different weeks.
         return jsonify(**base, published_gameweek=published['id'], opponent=opponent,
                        squad=own.pop('ids'), opponent_squad=other.pop('ids'), players=players,
+                       squad_gameweek=own.pop('gameweek'),
+                       opponent_squad_gameweek=other.pop('gameweek'),
                        settings=own, opponent_settings=other,
                        chips=chip_availability(entry, upcoming['id']),
                        opponent_chips=chip_availability(opponent['id'], upcoming['id']))
