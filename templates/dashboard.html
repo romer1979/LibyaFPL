@@ -37,9 +37,11 @@
                     <span class="update-icon">🕐</span>
                     <span id="last-updated-time" data-utc="{{ data.last_updated_utc or '' }}">-</span>
                 </span>
-                <button class="refresh-btn" onclick="refreshDashboard()" id="refresh-btn">🔄</button>
-                <a href="/" class="stats-link">🏠</a>
-                <a href="/league/elite/history" class="stats-link" title="سجل الجولات">📜</a>
+                {# Icons carry a label like the stats link already did — 🔄, 🏠
+                   and 📜 alone gave no clue what they did. #}
+                <button class="refresh-btn has-label" onclick="refreshDashboard()" id="refresh-btn">🔄 تحديث</button>
+                <a href="/" class="stats-link">🏠 الرئيسية</a>
+                <a href="/league/elite/history" class="stats-link">📜 سجل الجولات</a>
                 <a href="/league/elite/stats" class="stats-link">📊 {{ ar.stats }}</a>
             </div>
         </div>

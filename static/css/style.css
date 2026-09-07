@@ -1850,3 +1850,18 @@ body {
 @media (max-width: 768px) {
     .header-action { padding: 0.45rem 0.65rem; font-size: 0.78rem; }
 }
+
+
+/* A refresh button that carries a label cannot stay a fixed 36px circle.
+   Scoped to .has-label so the icon-only buttons on the other league pages
+   keep their circular shape. */
+.refresh-btn.has-label {
+    width: auto;
+    height: auto;
+    min-height: 36px;
+    padding: 0.3rem 0.8rem;
+    border-width: 1px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    gap: 0.35rem;
+}
