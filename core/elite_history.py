@@ -84,7 +84,7 @@ def get_elite_history_data():
     if not history:
         return {
             'league_name': 'دوري النخبة',
-            'logo_file': 'elite_league_logo.png',
+            'logo_file': 'elite_mark_192.png',
             'back_url': '/league/elite',
             'gameweeks': [],
             'history': {},
@@ -95,7 +95,7 @@ def get_elite_history_data():
 
     return {
         'league_name': 'دوري النخبة',
-        'logo_file': 'elite_league_logo.png',
+        'logo_file': 'elite_mark_192.png',
         'back_url': '/league/elite',
         'gameweeks': gameweeks,
         'history': history,

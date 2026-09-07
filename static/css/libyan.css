@@ -351,8 +351,8 @@ body .zone-indicator {
 /* The crest gets a plaque rather than sitting loose in the header. */
 body .logo-img {
     border-radius: 0;
-    border: 1px solid var(--libyan-gold-line);
-    padding: 2px;
+    border: 0;
+    padding: 0;
 }
 
 body .logo-title {

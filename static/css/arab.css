@@ -72,10 +72,12 @@ body {
 .logo-title { color: #ffffff; }
 .logo-subtitle { color: rgba(255, 255, 255, 0.62); letter-spacing: 0.2em; }
 
+/* No plaque: the crest's background is keyed out, so its white sphere reads
+   directly against the navy the way the emblem is drawn. */
 .logo-img {
-    border-radius: 8px;
-    background: #ffffff;
-    padding: 2px;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
 }
 
 /* Labelled navigation — base component is in style.css; these are the colours
