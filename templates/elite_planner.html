@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>خطط للمواجهة | دوري النخبة</title>
+    <title>خطط لفريقك | دوري النخبة</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     {# style.css first so the planner inherits the Elite palette from the one
        place it is defined, then the planner's own sheet for the pitch, the
@@ -36,7 +36,7 @@
         </div>
     </header>
     <main>
-        <div class="intro"><div><p class="eyebrow">الجولة القادمة · مساحة التخطيط</p><h1>خطط للمواجهة</h1><p>تشكيلتك، خصمك، واللاعبون الذين يصنعون الفارق.</p></div><span id="gameweek" class="gw">—</span></div>
+        <div class="intro"><div><p class="eyebrow">الجولة القادمة · مساحة التخطيط</p><h1>خطط لفريقك</h1><p>تشكيلتك، خصمك، واللاعبون الذين يصنعون الفارق.</p></div><span id="gameweek" class="gw">—</span></div>
         <section class="toolbar"><label for="manager">اختر مديرك<select id="manager" disabled><option value="">تحميل المديرين…</option></select></label><p id="deadline"></p><button id="retry" type="button">تحديث البيانات</button></section>
         <p id="message" role="status" aria-live="polite">جاري تحميل الجولة القادمة…</p>
         <div id="matchup" hidden>
@@ -47,6 +47,11 @@
                 <section class="team-panel"><div class="team-heading"><div><small>خصمك حسب جدول الجولة</small><h2 id="opponent-name"></h2></div><button id="opponent-reset" type="button">إعادة الضبط</button></div><p class="hint">جرّب خطة خصمك: اضغط أي لاعب لعرض بدائله. هذه توقعات وليست تشكيلته المؤكدة.</p><div id="opponent-controls" class="plan-controls"></div><div id="opponent-selection" class="selection-bar" role="status" aria-live="polite"></div><div id="opponent-pitch" class="pitch"></div><div class="bench-title">دكة البدلاء · حسب الأولوية</div><div id="opponent-bench" class="bench"></div></section>
             </div>
             <p class="hint">الشرائح حسب سجل الاستخدام المنشور لكل نصف موسم؛ تفعيل الجولة القادمة غير معلن. Wildcard و Free Hit يلغيان خصم الانتقالات، مع الالتزام بالميزانية. يُسمح بشريحة واحدة لكل فريق.</p><section class="summary"><div class="summary-heading"><h2>اللاعبون المختلفون</h2><span id="shared-count"></span></div><div class="summary-grid"><div><h3>أفضلية خطتك</h3><div id="my-diffs" class="diff-list"></div></div><div><h3>أفضلية خطة الخصم</h3><div id="opponent-diffs" class="diff-list"></div></div></div></section>
+            <section class="summary scenario" aria-labelledby="scenario-title">
+                <div class="summary-heading"><h2 id="scenario-title">ماذا لو؟</h2><button id="clear-scenario" type="button">مسح الافتراضات</button></div>
+                <p class="hint">أدخل نقاطاً افتراضية للاعبين المختلفين قبل مضاعف الكابتن. الحقول الفارغة تساوي 0 وليست توقعاً. الناتج يشمل كابتن الفريقين وTriple Captain وBench Boost وخصم الانتقالات؛ Wildcard وFree Hit يلغيان الخصم. نفترض مشاركة الأساسيين، دون محاكاة الغياب أو التبديلات التلقائية.</p>
+                <div id="scenario-fields" class="scenario-fields"></div><output id="scenario-result" aria-live="polite"></output>
+            </section>
         </div>
     </main>
     {# A side drawer at desktop, a full-screen sheet on phones. Kept as a

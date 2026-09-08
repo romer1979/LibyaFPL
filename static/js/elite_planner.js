@@ -1,6 +1,6 @@
 /* Public snapshots only; both hypothetical plans stay in browser memory. */
 const $ = id => document.getElementById(id);
-let data = null, plans = {}, selected = null, requestNumber = 0;
+let data = null, plans = {}, selected = null, requestNumber = 0, assumptions = {};
 const positions = {1:'حارس',2:'دفاع',3:'وسط',4:'هجوم'};
 function text(tag,value,className='') { const e=document.createElement(tag); e.textContent=value; e.className=className; return e; }
 function button(label,action) { const b=text('button',label); b.type='button'; b.onclick=action; return b; }
@@ -120,6 +120,27 @@ function render() {
     });
     const shared=plans.my.ids.filter(id=>weights.my[id]>0 && weights.my[id]===weights.opponent[id]).length;
     $('shared-count').textContent=shared+' لاعبين بنفس المساهمة · المضاعفات وليست نقاطاً متوقعة';
+    $('scenario-fields').replaceChildren();
+    [...new Set([...plans.my.ids,...plans.opponent.ids])].forEach(id=>{
+        const delta=(weights.my[id]||0)-(weights.opponent[id]||0);
+        if(!delta)return;
+        const label=text('label',`${data.players[id].name} (${delta>0?'+':''}${delta}×)`);
+        const input=document.createElement('input');input.type='number';input.step='1';input.dir='ltr';
+        input.value=assumptions[id]??'';input.placeholder='0';
+        input.oninput=()=>{
+            if(!input.validity.valid)return;
+            assumptions[id]=input.value===''?0:input.valueAsNumber;renderScenario();
+        };
+        label.append(input);$('scenario-fields').append(label);
+    });
+    if(!$('scenario-fields').childElementCount)$('scenario-fields').append(text('p','المساهمات متطابقة؛ قد يحسم خصم الانتقالات الفارق.','hint'));
+    renderScenario();
+}
+function renderScenario() {
+    const gap=PlannerRules.scenario(plans.my,plans.opponent,assumptions);
+    const overBudget=Object.values(plans).some(plan=>{const balance=PlannerRules.balance(plan,data.players);return balance!==null&&balance<0;});
+    $('scenario-result').textContent=gap===null?'حدد عدد الانتقالات المجانية للفريق الذي أجريت له انتقالات لحساب الفارق.':
+        (overBudget?'خطة تتجاوز الميزانية · ':'')+'حسب افتراضاتك: '+(gap===0?'تعادل':Math.abs(gap)+' نقطة لصالح '+$(gap>0?'my-name':'opponent-name').textContent);
 }
 function canTransfer(id) {
     if(!selected)return false;
@@ -210,6 +231,7 @@ function publishedLabel(d) {
     return 'خطتك من GW '+mine+' وخطة خصمك من GW '+theirs+' (تم تخطي Free Hit)';
 }
 async function load(entry='') {
+    assumptions={};
     const sequence=++requestNumber; data=null; selected=null; $('matchup').hidden=true; $('message').textContent='جاري تحميل البيانات…'; $('retry').disabled=true;
     try {
         const response=await fetch('/api/elite/planner'+(entry?'?entry='+encodeURIComponent(entry):'')); const result=await response.json();
@@ -233,4 +255,5 @@ $('retry').addEventListener('click',()=>load($('manager').value));
 }));
 $('search').addEventListener('input',transferOptions);
 $('club-filter').addEventListener('change',transferOptions);
+$('clear-scenario').onclick=()=>{assumptions={};render();};
 load();

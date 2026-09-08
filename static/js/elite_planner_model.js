@@ -74,6 +74,14 @@
             if (p.vice === outgoing) p.vice = incoming;
             rules.normalize(p); return true;
         },
+        scenario(own, opponent, points) {
+            const hit = p => rules.used(p) === 0 ? 0 : rules.hits(p);
+            const a = hit(own), b = hit(opponent);
+            if (a === null || b === null) return null;
+            const mine = rules.weights(own), theirs = rules.weights(opponent);
+            return [...new Set([...own.ids, ...opponent.ids])].reduce((gap, id) =>
+                gap + ((mine[id] || 0) - (theirs[id] || 0)) * (points[id] ?? 0), b - a);
+        },
         weights(p) {
             return Object.fromEntries(p.ids.map((id,i) => [id, i >= 11 && p.chip !== 'bboost' ? 0 : id === p.captain ? (p.chip === '3xc' ? 3 : 2) : 1]));
         }

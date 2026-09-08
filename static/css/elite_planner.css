@@ -677,3 +677,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
     .chip-controls .chip { font-size: 10px; }
     .selection-bar { padding-inline: 10px; }
 }
+/* Hypothetical points, styled with the Elite palette. */
+.scenario-fields {display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:18px 0;}
+.scenario-fields label {font-size:12px;}
+.scenario-fields input {display:block;box-sizing:border-box;width:100%;background:var(--paper);border:1px solid var(--line);padding:10px;color:var(--deep);border-radius:8px;}
+#scenario-result {display:block;border-inline-start:3px solid var(--purple);background:var(--tint);padding:18px;font-size:18px;font-weight:800;}

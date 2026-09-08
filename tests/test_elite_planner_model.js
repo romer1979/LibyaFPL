@@ -20,6 +20,20 @@ assert.equal(r.swap(p,0,11,players),true);
 assert.equal(r.swap(p,4,12,players),true);assert.equal(p.captain,13);
 assert.equal(r.swap(p,5,13,players),true);assert.equal(p.vice,14);
 const other=r.create(ids,{captain:6,vice:5});
+{
+    const a=r.create(ids,{captain:5,vice:6}), b=r.create(ids,{captain:6,vice:5});
+    assert.equal(r.scenario(a,b,{5:10,6:2}),8);
+    a.chip='3xc';assert.equal(r.scenario(a,b,{5:10,6:2}),18);
+    b.chip='3xc';assert.equal(r.scenario(a,b,{5:10,6:2}),16);
+    a.chip='bboost';b.chip=null;assert.equal(r.scenario(a,b,{13:6}),6);
+    b.chip='bboost';assert.equal(r.scenario(a,b,{13:6}),0);
+    a.chip=null;b.chip=null;assert.equal(r.scenario(a,b,{5:-2}),-2);
+    assert.equal(r.scenario(a,b,{}),0);
+    a.ids[7]=16;a.freeTransfers=null;assert.equal(r.scenario(a,b,{}),null);
+    a.freeTransfers=0;assert.equal(r.scenario(a,b,{16:5}),1);
+    a.chip='wildcard';assert.equal(r.scenario(a,b,{16:5}),5);
+    a.chip='freehit';assert.equal(r.scenario(a,b,{16:5}),5);
+}
 other.chip='3xc';const weights=r.weights(other);assert.equal(weights[6],3);assert.equal(weights[5],1);
 assert.notDeepEqual(p.ids,other.ids); // Independent lineups.
 assert.equal(r.create(ids,{captain:5,vice:5}).vice!==5,true);
