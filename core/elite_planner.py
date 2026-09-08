@@ -118,9 +118,10 @@ def free_transfers(entry, upcoming_gw):
 
     FPL does not publish this for anyone, so it is reconstructed from the
     public history: one free transfer per gameweek, banked up to five, spent
-    when transfers are made, and preserved through a Wildcard or Free Hit
-    (those weeks are unlimited and cost nothing). Gameweek 1 is unlimited too,
-    before the first deadline.
+    when transfers are made, and frozen through a Wildcard or Free Hit — those
+    weeks are unlimited and cost nothing, and they grant no weekly transfer
+    either, so the bank comes out the far side unchanged. Gameweek 1 is
+    unlimited too, before the first deadline.
 
     The reconstruction checks itself. FPL *does* publish what each gameweek's
     transfers cost, and that cost is a function of the free transfers held at
@@ -144,13 +145,18 @@ def free_transfers(entry, upcoming_gw):
                 available = 1
                 continue
             if chips.get(gw) in ('wildcard', 'freehit'):
-                predicted = 0              # unlimited, and the bank survives
+                # Unlimited and free, and the bank is frozen rather than
+                # topped up: a chip week grants no weekly free transfer, so
+                # whatever was banked carries over unchanged. Playing Free Hit
+                # in GW3 holding two leaves two for GW4, not three.
+                predicted, gained = 0, 0
             else:
                 predicted = 4 * max(0, made - available)
                 available -= min(made, available)
+                gained = 1
             if predicted != charged:
                 return None
-            available = min(MAX_BANKED_TRANSFERS, available + 1)
+            available = min(MAX_BANKED_TRANSFERS, available + gained)
         return available
     except (FPLApiError, KeyError, TypeError, ValueError):
         return None

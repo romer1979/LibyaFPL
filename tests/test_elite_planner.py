@@ -114,10 +114,21 @@ class PlannerTests(unittest.TestCase):
         fetch.return_value = history([(1, 0, 0)] + [(gw, 0, 0) for gw in range(2, 12)])
         self.assertEqual(free_transfers(11, 12), 5)
 
-        # A Wildcard week is unlimited and free, and preserves the bank.
+        # A Wildcard week is unlimited and free, and freezes the bank: no
+        # weekly free transfer is granted, so two banked stay two.
         fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 9, 0)],
                                      chips=[('wildcard', 3)])
-        self.assertEqual(free_transfers(11, 4), 3)
+        self.assertEqual(free_transfers(11, 4), 2)
+
+        # Free Hit behaves the same way.
+        fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 0, 0)],
+                                     chips=[('freehit', 3)])
+        self.assertEqual(free_transfers(11, 4), 2)
+
+        # And the freeze is only for that week: the following one accrues again.
+        fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0)],
+                                     chips=[('freehit', 3)])
+        self.assertEqual(free_transfers(11, 5), 3)
 
         # Only gameweeks before the one being planned are counted.
         fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 0, 0)])
