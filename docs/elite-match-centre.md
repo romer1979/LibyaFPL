@@ -64,6 +64,11 @@ the app and collector inside each worker.
 
 ## Interpretation
 
+- A LIVE badge and separate outline mean the player's club has a started,
+  unfinished fixture in this gameweek. This is not an on-pitch guarantee: a
+  player may be unused, substituted or sent off. Provisional/full completion
+  and settled gameweeks remove it. It applies to bench players too, preserves
+  differential colours and never creates a score-impact timeline event alone.
 - Times mean **detected at**, not real match event times. A poll may combine
   multiple events. Rows in a batch are not a claimed chronological sequence.
 - The first snapshot is a baseline, never a fabricated event history. Previously

@@ -22,6 +22,26 @@ def state(points=1, weight=1, other_weight=0, identifier='minutes', value=59):
 
 
 class ScoringTests(unittest.TestCase):
+    def test_live_fixture_status_is_separate_from_scoring_and_minutes(self):
+        players = {i: {'id':i, 'name':str(i), 'position':[1,2,2,2,3,3,3,3,4,4,4,1,3,2,2][i-1], 'club':1} for i in range(1,16)}
+        scores = {i:{'minutes':90, 'points':2, 'parts':{}} for i in players}
+        picks = {'picks':[{'element':i,'position':i,'multiplier':int(i<=11)} for i in players]}
+        fixture = {'id':1,'team_h':1,'team_a':2,'started':False,'finished':False}
+        def result(settled=False): return lineup(picks,players,scores,[fixture],settled)
+        before = result()
+        self.assertFalse(any(p['fixture_live'] for p in before['players']))
+        fixture['started'] = True
+        current = result()
+        self.assertTrue(all(p['fixture_live'] for p in current['players']))
+        self.assertEqual(before['score'],current['score'])
+        self.assertEqual(changes({'teams':[before,before]}, {'teams':[current,before]}), [])
+        fixture['finished_provisional'] = True
+        self.assertFalse(any(p['fixture_live'] for p in result()['players']))
+        fixture['finished_provisional'] = False
+        self.assertFalse(any(p['fixture_live'] for p in result(True)['players']))
+        fixture['team_h'] = 3
+        self.assertFalse(any(p['fixture_live'] for p in result()['players']))
+
     def test_sixty_minutes_and_all_point_categories(self):
         update = changes(state(), state(2, value=60))[0]
         self.assertEqual(update['parts'][0]['label'], 'بلوغ 60 دقيقة')

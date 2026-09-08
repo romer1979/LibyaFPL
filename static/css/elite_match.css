@@ -16,3 +16,10 @@
 .coverage-gap {border-inline-start:3px solid #a2630a;padding:8px;background:#fff5e4;color:#694200!important;}
 #status {color:var(--purple);font-weight:700;}
 @media(max-width:600px){.match-scoreboard{padding:18px 10px;gap:8px}.match-scoreboard strong{font-size:32px}.match-scoreboard .gap{font-size:11px;max-width:95px}.summary-heading{flex-wrap:wrap}}
+.player.fixture-live {outline:2px solid var(--match-live,#80d9ff);outline-offset:2px;border-radius:6px;}
+.live-badge {display:inline-block;background:var(--match-live,#80d9ff);color:#101820;border-radius:4px;padding:2px 5px;font-size:10px;font-weight:800;letter-spacing:.06em;line-height:1.4;}
+.player .live-badge {margin-top:3px;}
+.live-legend {line-height:1.9;}
+.planner-cities {--match-live:#e6be50;}
+.planner-libyan {--match-live:#c8a858;}
+.planner-arab {--match-live:#a8e9d7;}

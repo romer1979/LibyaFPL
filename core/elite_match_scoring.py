@@ -108,9 +108,12 @@ def lineup(payload, players, scores, fixtures, settled=False, team_rules=False):
     rows = []
     for pid in ids:
         score = scores[pid]
+        fixture_live = not settled and any(
+            players[pid]['club'] in (f['team_h'], f['team_a']) and f.get('started')
+            and not (f.get('finished') or f.get('finished_provisional')) for f in fixtures)
         rows.append(dict(players[pid], raw=score['points'], minutes=score['minutes'], weight=weights[pid],
                          points=score['points'] * weights[pid], captain=pid == captain, vice=pid == vice,
-                         active=pid in active, parts=score['parts']))
+                         active=pid in active, fixture_live=fixture_live, parts=score['parts']))
     return {'players': rows, 'score': sum(p['points'] for p in rows) - hits,
             'hits': hits, 'chip': chip, 'substitutions': substitutions}
 

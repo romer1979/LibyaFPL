@@ -15,10 +15,11 @@ function detail(player){
     });$('player-detail').showModal();
 }
 function card(player,other,ownWeight=player.weight){
-    const b=text('button','','player'+(ownWeight!==(other?.weight||0)&&player.weight>0?' unique':''));b.type='button';b.onclick=()=>detail(player);
-    b.setAttribute('aria-label',`${player.name}: ${player.points} نقطة محتسبة`);
+    const b=text('button','','player'+(ownWeight!==(other?.weight||0)&&player.weight>0?' unique':'')+(player.fixture_live?' fixture-live':''));b.type='button';b.onclick=()=>detail(player);
+    b.setAttribute('aria-label',`${player.name}: ${player.points} نقطة محتسبة${player.fixture_live?' · مباراته جارية':''}`);
     b.append(text('span',player.clubName,'shirt'),text('strong',player.name),text('small',`${player.raw} × ${player.weight} = ${player.points}`,'match-player-total'),text('small',player.minutes+' دقيقة'));
     if(player.captain||player.vice)b.append(text('span',player.captain?'C':'V','captain-badge'));
+    if(player.fixture_live){const badge=text('span','LIVE','live-badge');badge.lang='en';badge.title='مباراته جارية؛ لا يؤكد وجوده على أرض الملعب';b.append(badge);}
     return b;
 }
 function render(){

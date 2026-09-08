@@ -24,6 +24,7 @@
             <section id="scoreboard" class="match-scoreboard" aria-label="النتيجة الحالية"></section>
             <p class="notice">تتحدث النقاط كل دقيقة تقريباً. البونص تقديري حتى اعتماد الجولة؛ التبديلات ووراثة الكابتن تنتظر اكتمال مباريات اللاعب. قد تختلف القراءة المؤقتة عن توقعات صفحة الدوري. اضغط اللاعب لعرض أسباب نقاطه.</p>
             {% if league != 'elite' %}<p class="notice">نتيجة الفريق هي مجموع المديرين الثلاثة بعد خصم الانتقالات. الكابتن ×2 فقط؛ لا تحتسب زيادة Triple Captain أو نقاط دكة Bench Boost. التمييز يقارن مجموع المضاعفات بين الفريقين.</p>{% endif %}
+            <p class="hint live-legend"><span class="live-badge" lang="en">LIVE</span> مباراة اللاعب جارية، وليس تأكيداً لوجوده على أرض الملعب. الإطار يوضح الحالة المباشرة؛ لون اللاعب يظل للمساهمة المختلفة.</p>
             <div id="pitches" class="{{ 'city-teams' if league != 'elite' else 'pitches' }}"></div>
             <section class="summary"><div class="summary-heading"><h2>ما الذي غيّر الفارق؟</h2><span>توقيت الرصد، وليس دقيقة المباراة</span></div><p id="coverage" class="hint"></p><div id="timeline"></div></section>
         </div>
