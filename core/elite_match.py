@@ -4,7 +4,7 @@ import os
 import threading
 import time
 from uuid import uuid4
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, render_template
@@ -49,10 +49,10 @@ def stamp(dt):
     return dt.replace(tzinfo=timezone.utc).isoformat()
 
 
-def league_matches(gw):
+def league_matches(gw, league_id=None):
     results, page = [], 1
     while True:
-        response = fetch_data(f'{FPL_BASE_URL}/leagues-h2h-matches/league/{LEAGUE_ID}/?event={gw}&page={page}')
+        response = fetch_data(f'{FPL_BASE_URL}/leagues-h2h-matches/league/{league_id or LEAGUE_ID}/?event={gw}&page={page}')
         results.extend(m for m in response['results'] if m.get('event', gw) == gw)
         if not response.get('has_next', response.get('next')):
             return results
@@ -117,6 +117,9 @@ def record(key, state, observed):
             return
         version = row.version
         events = changes(row.state, state)
+        if state.get('team_league'):
+            from core.team_match import manager_effects
+            manager_effects(events, row.state, state)
         payload = {'detected_at': stamp(observed), 'previous_at': stamp(row.observed_at),
                    'gap_before': row.state['gap'], 'gap_after': state['gap'],
                    'scores': [t['score'] for t in state['teams']], 'events': events,
@@ -187,7 +190,8 @@ def acquire_lease():
     return False
 
 
-def collect(app):
+def collect(app, owner=None):
+    from core.team_match import LEAGUES, fixtures_for, snapshot_team
     bootstrap = get_bootstrap_data()
     now = datetime.now(timezone.utc)
     # Keep revisiting the last published GW to pick up late official corrections.
@@ -196,17 +200,34 @@ def collect(app):
         if event.get('data_checked') and event != published[-1]:
             continue
         ctx = context(event['id'], bootstrap)
-        matches = [m for m in league_matches(event['id']) if (m.get('entry_1_entry') or 0) > 0 and (m.get('entry_2_entry') or 0) > 0]
-        def save(match):
+        matches = []
+        for league in ('elite',) + LEAGUES:
+            try:
+                fixtures = league_matches(event['id']) if league == 'elite' else fixtures_for(league, event['id'])
+                matches.extend((league, m) for m in fixtures if (m.get('entry_1_entry') or 0) > 0 and (m.get('entry_2_entry') or 0) > 0)
+            except Exception:
+                log.exception('Could not load %s match schedule', league)
+        def save(work):
+            league, match = work
             with app.app_context():
                 try:
-                    key, state = snapshot(match, ctx)
+                    key, state = snapshot(match, ctx) if league == 'elite' else snapshot_team(league, match, ctx)
                     record(key, state, ctx['observed'])
                 except Exception:
                     db.session.rollback()
-                    log.exception('Elite match observation failed')
+                    log.exception('%s match observation failed', league)
         with ThreadPoolExecutor(max_workers=4) as pool:
-            list(pool.map(save, matches))
+            pending = {pool.submit(save, match) for match in matches}
+            while pending:
+                _, pending = wait(pending, timeout=30)
+                if owner:
+                    renewed = db.session.query(CollectorLease).filter_by(id=1, owner=owner).update(
+                        {'expires_at': datetime.utcnow() + timedelta(minutes=5)}, synchronize_session=False)
+                    db.session.commit()
+                    if not renewed:
+                        for future in pending:
+                            future.cancel()
+                        return
 
 
 def start_collector(app):
@@ -223,7 +244,7 @@ def start_collector(app):
                 try:
                     owner = acquire_lease()
                     if owner:
-                        collect(app)
+                        collect(app, owner)
                         db.session.query(CollectorLease).filter_by(id=1, owner=owner).update({'expires_at': datetime.utcnow() + timedelta(seconds=60)})
                         db.session.commit()
                 except Exception:

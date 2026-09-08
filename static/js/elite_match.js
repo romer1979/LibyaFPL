@@ -14,27 +14,44 @@ function detail(player){
         $('player-points').append(text('div',`${labels[part.identifier]||part.identifier.replaceAll('_',' ')}: ${signed(part.points)} · ${part.fixture_label||'تحديث المباراة'}${part.provisional?' · تقديري':''}`,'match-detail-row'));
     });$('player-detail').showModal();
 }
-function card(player,other){
-    const b=text('button','','player'+(player.weight!==(other?.weight||0)&&player.weight>0?' unique':''));b.type='button';b.onclick=()=>detail(player);
+function card(player,other,ownWeight=player.weight){
+    const b=text('button','','player'+(ownWeight!==(other?.weight||0)&&player.weight>0?' unique':''));b.type='button';b.onclick=()=>detail(player);
     b.setAttribute('aria-label',`${player.name}: ${player.points} نقطة محتسبة`);
     b.append(text('span',player.clubName,'shirt'),text('strong',player.name),text('small',`${player.raw} × ${player.weight} = ${player.points}`,'match-player-total'),text('small',player.minutes+' دقيقة'));
     if(player.captain||player.vice)b.append(text('span',player.captain?'C':'V','captain-badge'));
     return b;
 }
 function render(){
+    const expanded = new Set([...$('pitches').querySelectorAll('details[open]')].map(el=>el.dataset.entry));
+    const firstRender = !$('pitches').childElementCount;
     $('content').hidden=false;$('scoreboard').replaceChildren();$('pitches').replaceChildren();
     data.teams.forEach((team,i)=>{
         const title=text('div','');title.append(text('h2',team.name),text('strong',team.score),text('p','خصم انتقالات: '+team.hits));
         if(i===1){const gap=text('div','','gap');gap.append(text('p','GW '+data.gameweek),text('b',data.gap===0?'تعادل':Math.abs(data.gap)+' نقطة لصالح '+data.teams[data.gap>0?0:1].name),text('p',data.settled?'نتيجة معتمدة':'قراءة مباشرة · بونص تقديري'));$('scoreboard').append(gap);}
         $('scoreboard').append(title);
-        const panel=text('section','','team-panel'), pitch=text('div','','pitch'), bench=text('div','','bench');
+        const group=text('section','','city-team');
         const other=Object.fromEntries(data.teams[1-i].players.map(p=>[p.id,p]));
-        panel.append(text('h2',team.name),text('p',team.chip?`الشريحة: ${{'3xc':'Triple Captain',bboost:'Bench Boost',freehit:'Free Hit',wildcard:'Wildcard'}[team.chip]||team.chip}`:'دون شريحة','hint'));
-        [1,2,3,4].forEach(pos=>{const row=text('div','','position-row');team.players.filter(p=>p.active&&p.position===pos).forEach(p=>row.append(card(p,other[p.id])));pitch.append(row);});
-        team.players.filter(p=>!p.active).forEach(p=>bench.append(card(p,other[p.id])));
-        panel.append(pitch,text('p','الدكة · الأرقام المحتسبة تشمل تأثير الشريحة والتبديلات','bench-title'),bench);
-        team.substitutions.forEach(sub=>panel.append(text('p',`تبديل تلقائي: ${team.players.find(p=>p.id===sub.element_out)?.name} ← ${team.players.find(p=>p.id===sub.element_in)?.name}`,'hint')));
-        $('pitches').append(panel);
+        const own=Object.fromEntries(team.players.map(p=>[p.id,p]));
+        if(team.managers)group.append(text('h2',team.name,'city-title'));
+        (team.managers||[team]).forEach((manager,index)=>{
+            const panel=text('section','','team-panel'), pitch=text('div','','pitch'), bench=text('div','','bench');
+            let chip=manager.chip?({'3xc':'Triple Captain',bboost:'Bench Boost',freehit:'Free Hit',wildcard:'Wildcard'}[manager.chip]||manager.chip):'دون شريحة';
+            if(team.managers&&['3xc','bboost'].includes(manager.chip))chip+=' · الزيادة غير محتسبة';
+            panel.append(text('h3',manager.name),text('p',chip,'hint'));
+            const makeCard=p=>card(p,other[p.id],own[p.id]?.weight||0);
+            [1,2,3,4].forEach(pos=>{const row=text('div','','position-row');manager.players.filter(p=>p.active&&p.position===pos).forEach(p=>row.append(makeCard(p)));pitch.append(row);});
+            manager.players.filter(p=>!p.active).forEach(p=>bench.append(makeCard(p)));
+            panel.append(pitch,text('p',team.managers?'الدكة · نقاطها غير محتسبة إلا عند التبديل التلقائي':'الدكة · الأرقام المحتسبة تشمل تأثير الشريحة والتبديلات','bench-title'),bench);
+            manager.substitutions.forEach(sub=>panel.append(text('p',`تبديل تلقائي: ${manager.players.find(p=>p.id===sub.element_out)?.name} ← ${manager.players.find(p=>p.id===sub.element_in)?.name}`,'hint')));
+            if(team.managers){
+                const fold=text('details','','manager-card');fold.dataset.entry=String(manager.entry);
+                fold.open=expanded.has(String(manager.entry))||(firstRender&&index===0);
+                const heading=text('summary','','manager-overview');
+                heading.append(text('strong',manager.name),text('span',`${manager.score} نقطة · خصم ${manager.hits}`));
+                fold.append(heading,panel);group.append(fold);
+            }else $('pitches').append(panel);
+        });
+        if(team.managers)$('pitches').append(group);
     });
     $('coverage').textContent=`بدأ الرصد ${timeLabel(data.tracking_since)} عند النتيجة ${data.baseline.join(' – ')}. لا تُنسب النقاط السابقة إلى أحداث مؤرخة. آخر ${data.history_limit} دفعة كحد أقصى؛ التغييرات ضمن كل دفعة قد تكون متزامنة.`;
     $('timeline').replaceChildren();
@@ -49,6 +66,7 @@ function render(){
             else if(!event.lineup_change)row.append(text('p','تحديث نقاط / خصم انتقالات'));
             if(event.lineup_change)row.append(text('p',event.lineup_reasons?.join('، ')||'تغيّر اللاعب المحتسب أو مضاعف الكابتن / النائب.'));
             row.append(text('small',`${data.teams[0].name}: ${signed(event.delta[0])} · ${data.teams[1].name}: ${signed(event.delta[1])}`));
+            (event.manager_effects||[]).forEach(effect=>row.append(text('small',`${data.teams[effect.side].name} · ${effect.manager}: ${signed(effect.delta)}`)));
             row.append(text('p',`أثر التحديث: ${Math.abs(event.gap_delta)} نقطة في صالح ${data.teams[event.gap_delta>0?0:1].name}`,'effect'));box.append(row);
         });$('timeline').append(box);
     });

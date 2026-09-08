@@ -51,7 +51,7 @@ def player_scores(elements, fixtures, settled=False):
     return scores
 
 
-def lineup(payload, players, scores, fixtures, settled=False):
+def lineup(payload, players, scores, fixtures, settled=False, team_rules=False):
     picks = sorted(payload['picks'], key=lambda p: p['position'])
     ids = [p['element'] for p in picks]
     if len(ids) != 15 or len(set(ids)) != 15 or any(pid not in players or pid not in scores for pid in ids):
@@ -66,15 +66,17 @@ def lineup(payload, players, scores, fixtures, settled=False):
         # A postponed/unplayed fixture is not proof of DNP until the GW settles.
         return settled or not games or all(f.get('finished') or f.get('finished_provisional') for f in games)
 
-    if settled:
+    if settled and not (team_rules and chip == 'bboost'):
         # Published FPL multipliers/auto-subs are authoritative after data_checked.
         weights = {p['element']: p['multiplier'] for p in picks}
+        if team_rules:
+            weights = {pid: min(2, multiplier) for pid, multiplier in weights.items()}
         substitutions = payload.get('automatic_subs', [])
         for sub in substitutions:
             if sub['element_out'] in active:
                 active[active.index(sub['element_out'])] = sub['element_in']
     else:
-        if chip != 'bboost':
+        if chip != 'bboost' or team_rules:
             absent = [pid for pid in active if scores[pid]['minutes'] == 0 and done(pid)]
             used = set()
             for incoming in ids[11:]:
@@ -96,12 +98,12 @@ def lineup(payload, players, scores, fixtures, settled=False):
                         active = trial
                         substitutions.append({'element_in': incoming, 'element_out': outgoing})
                     break
-        weights = {pid: int(chip == 'bboost' or pid in active) for pid in ids}
+        weights = {pid: int((chip == 'bboost' and not team_rules) or pid in active) for pid in ids}
         effective = captain
         if captain and scores[captain]['minutes'] == 0 and done(captain):
             effective = vice
         if effective and weights.get(effective) and scores[effective]['minutes'] > 0:
-            weights[effective] = 3 if chip == '3xc' else 2
+            weights[effective] = 3 if chip == '3xc' and not team_rules else 2
     hits = payload.get('entry_history', {}).get('event_transfers_cost', 0)
     rows = []
     for pid in ids:

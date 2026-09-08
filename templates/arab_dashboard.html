@@ -367,6 +367,7 @@
                                         </div>
                                     </td>
                                     <td class="score-cell">
+                                    <a class="match-centre-link" style="color:inherit" href="{{ url_for('team_match.page', league='arab', gw=data.gameweek, first=match.team_1, second=match.team_2) }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">تفاصيل المواجهة ↗</a>
                                         <span class="score {% if match.winner == 1 %}score-win{% endif %}">{{ match.points_1 }}</span>
                                         <span class="vs">-</span>
                                         <span class="score {% if match.winner == 2 %}score-win{% endif %}">{{ match.points_2 }}</span>
@@ -435,6 +436,7 @@
                                 
                                 <!-- Score -->
                                 <div class="fixture-score-block">
+                                    <a class="match-centre-link" style="color:inherit" href="{{ url_for('team_match.page', league='arab', gw=data.gameweek, first=match.team_1, second=match.team_2) }}" target="_blank" rel="noopener" onclick="event.stopPropagation()">تفاصيل المواجهة ↗</a>
                                     <div class="fixture-scores">
                                         <span class="fixture-pts {% if match.winner == 1 %}winning{% endif %}">{{ match.points_1 }}</span>
                                         <span class="fixture-separator">-</span>

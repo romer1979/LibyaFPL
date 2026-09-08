@@ -1,23 +1,30 @@
+{% set league = league|default('elite') %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>تفاصيل المواجهة | دوري النخبة</title>
+    <title>تفاصيل المواجهة | {{ league_title|default('دوري النخبة') }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/elite_planner.css') }}">
+    {% if league != 'elite' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ league ~ '.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities_planner.css') }}">
+    {% endif %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/elite_match.css') }}">
+    {% if league != 'elite' %}<link rel="stylesheet" href="{{ url_for('static', filename='css/team_match.css') }}">{% endif %}
     <script src="{{ url_for('static', filename='js/elite_match.js') }}" defer></script>
 </head>
-<body data-api="{{ api_url }}">
-    <header class="header"><div class="header-content"><a href="/league/elite" class="logo"><img src="{{ url_for('static', filename='elite_mark_192.png') }}" class="logo-img" alt="" width="192" height="192"><div class="logo-text"><span class="logo-title">دوري النخبة</span><span class="logo-subtitle">ELITE LEAGUE</span></div></a><a href="/league/elite" class="stats-link">العودة إلى المواجهات</a></div></header>
+<body data-api="{{ api_url }}" class="{% if league != 'elite' %}team-planner planner-{{ league }}{% endif %}">
+    <header class="header"><div class="header-content"><a href="/league/{{ league }}" class="logo"><img src="{{ url_for('static', filename=league ~ '_mark_192.png') }}" class="logo-img" alt="" width="192" height="192"><div class="logo-text"><span class="logo-title">{{ league_title|default('دوري النخبة') }}</span><span class="logo-subtitle">{{ league_subtitle|default('ELITE LEAGUE') }}</span></div></a><a href="/league/{{ league }}" class="stats-link">العودة إلى المواجهات</a></div></header>
     <main>
         <div class="intro"><div><p class="eyebrow">المواجهة تحت المجهر</p><h1>كل نقطة تصنع الفارق</h1></div><button id="refresh" type="button">تحديث الآن</button></div>
         <p id="status" role="status" aria-live="polite">جاري تحميل المواجهة…</p>
         <div id="content" hidden>
             <section id="scoreboard" class="match-scoreboard" aria-label="النتيجة الحالية"></section>
             <p class="notice">تتحدث النقاط كل دقيقة تقريباً. البونص تقديري حتى اعتماد الجولة؛ التبديلات ووراثة الكابتن تنتظر اكتمال مباريات اللاعب. قد تختلف القراءة المؤقتة عن توقعات صفحة الدوري. اضغط اللاعب لعرض أسباب نقاطه.</p>
-            <div id="pitches" class="pitches"></div>
+            {% if league != 'elite' %}<p class="notice">نتيجة الفريق هي مجموع المديرين الثلاثة بعد خصم الانتقالات. الكابتن ×2 فقط؛ لا تحتسب زيادة Triple Captain أو نقاط دكة Bench Boost. التمييز يقارن مجموع المضاعفات بين الفريقين.</p>{% endif %}
+            <div id="pitches" class="{{ 'city-teams' if league != 'elite' else 'pitches' }}"></div>
             <section class="summary"><div class="summary-heading"><h2>ما الذي غيّر الفارق؟</h2><span>توقيت الرصد، وليس دقيقة المباراة</span></div><p id="coverage" class="hint"></p><div id="timeline"></div></section>
         </div>
     </main>

@@ -1,0 +1,18 @@
+.team-planner .match-scoreboard {background:linear-gradient(125deg,#27251a,#141712);border:1px solid var(--planner-line);color:#eee9da;}
+.team-planner .match-scoreboard strong {color:var(--planner-accent);}
+.team-planner .city-team {min-width:0;}
+.team-planner .manager-overview {display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer;}
+.team-planner .manager-overview span {font-size:12px;font-variant-numeric:tabular-nums;}
+.team-planner .manager-card .team-panel {border:0;margin:0;box-shadow:none;}
+.team-planner .match-update {background:var(--bg-card);border-color:var(--planner-accent);}
+.team-planner .coverage-gap {background:var(--planner-soft);color:var(--text-primary)!important;border-color:var(--planner-accent);}
+.planner-libyan .match-scoreboard {background:#101010;border-radius:0;border-width:1px 0;}
+.planner-libyan .match-update {background:transparent;border-radius:0;}
+.planner-libyan .match-player-total {color:#f0eadc;}
+.planner-arab .match-scoreboard {background:var(--arab-navy);color:#fff;border-radius:4px;}
+.planner-arab .match-scoreboard strong {color:#fff;}
+.planner-arab .match-update {background:#f5f6fa;}
+.planner-arab .match-player-total {color:var(--arab-navy);}
+.planner-arab h2.city-title {color:#fff;}
+.planner-arab .header .stats-link {color:#fff;border-color:rgba(255,255,255,.5);}
+@media(max-width:600px){.team-planner .manager-card .team-panel{padding:12px 6px}.team-planner .match-scoreboard h2{font-size:15px}}
