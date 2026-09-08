@@ -26,10 +26,12 @@ from core.cities_league import get_cities_league_data
 from core.libyan_league import get_libyan_league_data
 from core.arab_league import get_arab_league_data
 from core.elite_planner import planner
+from core.cities_planner import cities_planner
 from models import db, save_standings, calculate_rank_change, StandingsHistory, FixtureResult
 
 app = Flask(__name__)
 app.register_blueprint(planner)
+app.register_blueprint(cities_planner)
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///elite_league.db')

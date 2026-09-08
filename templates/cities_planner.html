@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d0d0f">
+    <title>خطة المدينة | دوري المدن</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/elite_planner.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities_planner.css') }}">
+    <script src="{{ url_for('static', filename='js/elite_planner_model.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/cities_planner_model.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/cities_planner.js') }}" defer></script>
+</head>
+<body class="cities-planner">
+    <header class="header"><div class="header-content">
+        <a href="/league/cities" class="logo"><img src="{{ url_for('static', filename='cities_mark_192.png') }}" class="logo-img" width="192" height="192" alt=""><div class="logo-text"><span class="logo-title">دوري المدن</span><span class="logo-subtitle" lang="en">CITIES LEAGUE</span></div></a>
+        <nav class="header-actions" aria-label="التنقل"><a href="/league/cities" class="header-action">الترتيب والمواجهات</a><a href="/" class="header-action">الرئيسية</a></nav>
+    </div></header>
+    <main>
+        <div class="intro"><div><p class="eyebrow">3 مديرين · خطة واحدة للمدينة</p><h1>أين تصنع فريقك الفارق؟</h1><p>خطط للتشكيلات، وراقب أثر كل قرار على المواجهة كاملة.</p></div><span id="gameweek" class="gw" dir="ltr">GW —</span></div>
+        <section class="toolbar"><label for="city">اختر فريقك<select id="city" disabled><option value="">تحميل المدن…</option></select></label><p id="deadline"></p><button id="refresh" type="button">تحديث البيانات</button></section>
+        <p id="message" role="status" aria-live="polite">جاري تحميل الجولة القادمة…</p>
+        <div id="matchup" hidden>
+            <aside class="notice">خطة افتراضية من آخر تشكيلات ثابتة منشورة. تعديلات الخصم توقعات؛ لا تُرسل أي تغييرات إلى FPL. المقارنة تفترض مشاركة الأساسيين، مع الكابتن ×2. نقاط Triple Captain الإضافية وBench Boost مستبعدة. لا تُحاكى التبديلات التلقائية أو غياب الكابتن.</aside>
+            <div id="city-teams" class="city-teams"></div>
+            <section class="summary city-summary" aria-labelledby="comparison-title">
+                <div class="summary-heading"><h2 id="comparison-title">ميزان المواجهة</h2><span id="shared"></span></div>
+                <p class="hint">المضاعف يجمع مشاركات اللاعب والكابتن في المدينة. اللاعب المشترك قد يصنع الفارق عندما تختلف مساهمته بين المدينتين.</p>
+                <div id="hit-summary" class="hit-summary"></div>
+                <div class="comparison-scroll"><table class="comparison"><thead><tr><th scope="col">اللاعب / الجولة</th><th scope="col" id="own-column">فريقك</th><th scope="col" id="other-column">الخصم</th><th scope="col">الفارق لصالحك</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
+            </section>
+            <section class="summary scenario" aria-labelledby="scenario-title"><div class="summary-heading"><h2 id="scenario-title">ماذا لو؟</h2><button id="clear-scenario" type="button">مسح الافتراضات</button></div>
+                <p class="hint">أدخل نقاطاً افتراضية للاعبين المختلفين. الحقول الفارغة تساوي 0، وليست توقعاً. اللاعبون المتساوون يلغون أثر بعضهم؛ الناتج يشمل خصم الانتقالات عندما يكون معروفاً.</p>
+                <div id="scenario-fields" class="scenario-fields"></div><output id="scenario-result" aria-live="polite"></output>
+            </section>
+        </div>
+    </main>
+    <dialog id="editor" class="picker" aria-labelledby="edit-title"><form method="dialog"><button class="close" aria-label="إغلاق">×</button></form><h2 id="edit-title"></h2><p id="edit-budget"></p>
+        <section class="picker-section"><h3>تبديل أو ترتيب الدكة</h3><div id="sub-options" class="picker-list"></div></section>
+        <section class="picker-section"><h3>انتقال افتراضي بنفس المركز</h3><div class="picker-filters"><label for="search">بحث<input id="search" type="search" autocomplete="off" placeholder="اسم اللاعب"></label><label for="club-filter">النادي<select id="club-filter"></select></label></div><p id="picker-count" class="hint"></p><div id="transfer-options" class="picker-list"></div></section>
+        <p class="hint">الميزانية خاصة بهذا المدير. الأسعار تقديرية ويمكن تصحيحها في إعداداته. حد 3 لاعبين من النادي يُطبق لكل مدير.</p>
+    </dialog>
+</body>
+</html>

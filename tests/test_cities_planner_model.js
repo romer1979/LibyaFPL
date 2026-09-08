@@ -1,0 +1,24 @@
+const assert = require('node:assert/strict');
+const rules = require('../static/js/elite_planner_model.js');
+const cities = require('../static/js/cities_planner_model.js');
+const ids = Array.from({length:15},(_,i)=>i+1);
+const make = captain => rules.create(ids,{captain,vice:captain===1?2:1},{bank:10,free_transfers:1});
+const own = [make(5),make(5),make(1)];
+const other = [make(5),make(1),make(1)];
+other[1].ids[4]=16;other[2].ids[4]=17;
+assert.equal(cities.aggregate(own)[5],5);
+assert.equal(cities.aggregate(other)[5],2);
+assert.equal(cities.differences([own,other]).find(r=>r.id===5).delta,3);
+own[0].chip='3xc';own[1].chip='bboost';
+assert.equal(cities.aggregate(own)[5],5);assert.equal(cities.aggregate(own)[12],0);
+own[0].chip=null;own[1].chip=null;
+own[0].freeTransfers=null;assert.equal(cities.hits(own),0); // Unchanged draft costs nothing.
+own[0].ids[5]=18;assert.equal(cities.hits(own),null);
+assert.equal(cities.scenario([own,other],{5:8}),null);
+own[0].freeTransfers=0;assert.equal(cities.hits(own),4);
+assert.equal(cities.scenario([own,other],{5:8}),20);
+own[0].chip='wildcard';assert.equal(cities.hits(own),0);
+own[0].chip='freehit';assert.equal(cities.hits(own),0);
+assert.equal(cities.scenario([own,other],{5:8}),24);
+assert.equal(cities.scenario([own,other],{5:-2}),-6);
+console.log('Cities scoring: aggregate captaincy, TC/BB exclusion, separate hits and scenarios passed.');

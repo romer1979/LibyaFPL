@@ -1,0 +1,59 @@
+/* Cities brand tokens come from cities.css; shared pitch/drawer from Claude's planner. */
+.cities-planner {
+    --purple: var(--cities-gold);
+    --purple-light: var(--cities-gold);
+    --deep: #16160f;
+    --silver: var(--cities-gold);
+    --silver-light: #f2d488;
+    --muted-strong: #b5b3a8;
+    --tint: var(--cities-gold-soft);
+    --tint-line: var(--cities-gold-line);
+    --focus: var(--cities-gold);
+    background: radial-gradient(ellipse at 85% 0%, #e6be5010, transparent 48%), var(--bg-white);
+}
+.cities-planner main {max-width:1400px;}
+.cities-planner .intro {padding:12px 0;}
+.cities-planner h1 {font-size:clamp(26px,3.5vw,42px);}
+.cities-planner .gw {background:var(--cities-gold-soft);border:1px solid var(--cities-gold-line);color:var(--cities-gold);}
+.city-teams {display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.city-team {min-width:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;padding:20px;}
+.city-title {display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:3px solid transparent;border-image:linear-gradient(90deg,var(--cities-red) 33%,#343430 33%,#343430 66%,var(--cities-green) 66%) 1;padding-bottom:16px;margin-bottom:14px;}
+.city-title h2 {font-size:25px;color:var(--cities-gold);margin:0;}
+.city-title small,.manager-overview small {color:var(--text-secondary);}
+.manager-card {border:1px solid var(--border-color);border-radius:12px;margin-top:12px;overflow:hidden;background:linear-gradient(130deg,var(--cities-gold-soft),transparent 65%);}
+.manager-card>summary {list-style:none;cursor:pointer;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.manager-card>summary::-webkit-details-marker {display:none;}
+.manager-card>summary:after {content:'+';font-size:24px;color:var(--cities-gold);}
+.manager-card[open]>summary:after {content:'−';}
+.manager-card[open] {border-color:var(--cities-gold-line);}
+.manager-overview strong {display:block;font-size:15px;}
+.manager-overview small {display:block;font-size:11px;line-height:1.9;}
+.manager-body {padding:0 12px 16px;border-top:1px solid var(--border-color);}
+.manager-body .leaders {margin-top:14px;}
+.cities-planner .leaders select,.cities-planner .finance-box input,.cities-planner .finance-box {background:var(--bg-card);color:var(--text-primary);border-color:var(--border-color);}
+.cities-planner .chip-controls .chip {background:var(--bg-gray);color:var(--text-primary);border-color:var(--border-color);}
+.cities-planner .chip-controls .chip.active {background:var(--cities-gold-soft);color:var(--cities-gold);border-color:var(--cities-gold);}
+.cities-planner button:disabled {cursor:not-allowed;}
+.cities-planner .finance-box {margin:12px 0;background:var(--bg-gray);}
+.cities-planner .finance-box summary {color:var(--cities-gold);}
+.cities-planner .finance-box button {background:var(--cities-gold-soft);color:var(--cities-gold);}
+.cities-planner .player.unique strong {background:var(--cities-gold);color:var(--deep);}
+.cities-planner .bench .player.unique strong {background:transparent;color:var(--cities-gold);}
+.manager-actions {display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+.hit-summary {display:flex;gap:12px;flex-wrap:wrap;padding:12px 0;}
+.hit-summary span {background:var(--bg-gray);padding:8px 12px;border-radius:8px;font-size:12px;}
+.comparison-scroll {overflow-x:auto;}
+.comparison {width:100%;border-collapse:collapse;min-width:440px;text-align:right;}
+.comparison th {font-size:11px;color:var(--text-secondary);padding:12px 8px;background:var(--bg-gray);}
+.comparison td {padding:12px 8px;border-bottom:1px solid var(--border-color);font-size:13px;}
+.comparison td small {display:block;font-size:10px;color:var(--text-secondary);}
+.comparison .positive {color:var(--cities-green);font-weight:800;}
+.comparison .negative {color:var(--cities-red);font-weight:800;}
+.scenario-fields {display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:18px 0;}
+.scenario-fields label {font-size:12px;}
+.scenario-fields input {display:block;width:100%;background:var(--bg-gray);border:1px solid var(--border-color);padding:10px;color:var(--text-primary);border-radius:8px;}
+#scenario-result {display:block;border-inline-start:3px solid var(--cities-gold);background:var(--cities-gold-soft);padding:18px;font-size:18px;font-weight:800;}
+.cities-planner dialog::backdrop {background:#0009;}
+.cities-planner .budget-error {color:#ff8890!important;}
+@media(max-width:900px){.city-teams{grid-template-columns:1fr}.city-team{padding:14px}.cities-planner .intro{align-items:flex-start}.cities-planner .gw{padding:10px}}
+@media(prefers-reduced-motion:no-preference){.manager-body{animation:city-reveal .2s ease-out}@keyframes city-reveal{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}}
