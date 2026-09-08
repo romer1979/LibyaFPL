@@ -9,6 +9,31 @@ from core.fpl_api import FPLApiError
 class CitiesPlannerTests(unittest.TestCase):
     roster = {'City A': [11, 12, 13], 'City B': [21, 22, 23]}
 
+    def test_each_page_uses_its_own_theme_and_endpoint(self):
+        app = Flask(__name__, template_folder='../templates')
+        app.register_blueprint(cities_planner)
+        client = app.test_client()
+        for league, title in [('cities', 'دوري المدن'), ('libyan', 'الدوري الليبي'), ('arab', 'البطولة العربية')]:
+            page = client.get(f'/league/{league}/planner')
+            self.assertEqual(page.status_code, 200)
+            html = page.get_data(as_text=True)
+            self.assertIn(title, html)
+            self.assertIn(f'css/{league}.css', html)
+            self.assertIn(f'data-planner-api="/api/{league}/planner"', html)
+            self.assertIn(f'{league}_mark_192.png', html)
+            if league != 'cities':
+                self.assertNotIn('css/cities.css', html)
+
+    @patch('core.cities_planner.fetch_data')
+    def test_other_leagues_use_correct_rosters_and_fixture_ids(self, fetch):
+        from core.cities_planner import league_config
+        for league in ('libyan', 'arab'):
+            roster, league_id, _, _ = league_config(league)
+            first, second = list(roster)[:2]
+            fetch.return_value = {'results': [{'entry_1_entry': roster[first][0], 'entry_2_entry': roster[second][0]}]}
+            self.assertEqual(city_opponent(first, 4, league), second)
+            self.assertIn(f'/league/{league_id}/', fetch.call_args.args[0])
+
     @patch('core.cities_planner.TEAMS_FPL_IDS', roster)
     @patch('core.cities_planner.fetch_data')
     def test_representative_on_second_page_reversed(self, fetch):

@@ -172,7 +172,7 @@ async function load(city='') {
     const current=++sequence;data=null;selected=null;$('matchup').hidden=true;$('refresh').disabled=true;
     $('message').textContent=city?'جاري تحميل فريقين و6 تشكيلات…':'جاري تحميل الجولة القادمة…';
     try {
-        const response=await fetch('/api/cities/planner'+(city?'?city='+encodeURIComponent(city):'')), result=await response.json();
+        const response=await fetch(document.body.dataset.plannerApi+(city?'?city='+encodeURIComponent(city):'')), result=await response.json();
         if(current!==sequence)return;
         if(!response.ok)throw Error(result.error||'تعذر تحميل البيانات.');
         $('city').replaceChildren(new Option('اختر فريقك',''));result.cities.forEach(name=>$('city').add(new Option(name,name)));$('city').value=city;$('city').disabled=false;

@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0d0d0f">
-    <title>خطط لفريقك | دوري المدن</title>
+    <meta name="theme-color" content="{{ '#f7f7fa' if league == 'arab' else '#0d0d0f' }}">
+    <title>خطط لفريقك | {{ league_title }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/elite_planner.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cities.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' ~ league ~ '.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/cities_planner.css') }}">
     <script src="{{ url_for('static', filename='js/elite_planner_model.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/cities_planner_model.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/cities_planner.js') }}" defer></script>
 </head>
-<body class="cities-planner">
+<body class="team-planner planner-{{ league }}" data-planner-api="/api/{{ league }}/planner">
     <header class="header"><div class="header-content">
-        <a href="/league/cities" class="logo"><img src="{{ url_for('static', filename='cities_mark_192.png') }}" class="logo-img" width="192" height="192" alt=""><div class="logo-text"><span class="logo-title">دوري المدن</span><span class="logo-subtitle" lang="en">CITIES LEAGUE</span></div></a>
-        <nav class="header-actions" aria-label="التنقل"><a href="/league/cities" class="header-action">الترتيب والمواجهات</a><a href="/" class="header-action">الرئيسية</a></nav>
+        <a href="/league/{{ league }}" class="logo"><img src="{{ url_for('static', filename=league ~ '_mark_192.png') }}" class="logo-img" width="192" height="192" alt=""><div class="logo-text"><span class="logo-title">{{ league_title }}</span><span class="logo-subtitle" lang="en">{{ league_subtitle }}</span></div></a>
+        <nav class="header-actions" aria-label="التنقل"><a href="/league/{{ league }}" class="header-action">الترتيب والمواجهات</a><a href="/" class="header-action">الرئيسية</a></nav>
     </div></header>
     <main>
         <div class="intro"><div><p class="eyebrow">3 مديرين · خطة واحدة للفريق</p><h1>خطط لفريقك</h1><p>خطط للتشكيلات، وراقب أثر كل قرار على المواجهة كاملة.</p></div><span id="gameweek" class="gw" dir="ltr">GW —</span></div>

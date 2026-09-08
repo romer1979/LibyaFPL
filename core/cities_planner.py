@@ -5,15 +5,25 @@ from flask import Blueprint, jsonify, render_template, request
 
 from config import FPL_BASE_URL
 from core.cities_league import CITIES_H2H_LEAGUE_ID, TEAMS_FPL_IDS
+from core import libyan_league, arab_league
 from core.elite_planner import event_window, squad, finances, free_transfers, chip_availability
 from core.fpl_api import fetch_data, get_bootstrap_data, get_fixtures, FPLApiError
 
 cities_planner = Blueprint('cities_planner', __name__)
 
 
-def city_opponent(city, gw):
+def league_config(league):
+    return {
+        'cities': (TEAMS_FPL_IDS, CITIES_H2H_LEAGUE_ID, 'دوري المدن', 'CITIES LEAGUE'),
+        'libyan': (libyan_league.TEAMS_FPL_IDS, libyan_league.LIBYAN_H2H_LEAGUE_ID, 'الدوري الليبي', 'LIBYAN LEAGUE'),
+        'arab': (arab_league.TEAMS_FPL_IDS, arab_league.ARAB_H2H_LEAGUE_ID, 'البطولة العربية', 'ARAB CHAMPIONSHIP'),
+    }[league]
+
+
+def city_opponent(city, gw, league='cities'):
+    roster, league_id, _, _ = league_config(league)
     lookup = {}
-    for name, entries in TEAMS_FPL_IDS.items():
+    for name, entries in roster.items():
         if len(entries) != 3 or len(set(entries)) != 3:
             raise ValueError('قائمة الفريق يجب أن تحتوي على 3 مديرين مختلفين.')
         for entry in entries:
@@ -22,7 +32,7 @@ def city_opponent(city, gw):
             lookup[entry] = name
     matches, page = [], 1
     while True:
-        data = fetch_data(f'{FPL_BASE_URL}/leagues-h2h-matches/league/{CITIES_H2H_LEAGUE_ID}/?event={gw}&page={page}')
+        data = fetch_data(f'{FPL_BASE_URL}/leagues-h2h-matches/league/{league_id}/?event={gw}&page={page}')
         for match in data['results']:
             if match.get('event', gw) != gw:
                 continue
@@ -54,27 +64,33 @@ def manager_snapshot(entry, published, upcoming, players):
             'chips': {key: chips[key] for key in ('wildcard', 'freehit')}}
 
 
-@cities_planner.route('/league/cities/planner')
-def page():
-    return render_template('cities_planner.html')
+@cities_planner.route('/league/cities/planner', defaults={'league': 'cities'})
+@cities_planner.route('/league/libyan/planner', defaults={'league': 'libyan'})
+@cities_planner.route('/league/arab/planner', defaults={'league': 'arab'})
+def page(league):
+    _, _, title, subtitle = league_config(league)
+    return render_template('cities_planner.html', league=league, league_title=title, league_subtitle=subtitle)
 
 
-@cities_planner.route('/api/cities/planner')
-def api():
+@cities_planner.route('/api/cities/planner', defaults={'league': 'cities'})
+@cities_planner.route('/api/libyan/planner', defaults={'league': 'libyan'})
+@cities_planner.route('/api/arab/planner', defaults={'league': 'arab'})
+def api(league):
     try:
+        roster, _, _, _ = league_config(league)
         bootstrap = get_bootstrap_data()
         upcoming, published = event_window(bootstrap['events'])
         if not upcoming:
             return jsonify(error='لا توجد جولة قادمة في الموسم الحالي.'), 409
-        base = {'cities': list(TEAMS_FPL_IDS), 'gameweek': upcoming['id'], 'deadline': upcoming['deadline_time']}
+        base = {'cities': list(roster), 'gameweek': upcoming['id'], 'deadline': upcoming['deadline_time']}
         city = request.args.get('city')
         if city is None:
             return jsonify(base)
-        if city not in TEAMS_FPL_IDS:
+        if city not in roster:
             return jsonify(error='اختر فريقاً مسجلاً في الدوري.'), 400
         if not published:
             return jsonify(error='تتاح المقارنة بعد نشر تشكيلات الجولة الأولى.'), 409
-        opponent = city_opponent(city, upcoming['id'])
+        opponent = city_opponent(city, upcoming['id'], league)
         clubs = {t['id']: t['short_name'] for t in bootstrap['teams']}
         fixtures = {t: [] for t in clubs}
         for fixture in get_fixtures(upcoming['id']):
@@ -85,7 +101,7 @@ def api():
                    'club': p['team'], 'clubName': clubs[p['team']], 'cost': p['now_cost'],
                    'status': p['status'], 'news': p.get('news', ''), 'fixtures': fixtures[p['team']]}
                    for p in bootstrap['elements']}
-        entries = TEAMS_FPL_IDS[city] + TEAMS_FPL_IDS[opponent]
+        entries = roster[city] + roster[opponent]
         # Fetch only the six managers in this fixture, never the whole league.
         with ThreadPoolExecutor(max_workers=6) as pool:
             snapshots = list(pool.map(lambda entry: manager_snapshot(entry, published['id'], upcoming['id'], players), entries))
