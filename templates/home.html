@@ -1,3 +1,4 @@
+{% from 'partials/champions.html' import champions %}
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -29,7 +30,7 @@
             min-height: 100vh;
         }
         a { color: inherit; }
-        a:focus-visible { outline: 3px solid var(--lime); outline-offset: 6px; }
+        a:focus-visible, summary:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
         .shell { width: min(1400px, calc(100% - 96px)); margin-inline: auto; }
         .skip-link { position: absolute; top: -100px; right: 24px; padding: 12px 20px; background: var(--lime); color: var(--bg); z-index: 3; }
         .skip-link:focus { top: 12px; }
@@ -50,7 +51,7 @@
         .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
         h2 { margin: 0; font-size: 19px; font-weight: 800; }
         .section-heading span { color: var(--muted); font-size: 12px; }
-        .leagues-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+        .leagues-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; align-items:start; }
         .league-card { --accent: var(--lime); position: relative; min-width: 0; display: flex; flex-direction: column; text-decoration: none; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; transition: transform .22s ease, border-color .22s ease; animation: enter .5s ease both; animation-delay: calc(var(--order) * 65ms); }
         .league-card:hover { transform: translateY(-6px); border-color: var(--accent); }
         .league-art { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; background: #111; border-bottom: 1px solid var(--line); }
@@ -63,6 +64,26 @@
         .card-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; font-size: 12px; font-weight: 700; }
         .arrow { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #2b3126; color: var(--accent); font-size: 18px; }
         .league-card:hover .arrow { background: var(--accent); color: #101310; }
+        .league-card:focus-within {border-color:var(--accent);}
+        .league-art {aspect-ratio:1.4;}
+        .league-logo {position:absolute;inset:0;}
+        .league-description {margin-bottom:16px;}
+        .champion {position:relative;padding:16px 12px;margin-bottom:14px;border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:3px 3px 10px 10px;background:linear-gradient(135deg,#ffffff09,transparent 70%);}
+        .champion-label {display:flex;align-items:center;gap:7px;color:var(--accent);font-size:11px;font-weight:700;}
+        .trophy {width:18px;height:18px;flex-shrink:0;}
+        .champion h4 {font-size:clamp(16px,1.4vw,20px);line-height:1.7;margin:10px 0 4px;overflow-wrap:anywhere;}
+        .champion small {color:var(--muted);font-size:10px;}
+        .honours {margin-bottom:18px;font-size:12px;}
+        .honours summary {display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;padding:10px 0;color:var(--muted);min-height:44px;}
+        .honours summary::-webkit-details-marker {display:none;}
+        .honours summary::after {content:'+';font-size:20px;color:var(--accent);}
+        .honours[open] summary::after {content:'−';}
+        .honours ol {list-style:none;padding:0;margin:6px 0 0;border-top:1px solid var(--line);}
+        .honours li {display:flex;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);}
+        .honours time {color:var(--accent);font-variant-numeric:tabular-nums;font-size:11px;}
+        .honours li span {overflow-wrap:anywhere;}
+        .card-action {text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;}
+        .card-action:hover {background:#ffffff08;}
         .closing-note { display: flex; align-items: center; gap: 10px; margin: 26px 0 48px; color: var(--muted); font-size: 12px; }
         .closing-note::before { content: ''; width: 18px; height: 2px; background: var(--lime); }
         footer { display: flex; justify-content: space-between; gap: 15px; padding-block: 23px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
@@ -87,17 +108,20 @@
             .intro-copy { font-size: 13px; max-width: 330px; }
             .section-heading { margin-bottom: 16px; }
             .section-heading span { font-size: 10px; }
-            .leagues-grid { display: flex; flex-direction: column; gap: 12px; }
-            .league-card { display: grid; grid-template-columns: 112px minmax(0, 1fr); border-radius: 12px; }
+            .leagues-grid { display: flex; flex-direction: column; gap: 12px; align-items:stretch; }
+            .league-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); border-radius: 12px; }
             .league-card:hover { transform: none; }
             .league-art { height: 100%; min-height: 158px; border-bottom: 0; border-left: 1px solid var(--line); }
-            .league-logo { width: 100%; height: auto; }
+            .league-logo { position:static;width:100%;height:auto; }
             .card-number { top: 7px; right: 9px; font-size: 9px; }
             .card-body { padding: 15px 14px 12px; }
             .league-english { font-size: 8px; letter-spacing: 1px; margin-bottom: 4px; }
             h3 { font-size: 18px; margin-bottom: 5px; }
             .league-description { font-size: 11px; margin-bottom: 12px; }
             .card-action { padding-top: 9px; font-size: 11px; }
+            .champion {padding:12px;margin-bottom:6px;}
+            .champion h4 {font-size:18px;}
+            .honours {margin-bottom:10px;}
             .arrow { width: 24px; height: 24px; }
             .closing-note { margin-block: 23px 30px; font-size: 11px; }
             footer { flex-direction: column; gap: 6px; font-size: 10px; }
@@ -119,9 +143,9 @@
         </header>
         <main>
             <section class="intro" aria-labelledby="page-title">
-                <p class="eyebrow">كل الدوريات. في مكان واحد.</p>
+                <p class="eyebrow">خمس منافسات · أبطال يكتبون التاريخ</p>
                 <h1 id="page-title">شغف واحد.<br><span>خمس منافسات.</span></h1>
-                <p class="intro-copy">اختر دوريك، تابع النتائج والترتيب، وعش تفاصيل المنافسة مع قروب عشاق الفانتازي في ليبيا.</p>
+                <p class="intro-copy">اختر دوريك، تابع المنافسة، واكتشف الأسماء التي رفعت الكأس عبر السنوات.</p>
                 <div class="intro-art" aria-hidden="true"></div>
             </section>
             <section id="leagues" aria-labelledby="leagues-title">
@@ -135,7 +159,8 @@
                 ] %}
                 <div class="leagues-grid">
                     {% for slug, name, english, description, logo, accent, legacy in leagues %}
-                    <a class="league-card" href="/league/{{ slug }}" aria-labelledby="league-{{ slug }}" style="--accent: {{ accent }}; --order: {{ loop.index0 }};">
+                    {% set winners = champions[slug] %}
+                    <article class="league-card" aria-labelledby="league-{{ slug }}" style="--accent: {{ accent }}; --order: {{ loop.index0 }};">
                         <div class="league-art">
                             <span class="card-number" aria-hidden="true">0{{ loop.index }}</span>
                             <img class="league-logo" src="{{ url_for('static', filename=logo) }}" alt="" width="256" height="256" decoding="async">
@@ -144,9 +169,16 @@
                             <p class="league-english" lang="en" dir="ltr">{{ english }}</p>
                             <h3 id="league-{{ slug }}"{% if slug == 'the100' %} dir="ltr" style="text-align: right;"{% endif %}>{{ name }}</h3>
                             <p class="league-description">{{ description }}</p>
-                            <span class="card-action">استكشف الدوري <span class="arrow" aria-hidden="true">←</span></span>
+                            <div class="champion">
+                                <div class="champion-label"><svg class="trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v2a5 5 0 0 0 5 5m9-7h4v2a5 5 0 0 1-5 5M12 14v5m-5 2h10M9 19h6"/></svg><span>بطل <bdi>{{ winners[0][0] }}</bdi></span></div>
+                                <h4>{{ winners[0][1] }}</h4><small>أحدث بطل في السجل</small>
+                            </div>
+                            <details class="honours"><summary aria-label="سجل أبطال {{ name }}">سجل الأبطال <span>{{ 'نسختان' if winners|length == 2 else (winners|length|string ~ ' نسخ') }}</span></summary>
+                                <ol>{% for year, winner in winners %}<li><time datetime="{{ year }}" dir="ltr">{{ year }}</time><span>{{ winner }}</span></li>{% endfor %}</ol>
+                            </details>
+                            <a class="card-action" href="/league/{{ slug }}" aria-label="ادخل الدوري — {{ name }}">ادخل الدوري <span class="arrow" aria-hidden="true">←</span></a>
                         </div>
-                    </a>
+                    </article>
                     {% endfor %}
                 </div>
             </section>

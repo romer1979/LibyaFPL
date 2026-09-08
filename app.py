@@ -59,7 +59,7 @@ start_collector(app)
 
 @app.route('/')
 def home():
-    """Home page showing all leagues - simple links only"""
+    """League selection with expandable historical champions."""
     return render_template('home.html')
 
 
