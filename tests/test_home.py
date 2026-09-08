@@ -31,7 +31,7 @@ class HomeTests(unittest.TestCase):
         self.assertTrue(all('open' not in attrs for attrs in parsed.details))
         self.assertEqual(len(parsed.years),17)
         self.assertTrue(all(year.isascii() and year.isdigit() for year in parsed.years))
-        for winner in ('راشد أبوخريص','عمار دهان','عزيز المحجوب','طلميثة','المستقبل','العين الإماراتي'):
+        for winner in ('راشد أبوخريص','عمار دهان','عزيز المحجوب','طرميسة','المستقبل','العين الإماراتي'):
             self.assertIn(winner,html)
 
 
