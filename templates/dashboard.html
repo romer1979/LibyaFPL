@@ -119,6 +119,7 @@
                                             </div>
                                         </td>
                                         <td class="score-cell">
+                                            <a href="/league/elite/match/{{ data.fixtures_gameweek or data.gameweek }}/{{ match.entry_1 }}/{{ match.entry_2 }}" target="_blank" rel="noopener" class="match-centre-link">تفاصيل المواجهة ↗</a>
                                             <span class="score {% if match.winner == 1 %}score-win{% endif %}">{{ match.team_1_points }}</span>
                                             <span class="vs">-</span>
                                             <span class="score {% if match.winner == 2 %}score-win{% endif %}">{{ match.team_2_points }}</span>
@@ -191,6 +192,7 @@
                                     
                                     <!-- Score -->
                                     <div class="fixture-score-block">
+                                        <a href="/league/elite/match/{{ data.fixtures_gameweek or data.gameweek }}/{{ match.entry_1 }}/{{ match.entry_2 }}" target="_blank" rel="noopener" class="match-centre-link" onclick="event.stopPropagation()">تفاصيل المواجهة ↗</a>
                                         <div class="fixture-scores">
                                             <span class="fixture-pts {% if match.winner == 1 %}winning{% endif %}">{{ match.team_1_points }}</span>
                                             <span class="fixture-separator">-</span>

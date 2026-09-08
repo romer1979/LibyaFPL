@@ -27,11 +27,13 @@ from core.libyan_league import get_libyan_league_data
 from core.arab_league import get_arab_league_data
 from core.elite_planner import planner
 from core.cities_planner import cities_planner
+from core.elite_match import match_centre, start_collector
 from models import db, save_standings, calculate_rank_change, StandingsHistory, FixtureResult
 
 app = Flask(__name__)
 app.register_blueprint(planner)
 app.register_blueprint(cities_planner)
+app.register_blueprint(match_centre)
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///elite_league.db')
@@ -49,6 +51,8 @@ db.init_app(app)
 # Create tables on first request
 with app.app_context():
     db.create_all()
+
+start_collector(app)
 
 
 @app.route('/')
