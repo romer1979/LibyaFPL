@@ -104,12 +104,12 @@ function render() {
     data.teams.forEach((team,t)=>{
         const section=text('section','','city-team'), heading=text('div','','city-title'), title=text('div','');
         title.append(text('small',t===0?'فريقك · خطة مشتركة':'الخصم · خطة مفترضة'),text('h2',team.name));
-        heading.append(title,button('إعادة ضبط المدينة',()=>{plans[t]=team.managers.map((_,i)=>draft(t,i));render();}));
+        heading.append(title,button('إعادة ضبط الفريق',()=>{plans[t]=team.managers.map((_,i)=>draft(t,i));render();}));
         section.append(heading);team.managers.forEach((_,i)=>section.append(managerCard(t,i,totals)));$('city-teams').append(section);
     });
     $('own-column').textContent=data.teams[0].name;$('other-column').textContent=data.teams[1].name;
     $('shared').textContent=Object.keys(totals[0]).filter(id=>totals[0][id]>0&&totals[0][id]===totals[1][id]).length+' لاعبين بنفس المساهمة';
-    $('hit-summary').replaceChildren();data.teams.forEach((team,i)=>$('hit-summary').append(text('span',team.name+' · خصم انتقالات المدينة: '+(CitiesRules.hits(plans[i])??'غير معروف — راجع المديرين'))));
+    $('hit-summary').replaceChildren();data.teams.forEach((team,i)=>$('hit-summary').append(text('span',team.name+' · خصم انتقالات الفريق: '+(CitiesRules.hits(plans[i])??'غير معروف — راجع المديرين'))));
     const diffs=CitiesRules.differences(plans);$('comparison-rows').replaceChildren();$('scenario-fields').replaceChildren();
     diffs.forEach(row=>{
         const player=data.players[row.id], tr=document.createElement('tr'), name=text('td',player.name);
@@ -143,12 +143,12 @@ function transferOptions() {
         const {team,manager,slot}=selected, plan=plans[team][manager], ids=[...plan.ids];ids[slot]=player.id;
         const balance=PlannerRules.balance(plan,data.players,ids), before=CitiesRules.hits(plans[team]);
         const hypothetical={...plan,ids}, updated=plans[team].map((p,i)=>i===manager?hypothetical:p), after=CitiesRules.hits(updated);
-        const hitChange=before===null||after===null?'خصم المدينة غير معروف':'تغيّر خصم المدينة '+(after-before>0?'+':'')+(after-before);
+        const hitChange=before===null||after===null?'خصم الفريق غير معروف':'تغيّر خصم الفريق '+(after-before>0?'+':'')+(after-before);
         const b=button(`${player.name} · ${player.clubName} · ${money(player.cost)} · ${balance===null?'أدخل الميزانية':balance<0?'يتجاوز الميزانية':'المتبقي '+money(balance)} · ${hitChange}`,()=>{
             const old=data.players[plan.ids[slot]].name;
             if(!PlannerRules.transfer(plan,slot,player.id,data.players))return;
             selected=null;$('editor').close();render();
-            $('message').textContent=`${data.teams[team].name}: ${old} ← ${player.name}. تم تحديث مساهمات المدينة وخصم الانتقالات.`;
+            $('message').textContent=`${data.teams[team].name}: ${old} ← ${player.name}. تم تحديث مساهمات الفريق وخصم الانتقالات.`;
         });b.disabled=balance===null||balance<0;$('transfer-options').append(b);
     });
     if(!matches.length)$('transfer-options').append(text('p','لا توجد نتائج متاحة.'));
@@ -170,16 +170,16 @@ function openEditor(team,manager,slot) {
 }
 async function load(city='') {
     const current=++sequence;data=null;selected=null;$('matchup').hidden=true;$('refresh').disabled=true;
-    $('message').textContent=city?'جاري تحميل مدينتين و6 تشكيلات…':'جاري تحميل الجولة القادمة…';
+    $('message').textContent=city?'جاري تحميل فريقين و6 تشكيلات…':'جاري تحميل الجولة القادمة…';
     try {
         const response=await fetch('/api/cities/planner'+(city?'?city='+encodeURIComponent(city):'')), result=await response.json();
         if(current!==sequence)return;
         if(!response.ok)throw Error(result.error||'تعذر تحميل البيانات.');
         $('city').replaceChildren(new Option('اختر فريقك',''));result.cities.forEach(name=>$('city').add(new Option(name,name)));$('city').value=city;$('city').disabled=false;
         $('gameweek').textContent='GW '+result.gameweek;$('deadline').textContent='الموعد النهائي: '+new Date(result.deadline).toLocaleString('en-GB');
-        if(!city){$('message').textContent='اختر المدينة لعرض مواجهتها القادمة.';return;}
+        if(!city){$('message').textContent='اختر الفريق لعرض مواجهته القادمة.';return;}
         data=result;plans=result.teams.map((team,t)=>team.managers.map((_,i)=>draft(t,i)));assumptions={};expanded.clear();financeExpanded.clear();
-        render();$('matchup').hidden=false;$('message').textContent='افتح أي مدير لتعديل خطته. تحديث البيانات أو تغيير المدينة يمسح الخطط المؤقتة.';
+        render();$('matchup').hidden=false;$('message').textContent='افتح أي مدير لتعديل خطته. تحديث البيانات أو تغيير الفريق يمسح الخطط المؤقتة.';
     }catch(error){if(current===sequence)$('message').textContent=error.message;}
     finally {if(current===sequence)$('refresh').disabled=false;}
 }

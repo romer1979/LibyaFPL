@@ -15,10 +15,10 @@ def city_opponent(city, gw):
     lookup = {}
     for name, entries in TEAMS_FPL_IDS.items():
         if len(entries) != 3 or len(set(entries)) != 3:
-            raise ValueError('قائمة المدينة يجب أن تحتوي على 3 مديرين مختلفين.')
+            raise ValueError('قائمة الفريق يجب أن تحتوي على 3 مديرين مختلفين.')
         for entry in entries:
             if entry in lookup:
-                raise ValueError('يوجد مدير مسجل في أكثر من مدينة.')
+                raise ValueError('يوجد مدير مسجل في أكثر من فريق.')
             lookup[entry] = name
     matches, page = [], 1
     while True:
@@ -33,9 +33,9 @@ def city_opponent(city, gw):
             break
         page += 1
     if len(matches) != 1:
-        raise ValueError('لا توجد مواجهة واحدة منشورة لهذه المدينة في الجولة القادمة.')
+        raise ValueError('لا توجد مواجهة واحدة منشورة لهذا الفريق في الجولة القادمة.')
     if matches[0] is None or matches[0] == city:
-        raise ValueError('الخصم غير متاح أو ممثل المدينة غير مربوط بالقائمة الصحيحة.')
+        raise ValueError('الخصم غير متاح أو ممثل الفريق غير مربوط بالقائمة الصحيحة.')
     return matches[0]
 
 
@@ -71,7 +71,7 @@ def api():
         if city is None:
             return jsonify(base)
         if city not in TEAMS_FPL_IDS:
-            return jsonify(error='اختر مدينة مسجلة في الدوري.'), 400
+            return jsonify(error='اختر فريقاً مسجلاً في الدوري.'), 400
         if not published:
             return jsonify(error='تتاح المقارنة بعد نشر تشكيلات الجولة الأولى.'), 409
         opponent = city_opponent(city, upcoming['id'])

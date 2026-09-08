@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0d0d0f">
-    <title>خطة المدينة | دوري المدن</title>
+    <title>خطط لفريقك | دوري المدن</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/elite_planner.css') }}">
@@ -20,15 +20,15 @@
         <nav class="header-actions" aria-label="التنقل"><a href="/league/cities" class="header-action">الترتيب والمواجهات</a><a href="/" class="header-action">الرئيسية</a></nav>
     </div></header>
     <main>
-        <div class="intro"><div><p class="eyebrow">3 مديرين · خطة واحدة للمدينة</p><h1>أين يصنع فريقك الفارق؟</h1><p>خطط للتشكيلات، وراقب أثر كل قرار على المواجهة كاملة.</p></div><span id="gameweek" class="gw" dir="ltr">GW —</span></div>
-        <section class="toolbar"><label for="city">اختر فريقك<select id="city" disabled><option value="">تحميل المدن…</option></select></label><p id="deadline"></p><button id="refresh" type="button">تحديث البيانات</button></section>
+        <div class="intro"><div><p class="eyebrow">3 مديرين · خطة واحدة للفريق</p><h1>خطط لفريقك</h1><p>خطط للتشكيلات، وراقب أثر كل قرار على المواجهة كاملة.</p></div><span id="gameweek" class="gw" dir="ltr">GW —</span></div>
+        <section class="toolbar"><label for="city">اختر فريقك<select id="city" disabled><option value="">تحميل الفرق…</option></select></label><p id="deadline"></p><button id="refresh" type="button">تحديث البيانات</button></section>
         <p id="message" role="status" aria-live="polite">جاري تحميل الجولة القادمة…</p>
         <div id="matchup" hidden>
             <aside class="notice">خطة افتراضية من آخر تشكيلات ثابتة منشورة. تعديلات الخصم توقعات؛ لا تُرسل أي تغييرات إلى FPL. المقارنة تفترض مشاركة الأساسيين، مع الكابتن ×2. نقاط Triple Captain الإضافية وBench Boost مستبعدة. لا تُحاكى التبديلات التلقائية أو غياب الكابتن.</aside>
             <div id="city-teams" class="city-teams"></div>
             <section class="summary city-summary" aria-labelledby="comparison-title">
                 <div class="summary-heading"><h2 id="comparison-title">ميزان المواجهة</h2><span id="shared"></span></div>
-                <p class="hint">المضاعف يجمع مشاركات اللاعب والكابتن في المدينة. اللاعب المشترك قد يصنع الفارق عندما تختلف مساهمته بين المدينتين.</p>
+                <p class="hint">المضاعف يجمع مشاركات اللاعب والكابتن في الفريق. اللاعب المشترك قد يصنع الفارق عندما تختلف مساهمته بين الفريقين.</p>
                 <div id="hit-summary" class="hit-summary"></div>
                 <div class="comparison-scroll"><table class="comparison"><thead><tr><th scope="col">اللاعب / الجولة</th><th scope="col" id="own-column">فريقك</th><th scope="col" id="other-column">الخصم</th><th scope="col">الفارق لصالحك</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
             </section>
