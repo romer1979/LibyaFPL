@@ -41,10 +41,10 @@ function renderFinance(side,area,expanded) {
     area.append(box);
 }
 
-// One gesture: tapping any player opens his panel. What the panel offers is
-// what differs — a bench player can be substituted into the XI or moved up the
-// bench order, a starter can only be transferred, because substitutions run
-// bench to XI and never the other way.
+// One gesture: tapping any player opens his panel, offering both a
+// substitution and a transfer whichever end he is at. The only pairing that
+// does not exist is starter with starter — order inside the XI carries no
+// meaning — and canSwap enforces that, so neither end needs a special case.
 //
 // This replaces the old two-tap pitch swap. The panel is modal, so the pitch
 // behind it is inert and a second tap out there could not land anyway; the
@@ -83,7 +83,7 @@ function renderControls(side) {
         const name=data.players[p.ids[selected.index]].name;
         bar.append(text('span',name+(selected.index>=11?' — بديل':' — أساسي')),
             button('فتح البدائل',openEditor),button('إلغاء',()=>{selected=null;render();}));
-    } else bar.append(text('span','اضغط أي لاعب لعرض البدائل في مركزه.'));
+    } else bar.append(text('span','اضغط أي لاعب للتبديل أو لتجربة انتقال.'));
 }
 function playerCard(id,index,side,weights,other) {
     const p=data.players[id], chosen=selected?.side===side && selected.index===index;
@@ -121,18 +121,27 @@ function canTransfer(id) {
     const p=data.players[id], ids=plans[selected.side].ids;
     return p.position===data.players[ids[selected.index]].position&&!ids.includes(id)&&!['u','n'].includes(p.status)&&ids.filter((x,i)=>i!==selected.index&&data.players[x].club===p.club).length<3;
 }
-// Substitution targets for a selected bench player, listed in the panel so a
-// swap never depends on hunting the right shirt on the pitch.
+// Substitution targets for whoever is selected, listed in the panel so a swap
+// never depends on hunting the right shirt on the pitch.
+//
+// Offered from both ends: a starter can be swapped out for a bench player and
+// a bench player brought in for a starter. The single forbidden pairing is
+// starter with starter, and that is canSwap's job — filtering on it here means
+// this list is right for either side without a separate rule.
 function subOptions() {
     const box=$('picker-subs'), list=$('sub-options');
     list.replaceChildren();
-    box.hidden=!selected||selected.index<11;
+    box.hidden=!selected;
     if(box.hidden)return;
     const side=selected.side, plan=plans[side];
     plan.ids.forEach((id,index)=>{
         if(!PlannerRules.canSwap(plan,selected.index,index,data.players))return;
         const p=data.players[id];
-        list.append(button(`${p.name} · ${p.clubName} · ${positions[p.position]}${index>=11?' · ترتيب الدكة':''}`,()=>{
+        // "Bench order" only when both ends are on the bench. Reading it off
+        // the target alone labelled a substitution into the XI as a reorder
+        // whenever the incoming player happened to be a substitute.
+        const reorder=selected.index>=11 && index>=11;
+        list.append(button(`${p.name} · ${p.clubName} · ${positions[p.position]}${reorder?' · ترتيب الدكة':''}`,()=>{
             if(!PlannerRules.swap(plan,selected.index,index,data.players))return;
             selected=null;$('editor').close();render();
             $('message').textContent='تم التبديل. انتقلت شارة الكابتن أو النائب إلى اللاعب الداخل إن لزم.';
@@ -170,6 +179,9 @@ function transferOptions() {
 function openEditor() {
     const player=data.players[plans[selected.side].ids[selected.index]];
     $('edit-title').textContent=`${player.name} · ${positions[player.position]}`;
+    $('subs-heading').textContent=selected.index>=11
+        ? 'التبديل مع الأساسيين · أو ترتيب الدكة'
+        : 'التبديل مع البدلاء';
     $('transfer-heading').textContent=`بدائل في مركز ${positions[player.position]}`;
     $('editor-finance').textContent='الرصيد المتاح: '+money(PlannerRules.balance(plans[selected.side],data.players))+' · عدّل أسعار البيع والميزانية من إعدادات الفريق عند الحاجة.';
     // Club list built from the players actually eligible for this slot, so it
