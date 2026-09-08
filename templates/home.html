@@ -40,7 +40,10 @@
         .brand strong { display: block; font-size: 16px; }
         .brand small { color: var(--muted); font-size: 11px; letter-spacing: 2px; }
         .masthead-note { font-size: 12px; color: var(--muted); }
-        .intro { position: relative; padding-block: 64px 52px; }
+        .intro { position:relative;isolation:isolate;overflow:hidden;padding:54px 34px;margin-block:24px 32px;border:1px solid var(--line);border-radius:18px;min-height:340px;background:#101310; }
+        .hero-players {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:left top;z-index:-2;filter:saturate(.65) brightness(.78);pointer-events:none;}
+        .intro::after {content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(270deg,#101310 0%,#101310ed 28%,#10131099 46%,#10131015 72%),linear-gradient(0deg,#101310b3,transparent 35%);pointer-events:none;}
+        .intro .intro-copy {max-width:45%;}
         .eyebrow { margin: 0 0 13px; color: var(--lime); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
         h1 { margin: 0; font-size: clamp(36px, 4.5vw, 66px); line-height: 1.4; font-weight: 900; letter-spacing: -2px; }
         h1 span { color: var(--lime); }
@@ -103,7 +106,10 @@
             .masthead { padding-block: 18px; }
             .masthead-note, .intro-art { display: none; }
             .brand strong { font-size: 14px; }
-            .intro { padding-block: 35px 30px; }
+            .intro {padding:225px 20px 24px;margin-block:18px 26px;min-height:0;border-radius:12px;}
+            .hero-players {height:280px;object-position:22% top;}
+            .intro::after {background:linear-gradient(0deg,#101310 0%,#101310 36%,#101310a6 52%,transparent 80%);}
+            .intro .intro-copy {max-width:100%;}
             h1 { font-size: 38px; letter-spacing: -1px; }
             .intro-copy { font-size: 13px; max-width: 330px; }
             .section-heading { margin-bottom: 16px; }
@@ -143,10 +149,10 @@
         </header>
         <main>
             <section class="intro" aria-labelledby="page-title">
+                <img class="hero-players" src="{{ url_for('static', filename='landing_players_v1.png') }}" alt="" aria-hidden="true" width="1983" height="793" fetchpriority="high">
                 <p class="eyebrow">خمس منافسات · أبطال يكتبون التاريخ</p>
                 <h1 id="page-title">شغف واحد.<br><span>خمس منافسات.</span></h1>
                 <p class="intro-copy">اختر دوريك، تابع المنافسة، واكتشف الأسماء التي رفعت الكأس عبر السنوات.</p>
-                <div class="intro-art" aria-hidden="true"></div>
             </section>
             <section id="leagues" aria-labelledby="leagues-title">
                 <div class="section-heading"><h2 id="leagues-title">اختر منافستك</h2><span>5 دوريات · شغف بلا حدود</span></div>
