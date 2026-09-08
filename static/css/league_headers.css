@@ -1,0 +1,20 @@
+/* Dashboard headers only. Decorative layers never cover or intercept controls. */
+.league-home .header {isolation:isolate;overflow:hidden;}
+.league-home .header::before,.league-home .header::after {content:'';position:absolute;inset:0;pointer-events:none;z-index:-1;background-repeat:no-repeat;}
+.league-home .header-content {position:relative;}
+.league-home.brand-elite .header {background:radial-gradient(ellipse at 38% 0%,#bbb7d128,transparent 55%),linear-gradient(120deg,#210d30,#421554);}
+.brand-elite .header::before {background-image:url('../elite_mark_192.png');background-size:210px;background-position:36% 42%;opacity:.12;mix-blend-mode:screen;filter:grayscale(1);}
+.league-home.brand-cities .header {background:linear-gradient(120deg,#1d1c12,#0d0d0f 80%);}
+.brand-cities .header::before {background-image:url('../header_cities.svg');background-size:auto 155px;background-position:center bottom;opacity:.65;}
+.league-home.brand-libyan .header {background:#101010;}
+.brand-libyan .header::before {background-image:url('../header_stadium.svg');background-size:auto 170px;background-position:center bottom;opacity:.55;}
+.brand-libyan .header::after {background-image:url('../libyan_mark_192.png');background-size:145px;background-position:36% center;opacity:.08;mix-blend-mode:screen;}
+.league-home.brand-arab .header {background:linear-gradient(110deg,#0d0d2b,#181844);}
+.brand-arab .header::before {background-image:url('../header_arab.svg');background-size:auto 225px;background-position:center;opacity:.65;}
+.brand-arab .header::after {background-image:url('../arab_mark_192.png');background-size:175px;background-position:35% center;opacity:.09;mix-blend-mode:screen;filter:grayscale(1);}
+@media(max-width:768px){
+    .brand-elite .header::before {background-position:left top;background-size:180px;opacity:.08;}
+    .brand-cities .header::before,.brand-libyan .header::before {background-size:auto 125px;opacity:.4;}
+    .brand-libyan .header::after,.brand-arab .header::after {background-position:left top;background-size:130px;opacity:.06;}
+    .brand-arab .header::before {background-size:auto 175px;opacity:.4;}
+}

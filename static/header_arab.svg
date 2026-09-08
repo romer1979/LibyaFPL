@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" fill="none">
+  <g stroke="#e5e9f5" stroke-opacity=".18" stroke-width="1.5">
+    <path d="m60-60 180 180L60 300M90-60l180 180L90 300m30-360 180 180-180 180m160-360L100 120l180 180m30-360L130 120l180 180m30-360L160 120l180 180"/>
+    <path d="m460-60 180 180-180 180m30-360 180 180-180 180m30-360 180 180-180 180m160-360L500 120l180 180m30-360L530 120l180 180m30-360L560 120l180 180"/>
+  </g>
+  <path d="m180-60 180 180-180 180" stroke="#4eae99" stroke-opacity=".25"/>
+  <path d="m620-60-180 180 180 180" stroke="#cf6a7c" stroke-opacity=".2"/>
+</svg>

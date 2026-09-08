@@ -241,8 +241,9 @@
     </style>
     {# Loaded after the inline <style> above so its rules win on source order. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/arab.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/league_headers.css') }}">
 </head>
-<body>
+<body class="league-home brand-arab">
     <!-- Header -->
     <header class="header">
         <div class="header-content">

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" fill="none">
+  <!-- Stylised coastal architecture; decorative, not a geographic map. -->
+  <path fill="#e6be50" fill-opacity=".08" d="M0 200V152h45v-35h44v35h25V98h48v54h30v-48h18V45h9V26h5v19h9v59h18v48h22v-30h58v30h24v-63h50v63h34v-29h18V81h10V50h7v31h10v42h18v29h35v-39h64v39h21v-67h13V51h12v34h13v67h25v-42h47v42h25v-72h15V29h8v51h15v72h30v-30h65v30h25v-49h45v49h30v-35h55v35h45v48Z"/>
+  <g stroke="#e6be50" stroke-opacity=".4" stroke-width="1.5">
+    <path d="M0 176h1000M45 152v-35h44v35m25 0V98h48v54m30 0v-48h18V45h23v59h18v48m22 0v-30h58v30m24 0V89h50v63m139 0v-39h64v39m21 0V85h13V51h12v34h13v67m119 0V80h15V29h8v51h15v72m30 0v-30h65v30m25 0v-49h45v49"/>
+    <path d="M115 98q23-39 46 0M355 89q25-40 50 0M452 123V81h27v42M458 81V50h14v31M545 113q21-30 42 0M66 152v-19m73 19v-32m82 32v-31m154 31v-38m186 38v-20m215 20v-13"/>
+    <path d="M0 187q50-6 100 0t100 0t100 0t100 0t100 0t100 0t100 0t100 0t100 0t100 0" stroke-opacity=".2"/>
+  </g>
+</svg>

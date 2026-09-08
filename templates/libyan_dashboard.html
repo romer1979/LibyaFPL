@@ -243,8 +243,9 @@
        placing it with the other <link>s meant every override needed a `body`
        prefix or a deeper selector to beat the page's own CSS. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/libyan.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/league_headers.css') }}">
 </head>
-<body>
+<body class="league-home brand-libyan">
     <!-- Header -->
     <header class="header">
         <div class="header-content">
