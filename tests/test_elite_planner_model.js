@@ -9,6 +9,13 @@ p.chip='3xc'; assert.equal(r.weights(p)[5],3);assert.equal(r.weights(p)[6],1);
 p.chip='bboost';assert.equal(r.weights(p)[5],2);assert.equal(r.weights(p)[13],1);
 assert.equal(r.canSwap(p,1,12,players),false); // Cannot remove the third defender.
 assert.equal(r.canSwap(p,0,12,players),false);
+// A substitution always involves the bench. Two starters swapping changes
+// nothing — only bench order carries meaning — and permitting it was what
+// allowed a substitution to be started from the pitch.
+assert.equal(r.canSwap(p,4,5,players),false);   // midfielder ↔ midfielder, both in the XI
+assert.equal(r.canSwap(p,1,2,players),false);   // defender ↔ defender, both in the XI
+assert.equal(r.swap(p,4,5,players),false);
+assert.equal(r.canSwap(p,12,13,players),true);  // bench ↔ bench reordering still allowed
 assert.equal(r.swap(p,0,11,players),true);
 assert.equal(r.swap(p,4,12,players),true);assert.equal(p.captain,13);
 assert.equal(r.swap(p,5,13,players),true);assert.equal(p.vice,14);

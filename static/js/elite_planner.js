@@ -41,13 +41,21 @@ function renderFinance(side,area,expanded) {
     area.append(box);
 }
 
+// Substitutions run bench → XI, never the other way. A starter can therefore
+// never begin one: tapping a starter offers a transfer instead, which is the
+// only thing that can sensibly be done to a player already in the team.
 function selectPlayer(side,index) {
-    if(selected && selected.side===side) {
-        if(selected.index===index) selected=null;
-        else if(PlannerRules.swap(plans[side],selected.index,index,data.players)) {
+    if(selected && selected.side===side && selected.index===index) { selected=null; render(); return; }
+    const pending = selected && selected.side===side && selected.index>=11;
+    if(pending) {
+        if(PlannerRules.swap(plans[side],selected.index,index,data.players)) {
             selected=null; $('message').textContent='تم التبديل. انتقلت شارة الكابتن أو النائب إلى اللاعب الداخل إن لزم.';
         } else { $('message').textContent='تبديل غير مسموح: حافظ على حارس واحد و3 مدافعين و2 وسط ومهاجم على الأقل.'; return; }
-    } else selected={side,index};
+    } else if(index>=11) {
+        selected={side,index};
+    } else {
+        selected={side,index}; render(); openEditor(); return;
+    }
     render();
 }
 function renderControls(side) {
@@ -76,12 +84,16 @@ function renderControls(side) {
     }); area.append(chips); renderFinance(side,area,expanded);
     const bar=$(side+'-selection'); bar.replaceChildren();
     if(selected?.side===side) {
-        bar.append(text('span',data.players[p.ids[selected.index]].name+' — اختر لاعباً مضيئاً للتبديل'),button('تجربة انتقال',openEditor),button('إلغاء',()=>{selected=null;render();}));
-    } else bar.append(text('span','اختر لاعباً من الملعب أو الدكة لبدء التبديل.'));
+        const name=data.players[p.ids[selected.index]].name;
+        bar.append(text('span',name+(selected.index>=11?' — اختر لاعباً مضيئاً من الأساسيين للتبديل':' — أساسي: يمكنك تجربة انتقال')),
+            button('تجربة انتقال',openEditor),button('إلغاء',()=>{selected=null;render();}));
+    } else bar.append(text('span','اضغط بديلاً لبدء التبديل، أو أساسياً لتجربة انتقال.'));
 }
 function playerCard(id,index,side,weights,other) {
     const p=data.players[id], chosen=selected?.side===side && selected.index===index;
-    const target=selected?.side===side && PlannerRules.canSwap(plans[side],selected.index,index,data.players);
+    // Only a pending bench selection lights up swap targets; a selected starter
+    // is waiting on a transfer, not a substitution.
+    const target=selected?.side===side && selected.index>=11 && PlannerRules.canSwap(plans[side],selected.index,index,data.players);
     const el=button('',()=>selectPlayer(side,index));
     el.className='player'+(weights[id] !== (other[id]||0)?' unique':'')+(chosen?' selected':'')+(target?' swap-target':'');
     el.setAttribute('aria-pressed',String(chosen)); el.setAttribute('aria-label',`${p.name}، ${positions[p.position]}، ${index<11?'أساسي':'بديل'}${target?'، متاح للتبديل':''}`);

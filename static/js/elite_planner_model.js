@@ -38,6 +38,11 @@
         },
         canSwap(p, a, b, players) {
             if (a === b) return false;
+            // Every substitution involves the bench. Two starters swapping
+            // changes nothing — order inside the XI does not affect scoring,
+            // only bench order does (it sets auto-sub priority) — and allowing
+            // it was what let a substitution be started from the pitch.
+            if (a < 11 && b < 11) return false;
             const pa = players[p.ids[a]].position, pb = players[p.ids[b]].position;
             if ((pa === 1 || pb === 1) && pa !== pb) return false;
             const ids = [...p.ids]; [ids[a], ids[b]] = [ids[b], ids[a]];
