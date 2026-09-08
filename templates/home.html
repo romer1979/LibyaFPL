@@ -87,6 +87,17 @@
         .honours li span {overflow-wrap:anywhere;}
         .card-action {text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;}
         .card-action:hover {background:#ffffff08;}
+        .league-name-link {display:block;color:inherit;text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:5px;min-height:44px;padding-block:4px;}
+        .league-art:focus-visible {outline-offset:-4px;}
+        .card-body {min-width:0;}
+        .card-body .card-action {margin:0 0 16px;flex-wrap:wrap;}
+        .quick-leagues {display:flex;flex-wrap:wrap;gap:8px;padding-block:16px;}
+        .quick-leagues a {display:flex;align-items:center;justify-content:center;min-height:44px;flex:1 1 140px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px;font-weight:700;text-align:center;text-decoration:none;}
+        .quick-leagues a:hover {border-color:var(--lime);}
+        .brand {min-width:0;}
+        .brand small {overflow-wrap:anywhere;}
+        h1,h3,.card-action,.honours summary {overflow-wrap:anywhere;}
+        .section-heading {flex-wrap:wrap;}
         .closing-note { display: flex; align-items: center; gap: 10px; margin: 26px 0 48px; color: var(--muted); font-size: 12px; }
         .closing-note::before { content: ''; width: 18px; height: 2px; background: var(--lime); }
         footer { display: flex; justify-content: space-between; gap: 15px; padding-block: 23px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
@@ -117,7 +128,7 @@
             .leagues-grid { display: flex; flex-direction: column; gap: 12px; align-items:stretch; }
             .league-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); border-radius: 12px; }
             .league-card:hover { transform: none; }
-            .league-art { height: 100%; min-height: 158px; border-bottom: 0; border-left: 1px solid var(--line); }
+            .league-art { height:auto;min-height:112px;align-self:start;border-bottom:1px solid var(--line);border-left:1px solid var(--line); }
             .league-logo { position:static;width:100%;height:auto; }
             .card-number { top: 7px; right: 9px; font-size: 9px; }
             .card-body { padding: 15px 14px 12px; }
@@ -135,6 +146,16 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation: none !important; transition: none !important; }
         }
+        @media(max-width:380px) {
+            .shell {width:calc(100% - 20px);}
+            .league-card {grid-template-columns:72px minmax(0,1fr);}
+            .card-body {padding:12px 10px;}
+            .league-art {min-height:96px;}
+            .intro {padding-inline:14px;}
+            h1 {font-size:32px;letter-spacing:0;}
+            .honours summary {flex-wrap:wrap;}
+            .honours li {flex-wrap:wrap;gap:4px 10px;}
+        }
     </style>
 </head>
 <body>
@@ -148,6 +169,13 @@
             <span class="masthead-note">المباريات · الترتيب · المنافسة</span>
         </header>
         <main>
+            <nav class="quick-leagues" aria-label="الدخول السريع للدوريات">
+                <a href="/league/elite">دوري النخبة</a>
+                <a href="/league/the100"><bdi>The 100</bdi></a>
+                <a href="/league/cities">دوري المدن</a>
+                <a href="/league/libyan">الدوري الليبي</a>
+                <a href="/league/arab">البطولة العربية</a>
+            </nav>
             <section class="intro" aria-labelledby="page-title">
                 <img class="hero-players" src="{{ url_for('static', filename='landing_players_v1.png') }}" alt="" aria-hidden="true" width="1983" height="793" fetchpriority="high">
                 <p class="eyebrow">خمس منافسات · أبطال يكتبون التاريخ</p>
@@ -167,14 +195,15 @@
                     {% for slug, name, english, description, logo, accent, legacy in leagues %}
                     {% set winners = champions[slug] %}
                     <article class="league-card" aria-labelledby="league-{{ slug }}" style="--accent: {{ accent }}; --order: {{ loop.index0 }};">
-                        <div class="league-art">
+                        <a class="league-art" href="/league/{{ slug }}" aria-label="ادخل الدوري — شعار {{ name }}">
                             <span class="card-number" aria-hidden="true">0{{ loop.index }}</span>
                             <img class="league-logo" src="{{ url_for('static', filename=logo) }}" alt="" width="256" height="256" decoding="async">
-                        </div>
+                        </a>
                         <div class="card-body">
                             <p class="league-english" lang="en" dir="ltr">{{ english }}</p>
-                            <h3 id="league-{{ slug }}"{% if slug == 'the100' %} dir="ltr" style="text-align: right;"{% endif %}>{{ name }}</h3>
+                            <h3 id="league-{{ slug }}"{% if slug == 'the100' %} dir="ltr" style="text-align: right;"{% endif %}><a class="league-name-link" href="/league/{{ slug }}">{{ name }}</a></h3>
                             <p class="league-description">{{ description }}</p>
+                            <a class="card-action" href="/league/{{ slug }}" aria-label="ادخل الدوري — {{ name }}">ادخل الدوري <span class="arrow" aria-hidden="true">←</span></a>
                             <div class="champion">
                                 <div class="champion-label"><svg class="trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v2a5 5 0 0 0 5 5m9-7h4v2a5 5 0 0 1-5 5M12 14v5m-5 2h10M9 19h6"/></svg><span>بطل <bdi>{{ winners[0][0] }}</bdi></span></div>
                                 <h4>{{ winners[0][1] }}</h4><small>أحدث بطل في السجل</small>
@@ -182,7 +211,6 @@
                             <details class="honours"><summary aria-label="سجل أبطال {{ name }}">سجل الأبطال <span>{{ 'نسختان' if winners|length == 2 else (winners|length|string ~ ' نسخ') }}</span></summary>
                                 <ol>{% for year, winner in winners %}<li><time datetime="{{ year }}" dir="ltr">{{ year }}</time><span>{{ winner }}</span></li>{% endfor %}</ol>
                             </details>
-                            <a class="card-action" href="/league/{{ slug }}" aria-label="ادخل الدوري — {{ name }}">ادخل الدوري <span class="arrow" aria-hidden="true">←</span></a>
                         </div>
                     </article>
                     {% endfor %}

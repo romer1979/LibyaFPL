@@ -26,7 +26,10 @@ class HomeTests(unittest.TestCase):
                 if tag == 'a': self.in_link=False
         parsed=Markup(); parsed.feed(html)
         for league in ('elite','the100','cities','libyan','arab'):
-            self.assertIn('/league/'+league,parsed.links)
+            self.assertEqual(parsed.links.count('/league/'+league),4)
+        self.assertLess(html.index('class="quick-leagues"'), html.index('class="intro"'))
+        for card in html.split('<article class="league-card"')[1:]:
+            self.assertLess(card.index('class="card-action"'),card.index('class="champion"'))
         self.assertEqual(len(parsed.details),5)
         self.assertTrue(all('open' not in attrs for attrs in parsed.details))
         self.assertEqual(len(parsed.years),17)
