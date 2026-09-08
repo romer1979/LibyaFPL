@@ -49,6 +49,27 @@
             <p class="hint">الشرائح حسب سجل الاستخدام المنشور لكل نصف موسم؛ تفعيل الجولة القادمة غير معلن. Wildcard و Free Hit يلغيان خصم الانتقالات، مع الالتزام بالميزانية. يُسمح بشريحة واحدة لكل فريق.</p><section class="summary"><div class="summary-heading"><h2>اللاعبون المختلفون</h2><span id="shared-count"></span></div><div class="summary-grid"><div><h3>أفضلية خطتك</h3><div id="my-diffs" class="diff-list"></div></div><div><h3>أفضلية خطة الخصم</h3><div id="opponent-diffs" class="diff-list"></div></div></div></section>
         </div>
     </main>
-    <dialog id="editor" aria-labelledby="edit-title"><form method="dialog"><button class="close" aria-label="إغلاق">×</button></form><h2 id="edit-title"></h2><p id="editor-finance" role="status"></p><label for="search">تجربة انتقال إلى لاعب بنفس المركز</label><input id="search" type="search" placeholder="ابحث بالاسم أو النادي" autocomplete="off"><p class="hint">تُراجع الميزانية وفق أسعار البيع والرصيد المفترضين. الانتقالات مسودة صافية وليست عمليات بيع وشراء منفذة.</p><div id="transfer-options"></div></dialog>
+    {# A side drawer at desktop, a full-screen sheet on phones. Kept as a
+       <dialog> rather than a hand-rolled panel so focus trapping, Escape to
+       close and the backdrop come from the browser. #}
+    <dialog id="editor" class="picker" aria-labelledby="edit-title">
+        <form method="dialog"><button class="close" aria-label="إغلاق">×</button></form>
+        <h2 id="edit-title"></h2>
+        <p id="editor-finance" role="status"></p>
+        <div id="picker-subs" class="picker-section" hidden>
+            <h3>التبديل مع الأساسيين</h3>
+            <div id="sub-options" class="picker-list"></div>
+        </div>
+        <div class="picker-section">
+            <h3 id="transfer-heading">تجربة انتقال إلى لاعب بنفس المركز</h3>
+            <div class="picker-filters">
+                <label for="search">بحث<input id="search" type="search" placeholder="اسم اللاعب أو النادي" autocomplete="off"></label>
+                <label for="club-filter">النادي<select id="club-filter"><option value="">كل الأندية</option></select></label>
+            </div>
+            <p id="picker-count" class="hint" role="status"></p>
+            <div id="transfer-options" class="picker-list"></div>
+        </div>
+        <p class="hint">تُراجع الميزانية وفق أسعار البيع والرصيد المفترضين. الانتقالات مسودة صافية وليست عمليات بيع وشراء منفذة.</p>
+    </dialog>
 </body>
 </html>

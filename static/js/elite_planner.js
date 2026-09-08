@@ -41,22 +41,18 @@ function renderFinance(side,area,expanded) {
     area.append(box);
 }
 
-// Substitutions run bench → XI, never the other way. A starter can therefore
-// never begin one: tapping a starter offers a transfer instead, which is the
-// only thing that can sensibly be done to a player already in the team.
+// One gesture: tapping any player opens his panel. What the panel offers is
+// what differs — a bench player can be substituted into the XI or moved up the
+// bench order, a starter can only be transferred, because substitutions run
+// bench to XI and never the other way.
+//
+// This replaces the old two-tap pitch swap. The panel is modal, so the pitch
+// behind it is inert and a second tap out there could not land anyway; the
+// substitution list does that job, in the same two taps, without having to
+// find the right shirt.
 function selectPlayer(side,index) {
     if(selected && selected.side===side && selected.index===index) { selected=null; render(); return; }
-    const pending = selected && selected.side===side && selected.index>=11;
-    if(pending) {
-        if(PlannerRules.swap(plans[side],selected.index,index,data.players)) {
-            selected=null; $('message').textContent='تم التبديل. انتقلت شارة الكابتن أو النائب إلى اللاعب الداخل إن لزم.';
-        } else { $('message').textContent='تبديل غير مسموح: حافظ على حارس واحد و3 مدافعين و2 وسط ومهاجم على الأقل.'; return; }
-    } else if(index>=11) {
-        selected={side,index};
-    } else {
-        selected={side,index}; render(); openEditor(); return;
-    }
-    render();
+    selected={side,index}; render(); openEditor();
 }
 function renderControls(side) {
     const p=plans[side], area=$(side+'-controls'), expanded=area.querySelector('details')?.open; area.replaceChildren();
@@ -85,18 +81,16 @@ function renderControls(side) {
     const bar=$(side+'-selection'); bar.replaceChildren();
     if(selected?.side===side) {
         const name=data.players[p.ids[selected.index]].name;
-        bar.append(text('span',name+(selected.index>=11?' — اختر لاعباً مضيئاً من الأساسيين للتبديل':' — أساسي: يمكنك تجربة انتقال')),
-            button('تجربة انتقال',openEditor),button('إلغاء',()=>{selected=null;render();}));
-    } else bar.append(text('span','اضغط بديلاً لبدء التبديل، أو أساسياً لتجربة انتقال.'));
+        bar.append(text('span',name+(selected.index>=11?' — بديل':' — أساسي')),
+            button('فتح البدائل',openEditor),button('إلغاء',()=>{selected=null;render();}));
+    } else bar.append(text('span','اضغط أي لاعب لعرض البدائل في مركزه.'));
 }
 function playerCard(id,index,side,weights,other) {
     const p=data.players[id], chosen=selected?.side===side && selected.index===index;
-    // Only a pending bench selection lights up swap targets; a selected starter
-    // is waiting on a transfer, not a substitution.
-    const target=selected?.side===side && selected.index>=11 && PlannerRules.canSwap(plans[side],selected.index,index,data.players);
+
     const el=button('',()=>selectPlayer(side,index));
-    el.className='player'+(weights[id] !== (other[id]||0)?' unique':'')+(chosen?' selected':'')+(target?' swap-target':'');
-    el.setAttribute('aria-pressed',String(chosen)); el.setAttribute('aria-label',`${p.name}، ${positions[p.position]}، ${index<11?'أساسي':'بديل'}${target?'، متاح للتبديل':''}`);
+    el.className='player'+(weights[id] !== (other[id]||0)?' unique':'')+(chosen?' selected':'');
+    el.setAttribute('aria-pressed',String(chosen)); el.setAttribute('aria-label',`${p.name}، ${positions[p.position]}، ${index<11?'أساسي':'بديل'}`);
     el.append(text('span',p.clubName,'shirt'),text('strong',p.name),text('small',p.fixtures.join(' · ')||'BLANK'));
     const plan=plans[side];
     if(id===plan.captain||id===plan.vice)el.append(text('span',id===plan.captain?'C':'V','captain-badge'));
@@ -127,10 +121,39 @@ function canTransfer(id) {
     const p=data.players[id], ids=plans[selected.side].ids;
     return p.position===data.players[ids[selected.index]].position&&!ids.includes(id)&&!['u','n'].includes(p.status)&&ids.filter((x,i)=>i!==selected.index&&data.players[x].club===p.club).length<3;
 }
+// Substitution targets for a selected bench player, listed in the panel so a
+// swap never depends on hunting the right shirt on the pitch.
+function subOptions() {
+    const box=$('picker-subs'), list=$('sub-options');
+    list.replaceChildren();
+    box.hidden=!selected||selected.index<11;
+    if(box.hidden)return;
+    const side=selected.side, plan=plans[side];
+    plan.ids.forEach((id,index)=>{
+        if(!PlannerRules.canSwap(plan,selected.index,index,data.players))return;
+        const p=data.players[id];
+        list.append(button(`${p.name} · ${p.clubName} · ${positions[p.position]}${index>=11?' · ترتيب الدكة':''}`,()=>{
+            if(!PlannerRules.swap(plan,selected.index,index,data.players))return;
+            selected=null;$('editor').close();render();
+            $('message').textContent='تم التبديل. انتقلت شارة الكابتن أو النائب إلى اللاعب الداخل إن لزم.';
+        }));
+    });
+    if(!list.children.length)list.append(text('p','لا يوجد تبديل قانوني يحافظ على التشكيلة.','hint'));
+}
 function transferOptions() {
     $('transfer-options').replaceChildren();if(!data||!selected)return;
     const query=$('search').value.trim().toLocaleLowerCase();
-    const options=Object.values(data.players).filter(p=>canTransfer(p.id)&&`${p.name} ${p.clubName}`.toLocaleLowerCase().includes(query)).slice(0,40);
+    const club=$('club-filter').value;
+    const matches=Object.values(data.players).filter(p=>canTransfer(p.id)
+        &&(!club||String(p.club)===club)
+        &&`${p.name} ${p.clubName}`.toLocaleLowerCase().includes(query));
+    // The list was capped at 40 with no indication, so a common name could
+    // silently hide the player you wanted. The cap stays — 200-odd buttons
+    // help nobody — but the count now says when it is hiding something.
+    const options=matches.slice(0,40);
+    $('picker-count').textContent=matches.length>options.length
+        ? `عرض ${options.length} من ${matches.length} — حدّد النادي أو ابحث للتضييق`
+        : `${matches.length} لاعب متاح`;
     const plan=plans[selected.side];
     options.forEach(p=>{
         const ids=[...plan.ids];ids[selected.index]=p.id;
@@ -145,9 +168,18 @@ function transferOptions() {
     if(!options.length)$('transfer-options').append(text('p','لا توجد نتائج متاحة بنفس المركز وحد 3 لاعبين من النادي.'));
 }
 function openEditor() {
-    $('edit-title').textContent=data.players[plans[selected.side].ids[selected.index]].name;
+    const player=data.players[plans[selected.side].ids[selected.index]];
+    $('edit-title').textContent=`${player.name} · ${positions[player.position]}`;
+    $('transfer-heading').textContent=`بدائل في مركز ${positions[player.position]}`;
     $('editor-finance').textContent='الرصيد المتاح: '+money(PlannerRules.balance(plans[selected.side],data.players))+' · عدّل أسعار البيع والميزانية من إعدادات الفريق عند الحاجة.';
-    $('search').value='';transferOptions();$('editor').showModal();
+    // Club list built from the players actually eligible for this slot, so it
+    // never offers a club with nothing to show.
+    const clubs=[...new Map(Object.values(data.players).filter(p=>canTransfer(p.id))
+        .map(p=>[p.club,p.clubName])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'ar'));
+    $('club-filter').replaceChildren(new Option('كل الأندية',''));
+    clubs.forEach(([id,name])=>$('club-filter').add(new Option(name,id)));
+    $('search').value='';
+    subOptions();transferOptions();$('editor').showModal();
 }
 // A Free Hit squad reverts, so the server steps back to the last standing one.
 // That can leave the two sides on different gameweeks, and it can leave either
@@ -183,4 +215,5 @@ $('retry').addEventListener('click',()=>load($('manager').value));
     selected=null;render();$('message').textContent='تمت استعادة التشكيلة المنشورة وإلغاء الشريحة التجريبية لهذا الفريق.';
 }));
 $('search').addEventListener('input',transferOptions);
+$('club-filter').addEventListener('change',transferOptions);
 load();

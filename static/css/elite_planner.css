@@ -353,18 +353,90 @@ button {
     font-size: 12px;
 }
 
-dialog {
-    width: min(540px, calc(100% - 24px));
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 22px;
+/* The picker is a drawer pinned to the inline-start edge — the right, since
+   the page is RTL — rather than a third grid column, which would have squeezed
+   both pitches between roughly 1000 and 1300px. On phones it becomes a
+   full-height sheet. It stays a <dialog> so focus trapping, Escape and the
+   backdrop come from the browser rather than being reimplemented. */
+dialog.picker {
+    width: min(400px, 100%);
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    margin-inline-end: auto;   /* pushes the drawer to the inline-start edge */
+    border: 0;
+    border-inline-start: 1px solid var(--line);
+    border-radius: 0;
+    padding: 20px;
     color: var(--ink);
-    max-height: 85vh;
+    background: var(--bg-card);
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(33, 8, 42, 0.25);
 }
 
-dialog::backdrop { background: rgba(33, 8, 42, 0.7); }
+dialog::backdrop { background: rgba(33, 8, 42, 0.55); }
 .close { float: left; font-size: 24px; padding: 0 10px; }
-dialog h2 { color: var(--purple); font-size: 20px; }
+dialog h2 { color: var(--purple); font-size: 20px; margin: 0 0 4px; }
+
+.picker-section { margin-top: 18px; }
+
+.picker-section h3 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--purple);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--tint-line);
+}
+
+.picker-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.picker-filters label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    min-width: 0;
+}
+
+.picker-filters input,
+.picker-filters select {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 9px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--ink);
+    font: inherit;
+}
+
+.picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.picker-list button {
+    text-align: right;
+    padding: 10px;
+    min-height: 44px;
+}
+
+.picker-list button:not(:disabled):hover,
+.picker-list button:not(:disabled):focus-visible { border-color: var(--purple-light); }
+
+#picker-count { margin: 0 0 8px; }
+
+/* The substitution list is the shorter of the two and the one a bench tap is
+   usually after, so it is not allowed to scroll away under the transfers. */
+#sub-options button { border-inline-start: 3px solid var(--purple-light); }
 
 dialog input {
     display: block;
@@ -375,17 +447,6 @@ dialog input {
     border-radius: 8px;
 }
 
-#swap-options,
-#transfer-options {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    max-height: 230px;
-    overflow: auto;
-}
-
-#swap-options button,
-#transfer-options button { text-align: right; }
 
 hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
 [hidden] { display: none !important; }
@@ -563,11 +624,6 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
     background: var(--purple) !important;
 }
 
-.player.swap-target {
-    outline: 2px dashed var(--silver);
-    outline-offset: 2px;
-    cursor: pointer;
-}
 
 .player .captain-badge {
     position: absolute;
@@ -588,6 +644,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
 
 
 @media (max-width: 850px) {
+    /* A full sheet, not a drawer: at this width a 400px panel beside nothing
+       is just a narrow modal, and the filters need the room. */
+    dialog.picker { width: 100%; padding: 16px; }
+    .picker-filters { grid-template-columns: 1fr; }
     .pitches { grid-template-columns: 1fr; }
     .toolbar { flex-wrap: wrap; }
     .toolbar label { flex-basis: 100%; }
