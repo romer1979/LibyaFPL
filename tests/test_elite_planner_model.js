@@ -27,6 +27,7 @@ console.log('Planner rules: substitutions, formations, C/V, TC, BB and independe
 const market=Object.fromEntries(ids.map((id,i)=>[id,{position:pos[i],club:id,cost:70,status:'a'}]));
 market[16]={position:3,club:16,cost:75,status:'a'};
 market[17]={position:3,club:17,cost:90,status:'a'};
+market[18]={position:3,club:18,cost:70,status:'a'};
 const f=r.create(ids,{captain:5,vice:6},{bank:10,sales:{5:{value:72}}},market);
 f.freeTransfers=0;
 assert.equal(r.transfer(f,4,16,market),true);
@@ -41,3 +42,27 @@ Object.assign(f,f.undo.pop());assert.equal(f.captain,16);assert.equal(r.balance(
 const unknown=r.create(ids,{}, {},market);assert.equal(r.transfer(unknown,4,16,market),false);
 f.bank=0;f.sales[5]=50;assert.equal(r.balance(f,market),-25);
 console.log('Finance rules: budgets, unknown funds, sale proceeds, net transfers, undo and WC/FH passed.');
+
+// The transfer allowance: how many are free, and when the limit is lifted.
+const a=r.create(ids,{captain:5,vice:6},{bank:1000,free_transfers:2},market);
+assert.equal(a.freeTransfers,2);                 // seeded from the server
+assert.equal(r.allowance(a),2);
+assert.equal(r.used(a),0);assert.equal(r.hits(a),0);
+assert.equal(r.transfer(a,4,16,market),true);assert.equal(r.used(a),1);assert.equal(r.hits(a),0);
+assert.equal(r.transfer(a,5,17,market),true);assert.equal(r.used(a),2);assert.equal(r.hits(a),0);
+assert.equal(r.transfer(a,6,18,market),true);assert.equal(r.used(a),3);assert.equal(r.hits(a),4);
+// Both chips lift the limit outright, and cancel the hit already incurred.
+a.chip='wildcard';assert.equal(r.allowance(a),Infinity);assert.equal(r.hits(a),0);
+a.chip='freehit';assert.equal(r.allowance(a),Infinity);assert.equal(r.hits(a),0);
+a.chip='3xc';assert.equal(r.allowance(a),2);assert.equal(r.hits(a),4);  // other chips do not
+a.chip=null;
+// An unverifiable count stays unknown rather than defaulting to a number:
+// hits cannot be stated, but a chip still lifts the limit.
+const u=r.create(ids,{captain:5,vice:6},{bank:1000},market);
+assert.equal(u.freeTransfers,null);
+assert.equal(r.allowance(u),null);assert.equal(r.hits(u),null);
+u.chip='freehit';assert.equal(r.allowance(u),Infinity);assert.equal(r.hits(u),0);
+// A server value that is not a sane integer is ignored, not trusted.
+assert.equal(r.create(ids,{},{free_transfers:-1},market).freeTransfers,null);
+assert.equal(r.create(ids,{},{free_transfers:'2'},market).freeTransfers,null);
+console.log('Transfer allowance: seeding, hits at the limit, WC/FH unlimited and unknown counts passed.');

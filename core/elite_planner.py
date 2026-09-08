@@ -106,7 +106,54 @@ def finances(entry, snapshot, players):
             'purchase': purchase,
         }
     return {'bank': snapshot['bank'], 'sales': sales,
-            'snapshot_gameweek': snapshot['snapshot_gameweek']}
+            'snapshot_gameweek': snapshot['snapshot_gameweek'],
+            'free_transfers': snapshot.get('free_transfers')}
+
+
+MAX_BANKED_TRANSFERS = 5
+
+
+def free_transfers(entry, upcoming_gw):
+    """Free transfers this manager takes into `upcoming_gw`, or None.
+
+    FPL does not publish this for anyone, so it is reconstructed from the
+    public history: one free transfer per gameweek, banked up to five, spent
+    when transfers are made, and preserved through a Wildcard or Free Hit
+    (those weeks are unlimited and cost nothing). Gameweek 1 is unlimited too,
+    before the first deadline.
+
+    The reconstruction checks itself. FPL *does* publish what each gameweek's
+    transfers cost, and that cost is a function of the free transfers held at
+    the time — so every past gameweek is a test. If a single one disagrees the
+    assumptions are wrong for this manager and None is returned, because the
+    whole point of the number is that someone plans around it: "unknown" is
+    recoverable, a confident wrong answer is not.
+
+    fetch_data is cached per URL and finances() already reads this endpoint,
+    so this costs no extra request.
+    """
+    try:
+        history = fetch_data(f'{FPL_BASE_URL}/entry/{entry}/history/')
+        chips = {c['event']: c['name'] for c in history['chips']}
+        available = None
+        for row in sorted(history['current'], key=lambda r: r['event']):
+            gw, made, charged = row['event'], row['event_transfers'], row['event_transfers_cost']
+            if gw >= upcoming_gw:
+                break
+            if available is None:          # the season opener is unlimited
+                available = 1
+                continue
+            if chips.get(gw) in ('wildcard', 'freehit'):
+                predicted = 0              # unlimited, and the bank survives
+            else:
+                predicted = 4 * max(0, made - available)
+                available -= min(made, available)
+            if predicted != charged:
+                return None
+            available = min(MAX_BANKED_TRANSFERS, available + 1)
+        return available
+    except (FPLApiError, KeyError, TypeError, ValueError):
+        return None
 
 
 def chip_availability(entry, gw):
@@ -164,6 +211,8 @@ def api():
                    for p in bootstrap['elements']}
         own = squad(entry, published['id'], players)
         other = squad(opponent['id'], published['id'], players)
+        own['free_transfers'] = free_transfers(entry, upcoming['id'])
+        other['free_transfers'] = free_transfers(opponent['id'], upcoming['id'])
         own_finance = finances(entry, own, players)
         other_finance = finances(opponent['id'], other, players)
         return jsonify(**base, published_gameweek=published['id'], opponent=opponent,

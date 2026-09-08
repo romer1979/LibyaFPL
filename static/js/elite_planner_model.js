@@ -4,7 +4,12 @@
         create(ids, settings = {}, finance = {}, players = {}) {
             const plan = {ids: [...ids], original: [...ids], captain: settings.captain, vice: settings.vice, chip: null,
                 bank: Number.isInteger(finance.bank) && finance.bank >= 0 ? finance.bank : null,
-                freeTransfers: null, sales: {}, undo: []};
+                // Derived from the public history by the server, which returns
+                // null rather than a guess when it cannot verify itself. Still
+                // editable: it is a starting point, not a claim.
+                freeTransfers: Number.isInteger(finance.free_transfers) && finance.free_transfers >= 0
+                    ? finance.free_transfers : null,
+                sales: {}, undo: []};
             ids.forEach(id => { plan.sales[id] = finance.sales?.[id]?.value ?? players[id]?.cost ?? 0; });
             rules.normalize(plan); return plan;
         },
@@ -13,10 +18,21 @@
             return p.bank + p.original.filter(id => !ids.includes(id)).reduce((n,id) => n+p.sales[id],0)
                 - ids.filter(id => !p.original.includes(id)).reduce((n,id) => n+players[id].cost,0);
         },
+        // How many transfers this plan may make without a points hit.
+        // Infinity under Wildcard or Free Hit, which lift the limit entirely;
+        // null when the free-transfer count could not be established.
+        allowance(p) {
+            if (['wildcard','freehit'].includes(p.chip)) return Infinity;
+            return p.freeTransfers === null ? null : p.freeTransfers;
+        },
+        used(p) {
+            return p.ids.filter(id => !p.original.includes(id)).length;
+        },
         hits(p) {
-            if (['wildcard','freehit'].includes(p.chip)) return 0;
-            if (p.freeTransfers === null) return null;
-            return 4 * Math.max(0, p.ids.filter(id => !p.original.includes(id)).length - p.freeTransfers);
+            const allowed = rules.allowance(p);
+            if (allowed === null) return null;
+            if (allowed === Infinity) return 0;
+            return 4 * Math.max(0, rules.used(p) - allowed);
         },
         transfer(p, index, id, players) {
             const incoming = players[id], outgoing = players[p.ids[index]];

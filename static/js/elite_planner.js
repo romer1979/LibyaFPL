@@ -18,15 +18,20 @@ function renderFinance(side,area,expanded) {
     const box=text('div','','finance-box'), balance=PlannerRules.balance(plan,data.players), hits=PlannerRules.hits(plan);
     const total=plan.ids.filter(id=>!plan.original.includes(id)).length;
     box.append(text('strong','الرصيد المتبقي '+money(balance),balance!==null&&balance<0?'budget-error':''));
-    box.append(text('p',`${total} انتقالات صافية · خصم النقاط: ${hits===null?'حدد الانتقالات المجانية':hits}`));
+    const allowed=PlannerRules.allowance(plan);
+    const allowedLabel=allowed===Infinity?'غير محدودة':allowed===null?'غير معروفة':allowed;
+    box.append(text('strong',`الانتقالات المسموحة: ${allowedLabel}`,'allowance'+(allowed===Infinity?' unlimited':'')));
+    box.append(text('p',`${total} انتقال صافٍ · خصم النقاط: ${hits===null?'حدد الانتقالات المجانية':hits}`));
+    if(allowed===Infinity)box.append(text('p',`${plan.chip==='wildcard'?'Wildcard':'Free Hit'}: عدد الانتقالات غير محدود ولا خصم على أي منها.`));
+    else if(allowed!==null&&total>allowed)box.append(text('p',`تجاوزت الانتقالات المجانية بـ ${total-allowed} — كل واحد إضافي يكلف 4 نقاط.`,'budget-error'));
     if(balance!==null&&balance<0)box.append(text('p','الخطة تتجاوز الميزانية: تراجع عن انتقال أو صحح الافتراضات.','budget-error'));
     if(plan.chip==='freehit')box.append(text('p','Free Hit: انتقالات لهذه الجولة فقط؛ التشكيلة الأصلية لا تتغير.'));
     if(plan.chip==='wildcard')box.append(text('p','Wildcard: انتقالات بلا خصم. هذه الأداة تخطط لجولة واحدة ولا تحفظ جولات مستقبلية.'));
     const detail=document.createElement('details');detail.open=Boolean(expanded);detail.append(text('summary','الميزانية وأسعار البيع · تعديل الافتراضات'));
-    detail.append(text('p',`الرصيد المنشور: ${money(finance.bank??null)} · GW ${finance.snapshot_gameweek??data.published_gameweek}. أسعار البيع تقديرية، وليست بيانات الحساب الخاصة.`, 'hint'));
+    detail.append(text('p',`الرصيد المنشور: ${money(finance.bank??null)} · GW ${finance.snapshot_gameweek??data.published_gameweek}. الانتقالات المجانية محسوبة من السجل المنشور ومطابَقة مع خصومات FPL السابقة؛ أسعار البيع تقديرية.`, 'hint'));
     const fields=text('div','','finance-fields');
     fields.append(numberField('رصيد البداية (£m)',plan.bank===null?null:plan.bank/10,0.1,1000,v=>{plan.bank=v===null?null:Math.round(v*10);render();}),
-        numberField('انتقالات مجانية (افتراضك)',plan.freeTransfers,1,5,v=>{plan.freeTransfers=v;render();}));detail.append(fields);
+        numberField('انتقالات مجانية',plan.freeTransfers,1,5,v=>{plan.freeTransfers=v;render();}));detail.append(fields);
     detail.append(text('p','المصدر: سجل انتقالات منشور إن توفر؛ وإلا سعر السوق كتقدير. صحح سعر البيع الحقيقي قبل الاعتماد على الميزانية.','hint'));
     const prices=text('div','','sale-prices');
     plan.original.forEach(id=>{

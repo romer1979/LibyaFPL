@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
 from flask import Flask
-from core.elite_planner import planner, event_window, opponent_for, members, chip_availability, finances, squad
+from core.elite_planner import planner, event_window, opponent_for, members, chip_availability, finances, free_transfers, squad
 
 
 class PlannerTests(unittest.TestCase):
@@ -90,6 +90,46 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(result['snapshot_gameweek'], 3)
         self.assertEqual(result['bank'], 17)
         self.assertEqual(picks.call_args.args, (11, 3))
+
+    @patch('core.elite_planner.fetch_data')
+    def test_free_transfers_are_derived_and_self_checked(self, fetch):
+        def history(rows, chips=()):
+            return {'chips': [{'name': n, 'event': e} for n, e in chips],
+                    'current': [{'event': gw, 'event_transfers': made, 'event_transfers_cost': cost}
+                                for gw, made, cost in rows]}
+
+        # No transfers: one banked per gameweek.
+        fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 0, 0)])
+        self.assertEqual(free_transfers(11, 4), 3)
+
+        # Two spent in GW3 against two banked leaves none, then GW4 restores one.
+        fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 2, 0)])
+        self.assertEqual(free_transfers(11, 4), 1)
+
+        # A hit: three made on one free transfer costs 8.
+        fetch.return_value = history([(1, 0, 0), (2, 3, 8), (3, 0, 0)])
+        self.assertEqual(free_transfers(11, 4), 2)
+
+        # The bank is capped at five however long the manager sits still.
+        fetch.return_value = history([(1, 0, 0)] + [(gw, 0, 0) for gw in range(2, 12)])
+        self.assertEqual(free_transfers(11, 12), 5)
+
+        # A Wildcard week is unlimited and free, and preserves the bank.
+        fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 9, 0)],
+                                     chips=[('wildcard', 3)])
+        self.assertEqual(free_transfers(11, 4), 3)
+
+        # Only gameweeks before the one being planned are counted.
+        fetch.return_value = history([(1, 0, 0), (2, 0, 0), (3, 0, 0)])
+        self.assertEqual(free_transfers(11, 3), 2)
+
+        # If the simulation cannot reproduce a published cost its assumptions
+        # are wrong, so it reports nothing rather than a confident guess.
+        fetch.return_value = history([(1, 0, 0), (2, 1, 12), (3, 0, 0)])
+        self.assertIsNone(free_transfers(11, 4))
+
+        fetch.side_effect = ValueError('unreachable')
+        self.assertIsNone(free_transfers(11, 4))
 
     @patch('core.elite_planner.get_entry_picks')
     def test_freehit_walkback_edges(self, picks):
